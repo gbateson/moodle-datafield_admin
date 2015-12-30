@@ -30,3 +30,16 @@ $string['pluginname'] = 'Admin field';
 $string['accessnone'] = 'Hidden from non-managers';
 $string['accessview'] = 'Non-managers can view this field';
 $string['accessedit'] = 'Non-managers can edit this field';
+$string['fixlangpack'] = '**The Admin field is not yet properly installed**
+
+Please append language strings for the Admin field to Database language file:
+
+* EDIT: {$a->langfile}
+* ADD: $string[\'admin\'] = \'Admin\';
+* ADD: $string[\'nameadmin\'] = \'Admin field\';
+
+Then purge the Moodle caches:
+
+* Administration -> Site administration -> Development -> Purge all caches
+
+See {$a->readfile} for more details.';

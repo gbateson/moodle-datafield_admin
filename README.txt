@@ -18,17 +18,27 @@ To INSTALL or UPDATE the Admin database field
         * https://github.com/gbateson/moodle-datafield_admin/archive/master.zip
         * http://bateson.kanazawa-gu.ac.jp/moodle/zip/plugins_datafield_admin.zip
 
-    2. unzip the zip file - creates folder called "admin"
+    2. unzip the zip file - and if necessary rename the resulting folder to "admin"
 
-    3. upload the "admin" folder into the "mod/data/field" folder on your Moodle >= 2.3 site, to create a new folder at "mod/data/field/admin"
+    3. upload the "admin" folder into the "mod/data/field" folder on your
+       Moodle >= 2.3 site, to create a new folder at "mod/data/field/admin"
 
-    4. log in to Moodle as administrator to initiate install/upgrade
+    4. currently database plugin strings aren't fully modularised, so the following
+       two strings need be added manually to the language pack for the Database
+       activity module, in file "/PATH/TO/MOODLE/mod/data/lang/en/data.php"
 
-        if install/upgrade does not begin automatically, you can initiate it manually by navigating to the following link:
+          $string['admin'] = 'Admin';
+          $string['nameadmin'] = 'Admin field';
+
+    5. log in to Moodle as administrator to initiate install/upgrade
+
+        if install/upgrade does not begin automatically, you can initiate it manually
+        by navigating to the following link:
+
         Settings -> Site administration -> Notifications
 
 ===============================================
-To add an Admin field to a database activity
+To ADD an Admin field to a database activity
 ===============================================
 
     1. Login to Moodle, and navigate to a course page
@@ -43,4 +53,5 @@ To add an Admin field to a database activity
 
     7. Click the "Save changes" button at the bottom of the page.
 
-    8. If necessary, you may need to further edit the field in order to complete further settings for selected subtype
+    8. If necessary, you may need to further edit the field in order to complete specific
+       settings for the selected subtype

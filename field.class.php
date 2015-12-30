@@ -67,12 +67,12 @@ class data_field_admin extends data_field_base {
     var $subfield = null;
 
     /**
-     * the $field->param property that contains the subtype of this database field
+     * the $field property that contains the subtype of this database field
      */
     var $subparam = 'param10';
 
     /**
-     * the $field->param property that contains the accessibility setting of this database field
+     * the $field property that contains the accessibility setting of this database field
      */
     var $accessparam = 'param9';
 
@@ -104,7 +104,7 @@ class data_field_admin extends data_field_base {
     ///////////////////////////////////////////
 
     function __construct($field=0, $data=0, $cm=0) {
-        global $CFG;
+        global $CFG, $DB;
 
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
@@ -121,8 +121,8 @@ class data_field_admin extends data_field_base {
             $this->is_editable = ($field->$accessparam >= self::ACCESS_EDIT);
         }
 
-        // enable debugging on developer sites
-        $this->debug = $this->is_developer_site();
+        // enable debugging for managers on developer sites
+        $this->debug = $this->show_debug_messages();
 
         // fetch the subfield if there is one
         if (isset($field->$subparam)) {
@@ -213,8 +213,22 @@ class data_field_admin extends data_field_base {
      * @return void, but output is echo'd to browser
      */
     function display_edit_field() {
+        global $CFG, $OUTPUT;
         if ($this->debug) {
             echo 'display_edit_field()<br />';
+        }
+        if (empty($this->field->id)) {
+            $strman = get_string_manager();
+            if (! $strman->string_exists($this->type, 'data')) {
+                $msg = (object)array(
+                    'langfile' => $CFG->dirroot.'/mod/data/lang/en/data.php',
+                    'readfile' => $CFG->dirroot.'/mod/data/field/admin/README.txt',
+                );
+                $msg = get_string('fixlangpack', 'datafield_'.$this->type, $msg);
+                $msg = format_text($msg, FORMAT_MARKDOWN);
+                $msg = html_writer::tag('div', $msg, array('class' => 'alert', 'style' => 'width: 100%; max-width: 640px;'));
+                echo $msg;
+            }
         }
         parent::display_edit_field();
     }
@@ -284,7 +298,7 @@ class data_field_admin extends data_field_base {
      *
      * @return HTML to send to browser
      */
-    function display_add_field($recordid=0) {
+    function display_add_field($recordid=0, $formdata=NULL) {
         if ($this->debug) {
             echo 'display_add_field($recordid=0)<br />';
         }
@@ -465,7 +479,7 @@ class data_field_admin extends data_field_base {
         if ($this->debug) {
             echo 'generate_sql($tablealias, $value)<br />';
         }
-        if ($this->is_visible && $this->subfield) {
+        if ($this->is_viewable && $this->subfield) {
             return $this->subfield->generate_sql($tablealias, $value);
         } else {
             return '';
@@ -477,11 +491,12 @@ class data_field_admin extends data_field_base {
     ///////////////////////////////////////////
 
     /**
-     * detect developer on localhost site
+     * enable debugging for developer on locahost sites
+     * with debugging level set to DEBUG_DEVELOPER
      */
-    public function is_developer_site() {
-        global $CFG;
-        return (debugging('', DEBUG_DEVELOPER) && strpos($CFG->wwwroot, 'http://localhost/')===0);
+    public function show_debug_messages() {
+        global $CFG, $USER;
+        return ($USER->username=='gbateson' && debugging('', DEBUG_DEVELOPER) && strpos($CFG->wwwroot, 'http://localhost/')===0);
     }
 
     /*

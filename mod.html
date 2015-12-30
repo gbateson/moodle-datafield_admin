@@ -34,7 +34,7 @@
         <td class="c1"><input class="fielddescription" type="text" name="description" id="description" value="<?php p($this->field->description); ?>" /></td>
     </tr>
     <tr>
-        <td class="c0"><label for="<?php echo $this->subparam ?>"><?php echo get_string('type', 'data'); ?></label></td>
+        <td class="c0"><label for="<?php echo $this->subparam; ?>"><?php echo get_string('type', 'data'); ?></label></td>
         <td class="c1"><?php
             $this->display_edit_selectfield($this->subparam, $this->get_datafield_types(), '');
         ?></td>

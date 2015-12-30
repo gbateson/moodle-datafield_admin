@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,14 +16,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    datafield
- * @subpackage text
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * Version information for the "datafield_admin" plugin
+ *
+ * @package    data
+ * @subpackage datafield_admin
+ * @copyright  2015 Gordon Bateson (gordon.bateson@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.3
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2014111000;
-$plugin->requires  = 2014110400;
 $plugin->component = 'datafield_admin';
+$plugin->requires  = 2012062500; // Moodle 2.3
+$plugin->version   = 2015123000;
+$plugin->release   = '2015-12-30 (00)';
