@@ -86,11 +86,6 @@ class data_field_admin extends data_field_base {
      */
     var $is_editable = false;
 
-    /**
-     * boolean: TRUE display debug/development messages; otherwise FALSE
-     */
-    var $debug = false;
-
     ///////////////////////////////////////////
     // custom constants
     ///////////////////////////////////////////
@@ -121,9 +116,6 @@ class data_field_admin extends data_field_base {
             $this->is_editable = ($field->$accessparam >= self::ACCESS_EDIT);
         }
 
-        // enable debugging for managers on developer sites
-        $this->debug = $this->show_debug_messages();
-
         // fetch the subfield if there is one
         if (isset($field->$subparam)) {
             $subtype = $field->$subparam;
@@ -141,9 +133,6 @@ class data_field_admin extends data_field_base {
     }
 
     function define_default_field() {
-        if ($this->debug) {
-            echo 'define_default_field()<br />';
-        }
         parent::define_default_field();
 
         $param = $this->subparam;
@@ -159,9 +148,6 @@ class data_field_admin extends data_field_base {
     }
 
     function define_field($data) {
-        if ($this->debug) {
-            echo 'define_field($data)<br />';
-        }
         parent::define_field($data);
 
         $param = $this->subparam;
@@ -184,9 +170,6 @@ class data_field_admin extends data_field_base {
      * generate HTML to display icon for this field type on the "Fields" page
      */
     function image() {
-        if ($this->debug) {
-            echo 'image()<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->image();
         } else {
@@ -214,9 +197,6 @@ class data_field_admin extends data_field_base {
      */
     function display_edit_field() {
         global $CFG, $OUTPUT;
-        if ($this->debug) {
-            echo 'display_edit_field()<br />';
-        }
         if (empty($this->field->id)) {
             $strman = get_string_manager();
             if (! $strman->string_exists($this->type, 'data')) {
@@ -237,9 +217,6 @@ class data_field_admin extends data_field_base {
      * add a new admin field from the "Fields" page
      */
     function insert_field() {
-        if ($this->debug) {
-            echo 'insert_field()<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->insert_field();
         } else {
@@ -253,9 +230,6 @@ class data_field_admin extends data_field_base {
      * @return void, but output is echo'd to browser
      */
     function update_field() {
-        if ($this->debug) {
-            echo 'update_field()<br />';
-        }
         parent::update_field();
         if ($this->subfield) {
             $this->subfield->update_field();
@@ -267,9 +241,6 @@ class data_field_admin extends data_field_base {
      * delete an admin field from the "Fields" page
      */
     function delete_field() {
-        if ($this->debug) {
-            echo 'delete_field()<br />';
-        }
         if ($this->subfield) {
             $this->subfield->delete_field();
         } else {
@@ -279,13 +250,10 @@ class data_field_admin extends data_field_base {
     }
 
     /*
-     * delete tuser generate content associated with an admin field
+     * delete user generated content associated with an admin field
      * when the admin field is deleted from the "Fields" page
      */
     function delete_content($recordid=0) {
-        if ($this->debug) {
-            echo 'delete_content($recordid=0)<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->delete_content($recordid);
         } else {
@@ -299,14 +267,11 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function display_add_field($recordid=0, $formdata=NULL) {
-        if ($this->debug) {
-            echo 'display_add_field($recordid=0)<br />';
-        }
         if ($this->is_editable) {
             if ($this->subfield) {
-                return $this->subfield->display_add_field($recordid);
+                return $this->subfield->display_add_field($recordid, $formdata);
             } else {
-                return parent::display_add_field($recordid);
+                return parent::display_add_field($recordid, $formdata);
             }
         } else {
             return $this->display_browse_field($recordid, '');
@@ -319,9 +284,6 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function update_content($recordid, $value, $name='') {
-        if ($this->debug) {
-            echo 'update_content($recordid, $value, $name="")<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->update_content($recordid, $value, $name);
         } else {
@@ -333,9 +295,6 @@ class data_field_admin extends data_field_base {
      * display this field in on the "View list" or "View single" page
      */
     function display_browse_field($recordid, $template) {
-        if ($this->debug) {
-            echo 'display_browse_field($recordid, $template)<br />';
-        }
         if ($this->is_viewable) {
             if ($this->subfield) {
                 return $this->subfield->display_browse_field($recordid, $template);
@@ -351,9 +310,6 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function display_search_field() {
-        if ($this->debug) {
-            echo 'display_search_field()<br />';
-        }
         if ($this->is_viewable) {
             if ($this->subfield) {
                 return $this->subfield->display_search_field();
@@ -394,9 +350,6 @@ class data_field_admin extends data_field_base {
      * parse search field from "Search" page
      */
     function parse_search_field() {
-        if ($this->debug) {
-            echo 'parse_search_field()<br />';
-        }
         if ($this->is_viewable) {
             if ($this->subfield) {
                 return $this->subfield->parse_search_field();
@@ -417,9 +370,6 @@ class data_field_admin extends data_field_base {
     }
 
     function get_sort_field() {
-        if ($this->debug) {
-            echo 'get_sort_field()<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->get_sort_field();
         } else {
@@ -428,9 +378,6 @@ class data_field_admin extends data_field_base {
     }
 
     function get_sort_sql($fieldname) {
-        if ($this->debug) {
-            echo 'get_sort_sql($fieldname)<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->get_sort_sql($fieldname);
         } else {
@@ -439,9 +386,6 @@ class data_field_admin extends data_field_base {
     }
 
     function text_export_supported() {
-        if ($this->debug) {
-            echo 'text_export_supported()<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->text_export_supported();
         } else {
@@ -450,9 +394,6 @@ class data_field_admin extends data_field_base {
     }
 
     function export_text_value($record) {
-        if ($this->debug) {
-            echo 'export_text_value($record)<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->export_text_value();
         } else {
@@ -461,9 +402,6 @@ class data_field_admin extends data_field_base {
     }
 
     function file_ok($relativepath) {
-        if ($this->debug) {
-            echo 'file_ok($relativepath)<br />';
-        }
         if ($this->subfield) {
             return $this->subfield->file_ok($relativepath);
         } else {
@@ -476,9 +414,6 @@ class data_field_admin extends data_field_base {
      * Note: this function is missing from the parent class :-(
      */
     function generate_sql($tablealias, $value) {
-        if ($this->debug) {
-            echo 'generate_sql($tablealias, $value)<br />';
-        }
         if ($this->is_viewable && $this->subfield) {
             return $this->subfield->generate_sql($tablealias, $value);
         } else {
@@ -489,15 +424,6 @@ class data_field_admin extends data_field_base {
     ///////////////////////////////////////////
     // custom methods
     ///////////////////////////////////////////
-
-    /**
-     * enable debugging for developer on locahost sites
-     * with debugging level set to DEBUG_DEVELOPER
-     */
-    public function show_debug_messages() {
-        global $CFG, $USER;
-        return ($USER->username=='gbateson' && debugging('', DEBUG_DEVELOPER) && strpos($CFG->wwwroot, 'http://localhost/')===0);
-    }
 
     /*
      * get options for field accessibility (for display in mod.html)
