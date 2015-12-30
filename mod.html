@@ -1,0 +1,50 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * HTML snippet for insertion into the form to edit an instance of this field
+ *
+ * @package    data
+ * @subpackage datafield_admin
+ * @copyright  2015 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.3
+ */
+ ?>
+<table width="100%" cellpadding="5">
+    <tr>
+        <td class="c0"><label for="name"><?php echo get_string('fieldname', 'data'); ?></label></td>
+        <td class="c1"><input class="fieldname" type="text" name="name" id="name" value="<?php p($this->field->name); ?>" /></td>
+    </tr>
+    <tr>
+        <td class="c0"><label for="description"><?php echo get_string('fielddescription', 'data'); ?></label></td>
+        <td class="c1"><input class="fielddescription" type="text" name="description" id="description" value="<?php p($this->field->description); ?>" /></td>
+    </tr>
+    <tr>
+        <td class="c0"><label for="<?php echo $this->subparam ?>"><?php echo get_string('type', 'data'); ?></label></td>
+        <td class="c1"><?php
+            $this->display_edit_selectfield($this->subparam, $this->get_datafield_types(), '');
+        ?></td>
+    </tr>
+    <tr>
+        <td class="c0"><label for="<?php echo $this->accessparam ?>"><?php echo get_string('access', 'access'); ?></label></td>
+        <td class="c1"><?php
+            $this->display_edit_selectfield($this->accessparam, $this->get_access_types(), data_field_admin::ACCESS_VIEW);
+        ?></td>
+    </tr>
+<?php
+    $this->display_edit_subfield(); ?>
+</table>
