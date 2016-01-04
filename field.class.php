@@ -56,23 +56,23 @@ class data_field_admin extends data_field_base {
     var $subclass = '';
 
     /**
-     * the full path to the folder of the subfield of this database field
+     * the full path to the folder of the subfield of this field
      * e.g. /path/to/moodle/mod/data/field/radiobutton
      */
     var $subfolder = '';
 
     /**
-     * an object containing the subfield for this database field
+     * an object containing the subfield for this field
      */
     var $subfield = null;
 
     /**
-     * the $field property that contains the subtype of this database field
+     * the $field property that contains the subtype of this field
      */
     var $subparam = 'param10';
 
     /**
-     * the $field property that contains the accessibility setting of this database field
+     * the $field property that contains the accessibility setting of this field
      */
     var $accessparam = 'param9';
 
@@ -85,6 +85,30 @@ class data_field_admin extends data_field_base {
      * TRUE if the current user can edit this field; otherwise FALSE
      */
     var $is_editable = false;
+
+    ///////////////////////////////////////////
+    // fields that are NOT IMPLEMENTED ... yet
+    ///////////////////////////////////////////
+
+    /**
+     * the $field property that contains disabledIf information for this field
+     */
+    var $disabledifparam = 'param8';
+
+    /**
+     * the $field property that contains line of display text
+     * for select, radio, and checkbox subfields
+     * e.g. value, multilingual display text
+     */
+    var $displaytextparam = 'param7';
+
+    /**
+     * the $field property that contains the sort order for this field
+     */
+    var $sortorderparam = 'param6';
+
+    // can we filter_string output to view pages?
+    // can we add field description to export?
 
     ///////////////////////////////////////////
     // custom constants
@@ -104,8 +128,11 @@ class data_field_admin extends data_field_base {
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
 
-        $accessparam = $this->accessparam;
-        $subparam = $this->subparam;
+        $subparam         = $this->subparam;
+        $accessparam      = $this->accessparam;
+        $disabledifparam  = $this->disabledifparam;
+        $displaytextparam = $this->displaytextparam;
+        $sortorderparam   = $this->sortorderparam;
 
         // set view and edit permissions for this user
         if (has_capability('mod/data:managetemplates', $this->context)) {
