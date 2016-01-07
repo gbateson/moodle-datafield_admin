@@ -77,6 +77,11 @@ class data_field_admin extends data_field_base {
     var $accessparam = 'param9';
 
     /**
+     * the $field property that contains disabledIf information for this field
+     */
+    var $disabledifparam = 'param8';
+
+    /**
      * TRUE if the current user can view this field; otherwise FALSE
      */
     var $is_viewable = false;
@@ -91,11 +96,6 @@ class data_field_admin extends data_field_base {
     ///////////////////////////////////////////
 
     /**
-     * the $field property that contains disabledIf information for this field
-     */
-    var $disabledifparam = 'param8';
-
-    /**
      * the $field property that contains line of display text
      * for select, radio, and checkbox subfields
      * e.g. value, multilingual display text
@@ -107,6 +107,8 @@ class data_field_admin extends data_field_base {
      */
     var $sortorderparam = 'param6';
 
+    // implement validation on values
+    //  - PARAM_xxx
     // can we filter_string output to view pages?
     // can we add field description to export?
 
@@ -294,15 +296,18 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function display_add_field($recordid=0, $formdata=NULL) {
+        $output = '';
         if ($this->is_editable) {
+            $output .= $this->js_disabledif();
             if ($this->subfield) {
-                return $this->subfield->display_add_field($recordid, $formdata);
+                $output .= $this->subfield->display_add_field($recordid, $formdata);
             } else {
-                return parent::display_add_field($recordid, $formdata);
+                $output .= parent::display_add_field($recordid, $formdata);
             }
         } else {
-            return $this->display_browse_field($recordid, '');
+            $output.= $this->display_browse_field($recordid, '');
         }
+        return $output;
     }
 
     /*
@@ -319,7 +324,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * display this field in on the "View list" or "View single" page
+     * display this field on the "View list" or "View single" page
      */
     function display_browse_field($recordid, $template) {
         if ($this->is_viewable) {
@@ -462,7 +467,38 @@ class data_field_admin extends data_field_base {
     }
 
     /*
-     * display a select field on page to edit field settings (i.e. mod.html)
+     * display a label in mod.html
+     */
+    function display_edit_label($name, $label) {
+        echo html_writer::tag('label', $label, array('for' => $name));
+    }
+
+    /*
+     * display a text field in mod.html
+     */
+    function display_edit_textfield($name, $value, $class) {
+        $params = array('type'  => 'text',
+                        'id'    => 'id_'.$name,
+                        'name'  => $name,
+                        'value' => $value,
+                        'class' => $class);
+        echo html_writer::empty_tag('input', $params);
+    }
+
+    /*
+     * display a textarea field in mod.html
+     */
+    function display_edit_textarea($name, $value, $class) {
+        $params = array('id'    => 'id_'.$name,
+                        'name'  => $name,
+                        'class' => $class,
+                        'rows'  => 3,
+                        'cols'  => 40);
+        echo html_writer::tag('textarea', $value, $params);
+    }
+
+    /*
+     * display a select field in mod.html
      */
     public function display_edit_selectfield($param, $values, $default) {
         echo html_writer::start_tag('select', array('id' => $param, 'name' => $param));
@@ -499,7 +535,7 @@ class data_field_admin extends data_field_base {
     }
 
     /*
-     * add subfield's mod.html to admin field's mod.html
+     * display a subfield's settings in mod.html
      */
     public function display_edit_subfield() {
         global $CFG, $DB, $OUTPUT, $PAGE;
@@ -527,5 +563,52 @@ class data_field_admin extends data_field_base {
         $output = preg_replace($search, '', $output);
 
         return trim($output);
+    }
+
+    /*
+     * add javascript to disable a field if specified conditions are met
+     */
+    public function js_disabledif() {
+        global $DB;
+        $output = '';
+        $param = $this->disabledifparam;
+        if ($lines = $this->field->$param) {
+            $search = "/\\(\\s*('([^']+)', *(('(checked|notchecked|noitemselected)')|('(eq|neq|in)',\\s*'([^']+)')))\\s*\\)/is";
+            // $0 : ('fieldname', 'operator', 'value')
+            // $1 : 'fieldname', 'operator', 'value'
+            // $2 : fieldname
+            // $3 : 'operator', 'value'
+            // $4 : 'unary_operator'
+            // $5 : unary_operator
+            // $6 : 'binary_operator', 'value'
+            // $7 : binary_operator
+            // $8 : value
+            if (preg_match_all($search, $lines, $matches)) {
+                $output .= '<script type="text/javascript">'."\n";
+                $output .= "//<![CDATA[\n";
+                $output .= "if (! window.ADM) {\n";
+                $output .= "    window.ADM = {};\n";
+                $output .= "}\n";
+                $output .= "ADM.setup_field = function (id1, id2, op, value) {\n";
+                $output .= "    if(!window.gdb)window.gdb=!confirm('id1=' + id1 + ', id2=' + id2 + ', op=' + op + ', value=' + value);\n";
+                $output .= "}\n";
+                foreach ($matches[1] as $i => $match) {
+                    $params = array('dataid' => $this->field->dataid, 'name' => $matches[2][$i]);
+                    if ($fieldid = $DB->get_field('data_fields', 'id', $params)) {
+                        if ($matches[6][$i]) {
+                            $operator = $matches[7][$i]; // eq|neq|in
+                            $fieldvalue = "'".$matches[8][$i]."'";
+                        } else {
+                            $operator = $matches[5][$i]; // checked|notchecked|noitemselected
+                            $fieldvalue = 'null';
+                        }
+                        $output .= "ADM.setup_field('field_{$this->field->id}', 'field_{$fieldid}', '$operator', $fieldvalue);\n";
+                    }
+                }
+                $output .= "//]]>\n";
+                $output .= "</script>\n";
+            }
+        }
+        return $output;
     }
 }

@@ -26,24 +26,51 @@
  ?>
 <table width="100%" cellpadding="5">
     <tr>
-        <td class="c0"><label for="name"><?php echo get_string('fieldname', 'data'); ?></label></td>
-        <td class="c1"><input class="fieldname" type="text" name="name" id="name" value="<?php p($this->field->name); ?>" /></td>
+        <?php
+            $name = 'name';
+            $label = get_string('fieldname', 'data');
+            $value = $this->field->$name;
+        ?>
+        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
+        <td class="c1"><?php $this->display_edit_textfield($name, $value, 'field'.$name); ?></td>
     </tr>
     <tr>
-        <td class="c0"><label for="description"><?php echo get_string('fielddescription', 'data'); ?></label></td>
-        <td class="c1"><input class="fielddescription" type="text" name="description" id="description" value="<?php p($this->field->description); ?>" /></td>
+        <?php
+            $name = 'description';
+            $label = get_string('fielddescription', 'data');
+            $value = $this->field->$name;
+        ?>
+        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
+        <td class="c1"><?php $this->display_edit_textfield($name, $value, 'field'.$name); ?></td>
     </tr>
     <tr>
-        <td class="c0"><label for="<?php echo $this->subparam; ?>"><?php echo get_string('type', 'data'); ?></label></td>
-        <td class="c1"><?php
-            $this->display_edit_selectfield($this->subparam, $this->get_datafield_types(), '');
-        ?></td>
+        <?php
+            $name = $this->subparam; // param10
+            $label = get_string('type', 'data');
+            $options = $this->get_datafield_types();
+            $default = '';
+        ?>
+        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
+        <td class="c1"><?php $this->display_edit_selectfield($name, $options, $default); ?></td>
     </tr>
     <tr>
-        <td class="c0"><label for="<?php echo $this->accessparam ?>"><?php echo get_string('access', 'access'); ?></label></td>
-        <td class="c1"><?php
-            $this->display_edit_selectfield($this->accessparam, $this->get_access_types(), data_field_admin::ACCESS_VIEW);
-        ?></td>
+        <?php
+            $name = $this->accessparam; // param9
+            $label = get_string('access', 'access');
+            $options = $this->get_access_types();
+            $default = data_field_admin::ACCESS_VIEW;
+        ?>
+        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
+        <td class="c1"><?php $this->display_edit_selectfield($name, $options, $default); ?></td>
+    </tr>
+    <tr>
+        <?php
+            $name = $this->disabledifparam; // param8
+            $label = get_string('disabledif', 'datafield_admin');
+            $value = $this->field->$name;
+        ?>
+        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
+        <td class="c1"><?php $this->display_edit_textarea($name, $value, 'disabledif'); ?></td>
     </tr>
 <?php
     $this->display_edit_subfield(); ?>

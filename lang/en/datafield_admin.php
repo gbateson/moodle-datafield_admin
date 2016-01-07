@@ -27,9 +27,10 @@
 
 $string['pluginname'] = 'Admin field';
 
-$string['accessnone'] = 'Hidden from non-managers';
-$string['accessview'] = 'Non-managers can view this field';
-$string['accessedit'] = 'Non-managers can edit this field';
+$string['accessnone'] = 'This field is hidhen from non-managers';
+$string['accessview'] = 'Non-managers can only view this field';
+$string['accessedit'] = 'Non-managers can view and add data to this field';
+$string['disabledif'] = 'Conditions for disabling this field';
 $string['fixlangpack'] = '**The Admin field is not yet properly installed**
 
 Please append language strings for the Admin field to Database language file:
