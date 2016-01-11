@@ -103,8 +103,9 @@ class data_field_admin extends data_field_base {
      * It will not be displayed or editable, but it will be added as a hidden field,
      * and will be processed below in the "update_content()" method of this PHP class
      *
-     * The subtype of the "unapprove" does not matter,
-     * but it seems reasonable to create it as a checkbox
+     * The subtype of the "unapprove" field should be "number" or "text".
+     * Setting the subtype to "radio" or "checkbox" will cause an error
+     * when adding a new entry.
      */
      var $unapprove = false;
 
