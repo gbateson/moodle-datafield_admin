@@ -92,21 +92,21 @@ class data_field_admin extends data_field_base {
     var $is_editable = false;
 
     /**
-     * TRUE if we should force this record to be disapproved; otherwise FALSE
+     * TRUE if we should force this record to be unapproved; otherwise FALSE
      *
      * This flag is set to TRUE automatically under the following conditions:
-     * (1) field name is "disapprove"
+     * (1) field name is "unapprove"
      * (2) new record is being added
      * (3) user is a teacher or admin
      *
-     * In the add single template, you should include the field, [[disapprove]].
+     * In the add single template, you should include the field, [[unapprove]].
      * It will not be displayed or editable, but it will be added as a hidden field,
      * and will be processed below in the "update_content()" method of this PHP class
      *
-     * The subtype of the "disapprove" does not matter,
+     * The subtype of the "unapprove" does not matter,
      * but it seems reasonable to create it as a checkbox
      */
-     var $disapprove = false;
+     var $unapprove = false;
 
     ///////////////////////////////////////////
     // fields that are NOT IMPLEMENTED ... yet
@@ -161,7 +161,7 @@ class data_field_admin extends data_field_base {
         $sortorderparam   = $this->sortorderparam;
 
         // set view and edit permissions for this user
-        if ($this->field && $this->field->name=='disapprove') {
+        if ($this->field && $this->field->name=='unapprove') {
             // this field is not viewable or editable by anyone
             $this->is_editable = false;
             $this->is_viewable = false;
@@ -170,7 +170,7 @@ class data_field_admin extends data_field_base {
             // We want to detect this situation, so that we can
             // override it later, in the update_content() method
             if (optional_param('rid', 0, PARAM_INT)==0) {
-                $this->disapprove = has_capability('mod/data:approve', $this->context);
+                $this->unapprove = has_capability('mod/data:approve', $this->context);
             }
         } else if (has_capability('mod/data:managetemplates', $this->context)) {
             $this->is_editable = true;
@@ -340,7 +340,7 @@ class data_field_admin extends data_field_base {
      */
     function display_add_field($recordid=0, $formdata=NULL) {
         $output = '';
-        if ($this->disapprove) {
+        if ($this->unapprove) {
             $name = 'field_'.$this->field->id;
             $params = array('type'  => 'hidden',
                             'name'  => $name,
@@ -369,7 +369,7 @@ class data_field_admin extends data_field_base {
     function update_content($recordid, $value, $name='') {
         global $DB;
         if ($this->subfield) {
-            if ($this->disapprove) {
+            if ($this->unapprove) {
                 // override the automatic approval of records created by teachers and admins
                 return $DB->set_field('data_records', 'approved', 0, array('id' => $recordid));
             }
