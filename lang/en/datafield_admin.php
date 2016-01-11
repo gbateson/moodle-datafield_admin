@@ -27,7 +27,7 @@
 
 $string['pluginname'] = 'Admin field';
 
-$string['accessnone'] = 'This field is hidhen from non-managers';
+$string['accessnone'] = 'This field is hidden from non-managers';
 $string['accessview'] = 'Non-managers can only view this field';
 $string['accessedit'] = 'Non-managers can view and add data to this field';
 $string['disabledif'] = 'Conditions for disabling this field';

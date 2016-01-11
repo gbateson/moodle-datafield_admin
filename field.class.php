@@ -91,6 +91,23 @@ class data_field_admin extends data_field_base {
      */
     var $is_editable = false;
 
+    /**
+     * TRUE if we should force this record to be disapproved; otherwise FALSE
+     *
+     * This flag is set to TRUE automatically under the following conditions:
+     * (1) field name is "disapprove"
+     * (2) new record is being added
+     * (3) user is a teacher or admin
+     *
+     * In the add single template, you should include the field, [[disapprove]].
+     * It will not be displayed or editable, but it will be added as a hidden field,
+     * and will be processed below in the "update_content()" method of this PHP class
+     *
+     * The subtype of the "disapprove" does not matter,
+     * but it seems reasonable to create it as a checkbox
+     */
+     var $disapprove = false;
+
     ///////////////////////////////////////////
     // fields that are NOT IMPLEMENTED ... yet
     ///////////////////////////////////////////
@@ -116,14 +133,21 @@ class data_field_admin extends data_field_base {
     // custom constants
     ///////////////////////////////////////////
 
-    const ACCESS_NONE = 0; // hidden
-    const ACCESS_VIEW = 1; // can view
-    const ACCESS_EDIT = 2; // can edit
+    const ACCESS_NONE =  0; // hidden
+    const ACCESS_VIEW =  1; // can view
+    const ACCESS_EDIT =  2; // can edit
 
     ///////////////////////////////////////////
     // standard methods
     ///////////////////////////////////////////
 
+    /**
+     * constructor
+     *
+     * @param object $field record from "data_fields" table
+     * @param object $data record from "data" table
+     * @param object $cm record from "course_modules" table
+     */
     function __construct($field=0, $data=0, $cm=0) {
         global $CFG, $DB;
 
@@ -137,7 +161,18 @@ class data_field_admin extends data_field_base {
         $sortorderparam   = $this->sortorderparam;
 
         // set view and edit permissions for this user
-        if (has_capability('mod/data:managetemplates', $this->context)) {
+        if ($field->name=='disapprove') {
+            // this field is not viewable or editable by anyone
+            $this->is_editable = false;
+            $this->is_viewable = false;
+            // By default records added by teachers and admins
+            // have their "approved" flag set to "1".
+            // We want to detect this situation, so that we can
+            // override it later, in the update_content() method
+            if (optional_param('rid', 0, PARAM_INT)==0) {
+                $this->disapprove = has_capability('mod/data:approve', $this->context);
+            }
+        } else if (has_capability('mod/data:managetemplates', $this->context)) {
             $this->is_editable = true;
             $this->is_viewable = true;
         } else if (isset($field->$accessparam)) {
@@ -170,6 +205,9 @@ class data_field_admin extends data_field_base {
         $param = $this->accessparam;
         $this->field->$param = self::ACCESS_VIEW;
 
+        $param = $this->disabledifparam;
+        $this->field->$param = '';
+
         if ($this->subfield) {
             $this->subfield->define_default_field();
         }
@@ -187,6 +225,11 @@ class data_field_admin extends data_field_base {
         $param = $this->accessparam;
         if (isset($data->$param)) {
             $this->field->$param = intval($data->$param);
+        }
+
+        $param = $this->disabledifparam;
+        if (isset($data->$param)) {
+            $this->field->$param = trim($data->$param);
         }
 
         if ($this->subfield) {
@@ -297,8 +340,16 @@ class data_field_admin extends data_field_base {
      */
     function display_add_field($recordid=0, $formdata=NULL) {
         $output = '';
+        if ($this->disapprove) {
+            $name = 'field_'.$this->field->id;
+            $params = array('type'  => 'hidden',
+                            'name'  => $name,
+                            'id'    => $name,
+                            'value' => '1');
+            return html_writer::empty_tag('input', $params);
+        }
         if ($this->is_editable) {
-            $output .= $this->js_disabledif();
+            $this->js_setup_fields(); // does not add anything to $output
             if ($this->subfield) {
                 $output .= $this->subfield->display_add_field($recordid, $formdata);
             } else {
@@ -316,7 +367,12 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function update_content($recordid, $value, $name='') {
+        global $DB;
         if ($this->subfield) {
+            if ($this->disapprove) {
+                // override the automatic approval of records created by teachers and admins
+                return $DB->set_field('data_records', 'approved', 0, array('id' => $recordid));
+            }
             return $this->subfield->update_content($recordid, $value, $name);
         } else {
             return parent::update_content($recordid, $value, $name);
@@ -568,11 +624,13 @@ class data_field_admin extends data_field_base {
     /*
      * add javascript to disable a field if specified conditions are met
      */
-    public function js_disabledif() {
-        global $DB;
+    public function js_setup_fields() {
+        global $DB, $PAGE;
+
         $output = '';
         $param = $this->disabledifparam;
         if ($lines = $this->field->$param) {
+
             $search = "/\\(\\s*('([^']+)', *(('(checked|notchecked|noitemselected)')|('(eq|neq|in)',\\s*'([^']+)')))\\s*\\)/is";
             // $0 : ('fieldname', 'operator', 'value')
             // $1 : 'fieldname', 'operator', 'value'
@@ -584,31 +642,57 @@ class data_field_admin extends data_field_base {
             // $7 : binary_operator
             // $8 : value
             if (preg_match_all($search, $lines, $matches)) {
-                $output .= '<script type="text/javascript">'."\n";
-                $output .= "//<![CDATA[\n";
-                $output .= "if (! window.ADM) {\n";
-                $output .= "    window.ADM = {};\n";
-                $output .= "}\n";
-                $output .= "ADM.setup_field = function (id1, id2, op, value) {\n";
-                $output .= "    if(!window.gdb)window.gdb=!confirm('id1=' + id1 + ', id2=' + id2 + ', op=' + op + ', value=' + value);\n";
-                $output .= "}\n";
+
+                // set path to js library
+                $module = array('name' => 'M.datafield_admin', 'fullpath' => '/mod/data/field/admin/admin.js');
+
+                // cache data id
+                $dataid = $this->field->dataid;
+
+                // loop through matched items
                 foreach ($matches[1] as $i => $match) {
-                    $params = array('dataid' => $this->field->dataid, 'name' => $matches[2][$i]);
-                    if ($fieldid = $DB->get_field('data_fields', 'id', $params)) {
+
+                    // fetch this field from the $DB
+                    $name = $matches[2][$i];
+                    $params = array('dataid' => $dataid, 'name' => $name);
+                    if ($field = $DB->get_record('data_fields', $params)) {
+
+                        // set form element ids
+                        $id1 = $this->get_form_element_id($this->field);
+                        $id2 = $this->get_form_element_id($field);
+
+                        // set operator and value
                         if ($matches[6][$i]) {
-                            $operator = $matches[7][$i]; // eq|neq|in
-                            $fieldvalue = "'".$matches[8][$i]."'";
+                            $op = $matches[7][$i]; // eq|neq|in
+                            $value = $matches[8][$i];
                         } else {
-                            $operator = $matches[5][$i]; // checked|notchecked|noitemselected
-                            $fieldvalue = 'null';
+                            $op = $matches[5][$i]; // checked|notchecked|noitemselected
+                            $value = null;
                         }
-                        $output .= "ADM.setup_field('field_{$this->field->id}', 'field_{$fieldid}', '$operator', $fieldvalue);\n";
+
+                        // add js call to setup this field in browser
+                        $options = array('id1' => $id1, 'id2' => $id2, 'op' => $op, 'value' => $value);
+                        $PAGE->requires->js_init_call('M.datafield_admin.setup_field', $options, false, $module);
                     }
                 }
-                $output .= "//]]>\n";
-                $output .= "</script>\n";
             }
         }
         return $output;
+    }
+
+    /*
+     * determine the id of the form element for the given $field
+     */
+    public function get_form_element_id($field) {
+        $id = 'field_'.$field->id;
+        $type = $field->type;
+        if ($type=='admin') {
+            $param = $this->subparam;
+            $type = $field->$param;
+        }
+        if ($type=='checkbox' || $type=='radiobutton') {
+            $id .= '_0'; // this id should always exist
+        }
+        return $id;
     }
 }
