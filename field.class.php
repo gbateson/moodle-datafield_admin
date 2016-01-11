@@ -161,7 +161,7 @@ class data_field_admin extends data_field_base {
         $sortorderparam   = $this->sortorderparam;
 
         // set view and edit permissions for this user
-        if ($field->name=='disapprove') {
+        if ($this->field && $this->field->name=='disapprove') {
             // this field is not viewable or editable by anyone
             $this->is_editable = false;
             $this->is_viewable = false;
@@ -523,41 +523,60 @@ class data_field_admin extends data_field_base {
     }
 
     /*
-     * display a label in mod.html
+     * format a label in mod.html
      */
-    function display_edit_label($name, $label) {
-        echo html_writer::tag('label', $label, array('for' => $name));
+    function format_table_row($name, $label, $text) {
+        $output = $this->format_edit_label($name, $label);
+        $output = $this->format_table_cell($name, $output, 'c0').
+                  $this->format_table_cell($name, $text, 'c1');
+        $output = html_writer::tag('tr', $output, array('class' => "$name"));
+        return $output;
     }
 
     /*
-     * display a text field in mod.html
+     * format a cells in mod.html
      */
-    function display_edit_textfield($name, $value, $class) {
+    function format_table_cell($name, $text, $class) {
+        return html_writer::tag('td', $text, array('class' => $class));
+    }
+
+    /*
+     * format a label in mod.html
+     */
+    function format_edit_label($name, $label) {
+        return html_writer::tag('label', $label, array('for' => $name));
+    }
+
+    /*
+     * format a text field in mod.html
+     */
+    function format_edit_textfield($name, $value, $class) {
         $params = array('type'  => 'text',
                         'id'    => 'id_'.$name,
                         'name'  => $name,
                         'value' => $value,
                         'class' => $class);
-        echo html_writer::empty_tag('input', $params);
+        return html_writer::empty_tag('input', $params);
     }
 
     /*
-     * display a textarea field in mod.html
+     * format a textarea field in mod.html
      */
-    function display_edit_textarea($name, $value, $class) {
+    function format_edit_textarea($name, $value, $class) {
         $params = array('id'    => 'id_'.$name,
                         'name'  => $name,
                         'class' => $class,
                         'rows'  => 3,
                         'cols'  => 40);
-        echo html_writer::tag('textarea', $value, $params);
+        return html_writer::tag('textarea', $value, $params);
     }
 
     /*
-     * display a select field in mod.html
+     * format a select field in mod.html
      */
-    public function display_edit_selectfield($param, $values, $default) {
-        echo html_writer::start_tag('select', array('id' => $param, 'name' => $param));
+    public function format_edit_selectfield($param, $values, $default) {
+        $output = '';
+        $output .= html_writer::start_tag('select', array('id' => $param, 'name' => $param));
         if (isset($this->field->$param)) {
             $param = $this->field->$param;
         } else {
@@ -568,9 +587,10 @@ class data_field_admin extends data_field_base {
             if ($value==$param) {
                 $params['selected'] = 'selected';
             }
-            echo html_writer::tag('option', $text, $params);
+            $output .= html_writer::tag('option', $text, $params);
         }
-        echo html_writer::end_tag('select');
+        $output .= html_writer::end_tag('select');
+        return $output;
     }
 
     /*

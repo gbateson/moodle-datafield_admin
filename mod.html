@@ -24,54 +24,40 @@
  * @since      Moodle 2.3
  */
  ?>
-<table width="100%" cellpadding="5">
-    <tr>
-        <?php
-            $name = 'name';
-            $label = get_string('fieldname', 'data');
-            $value = $this->field->$name;
-        ?>
-        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
-        <td class="c1"><?php $this->display_edit_textfield($name, $value, 'field'.$name); ?></td>
-    </tr>
-    <tr>
-        <?php
-            $name = 'description';
-            $label = get_string('fielddescription', 'data');
-            $value = $this->field->$name;
-        ?>
-        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
-        <td class="c1"><?php $this->display_edit_textfield($name, $value, 'field'.$name); ?></td>
-    </tr>
-    <tr>
-        <?php
-            $name = $this->subparam; // param10
-            $label = get_string('type', 'data');
-            $options = $this->get_datafield_types();
-            $default = '';
-        ?>
-        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
-        <td class="c1"><?php $this->display_edit_selectfield($name, $options, $default); ?></td>
-    </tr>
-    <tr>
-        <?php
-            $name = $this->accessparam; // param9
-            $label = get_string('access', 'access');
-            $options = $this->get_access_types();
-            $default = data_field_admin::ACCESS_VIEW;
-        ?>
-        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
-        <td class="c1"><?php $this->display_edit_selectfield($name, $options, $default); ?></td>
-    </tr>
-    <tr>
-        <?php
-            $name = $this->disabledifparam; // param8
-            $label = get_string('disabledif', 'datafield_admin');
-            $value = $this->field->$name;
-        ?>
-        <td class="c0"><?php $this->display_edit_label($name, $label); ?></td>
-        <td class="c1"><?php $this->display_edit_textarea($name, $value, 'disabledif'); ?></td>
-    </tr>
-<?php
-    $this->display_edit_subfield(); ?>
-</table>
+<table width="100%" cellpadding="5" class="datafield_admin"><?php
+
+    $name  = 'name';
+    $value = $this->field->$name;
+    $label = get_string('field'.$name, 'data');
+    $text  = $this->format_edit_textfield($name, $value, 'field'.$name);
+    echo $this->format_table_row($name, $label, $text);
+
+    $name  = 'description';
+    $value = $this->field->$name;
+    $label = get_string('field'.$name, 'data');
+    $text  = $this->format_edit_textfield($name, $value, 'field'.$name);
+    echo $this->format_table_row($name, $label, $text);
+
+    $name  = $this->subparam; // param10
+    $label = get_string('type', 'data');
+    $options = $this->get_datafield_types();
+    $default = '';
+    $text  = $this->format_edit_selectfield($name, $options, $default);
+    echo $this->format_table_row($name, $label, $text);
+
+    $name = $this->accessparam; // param9
+    $label = get_string('access', 'access');
+    $options = $this->get_access_types();
+    $default = data_field_admin::ACCESS_VIEW;
+    $text  = $this->format_edit_selectfield($name, $options, $default);
+    echo $this->format_table_row($name, $label, $text);
+
+    $name = $this->disabledifparam; // param8
+    $value = $this->field->$name;
+    $label = get_string('disabledif', 'datafield_admin');
+    $text = $this->format_edit_textarea($name, $value, 'disabledif');
+    echo $this->format_table_row($name, $label, $text);
+
+    $this->display_edit_subfield();
+
+?></table>
