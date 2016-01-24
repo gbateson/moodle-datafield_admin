@@ -25,11 +25,13 @@
  * @since      Moodle 2.3
  */
 
+/* required strings */
 $string['pluginname'] = 'Admin field';
 
-$string['accessnone'] = 'This field is hidden from non-managers';
-$string['accessview'] = 'Non-managers can only view this field';
-$string['accessedit'] = 'Non-managers can view and add data to this field';
+/* more string */
+$string['accessnone'] = 'Hidden from non-managers';
+$string['accessview'] = 'Viewable by non-managers';
+$string['accessedit'] = 'Editable by non-managers';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['fixlangpack'] = '**The Admin field is not yet properly installed**
 
