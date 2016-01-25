@@ -484,9 +484,9 @@ class data_field_admin extends data_field_base {
 
     function export_text_value($record) {
         if ($this->subfield) {
-            return $this->subfield->export_text_value();
+            return $this->subfield->export_text_value($record);
         } else {
-            return parent::export_text_value();
+            return parent::export_text_value($record);
         }
     }
 
