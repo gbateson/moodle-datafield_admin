@@ -524,68 +524,64 @@ class data_field_admin extends data_field_base {
     }
 
     /*
-     * format a label in mod.html
+     * format a table row in mod.html
      */
-    function format_table_row($name, $label, $text) {
-        $output = $this->format_edit_label($name, $label);
-        $output = $this->format_table_cell($name, $output, 'c0').
-                  $this->format_table_cell($name, $text, 'c1');
-        $output = html_writer::tag('tr', $output, array('class' => "$name"));
+    public function format_table_row($name, $label, $text) {
+        $label = $this->format_edit_label($name, $label);
+        $output = $this->format_table_cell($label, 'c0').
+                  $this->format_table_cell($text, 'c1');
+        $output = html_writer::tag('tr', $output, array('class' => $name));
         return $output;
     }
 
     /*
-     * format a cells in mod.html
+     * format a table cell in mod.html
      */
-    function format_table_cell($name, $text, $class) {
+    public function format_table_cell($text, $class) {
         return html_writer::tag('td', $text, array('class' => $class));
     }
 
     /*
      * format a label in mod.html
      */
-    function format_edit_label($name, $label) {
+    public function format_edit_label($name, $label) {
         return html_writer::tag('label', $label, array('for' => $name));
     }
 
     /*
      * format a text field in mod.html
      */
-    function format_edit_textfield($name, $value, $class) {
+    public function format_edit_textfield($name, $value, $class, $size=10) {
         $params = array('type'  => 'text',
                         'id'    => 'id_'.$name,
                         'name'  => $name,
                         'value' => $value,
-                        'class' => $class);
+                        'class' => $class,
+                        'size'  => $size);
         return html_writer::empty_tag('input', $params);
     }
 
     /*
      * format a textarea field in mod.html
      */
-    function format_edit_textarea($name, $value, $class) {
+    public function format_edit_textarea($name, $value, $class, $rows=3, $cols=40) {
         $params = array('id'    => 'id_'.$name,
                         'name'  => $name,
                         'class' => $class,
-                        'rows'  => 3,
-                        'cols'  => 40);
+                        'rows'  => $rows,
+                        'cols'  => $cols);
         return html_writer::tag('textarea', $value, $params);
     }
 
     /*
      * format a select field in mod.html
      */
-    public function format_edit_selectfield($param, $values, $default) {
-        $output = '';
-        $output .= html_writer::start_tag('select', array('id' => $param, 'name' => $param));
-        if (isset($this->field->$param)) {
-            $param = $this->field->$param;
-        } else {
-            $param = $default;
-        }
+    public function format_edit_selectfield($name, $values, $default) {
+        $params = array('id' => 'id_'.$name, 'name' => $name);
+        $output = html_writer::start_tag('select', $params);
         foreach ($values as $value => $text) {
             $params = array('value' => $value);
-            if ($value==$param) {
+            if ($value==$default) {
                 $params['selected'] = 'selected';
             }
             $output .= html_writer::tag('option', $text, $params);
