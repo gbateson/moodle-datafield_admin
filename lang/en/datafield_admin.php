@@ -25,10 +25,10 @@
  * @since      Moodle 2.3
  */
 
-/* required strings */
+/** required strings */
 $string['pluginname'] = 'Admin field';
 
-/* more string */
+/** more string */
 $string['accessnone'] = 'Hidden from non-managers';
 $string['accessview'] = 'Viewable by non-managers';
 $string['accessedit'] = 'Editable by non-managers';

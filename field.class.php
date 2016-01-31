@@ -239,7 +239,7 @@ class data_field_admin extends data_field_base {
         return true;
     }
 
-    /*
+    /**
      * generate HTML to display icon for this field type on the "Fields" page
      */
     function image() {
@@ -250,7 +250,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * the name of this field type on the page for editing this field's settings
      */
     function name() {
@@ -263,7 +263,7 @@ class data_field_admin extends data_field_base {
         return $name;
     }
 
-    /*
+    /**
      * displays the settings for this admin field on the "Fields" page
      *
      * @return void, but output is echo'd to browser
@@ -286,7 +286,7 @@ class data_field_admin extends data_field_base {
         parent::display_edit_field();
     }
 
-    /*
+    /**
      * add a new admin field from the "Fields" page
      */
     function insert_field() {
@@ -297,7 +297,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * update settings for this admin field sent from the "Fields" page
      *
      * @return void, but output is echo'd to browser
@@ -310,7 +310,7 @@ class data_field_admin extends data_field_base {
         return true;
     }
 
-    /*
+    /**
      * delete an admin field from the "Fields" page
      */
     function delete_field() {
@@ -322,7 +322,7 @@ class data_field_admin extends data_field_base {
         return true;
     }
 
-    /*
+    /**
      * delete user generated content associated with an admin field
      * when the admin field is deleted from the "Fields" page
      */
@@ -334,7 +334,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * display a form element for this field on the "Add entry" page
      *
      * @return HTML to send to browser
@@ -342,12 +342,7 @@ class data_field_admin extends data_field_base {
     function display_add_field($recordid=0, $formdata=NULL) {
         $output = '';
         if ($this->unapprove) {
-            $name = 'field_'.$this->field->id;
-            $params = array('type'  => 'hidden',
-                            'name'  => $name,
-                            'id'    => $name,
-                            'value' => '1');
-            return html_writer::empty_tag('input', $params);
+            return $this->format_edit_hiddenfield('field_'.$this->field->id, 1);
         }
         if ($this->is_editable) {
             $this->js_setup_fields(); // does not add anything to $output
@@ -362,7 +357,7 @@ class data_field_admin extends data_field_base {
         return $output;
     }
 
-    /*
+    /**
      * update content for this field sent from the "Add entry" page
      *
      * @return HTML to send to browser
@@ -393,7 +388,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * display a form element for this field on the "Search" page
      *
      * @return HTML to send to browser
@@ -435,7 +430,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * parse search field from "Search" page
      */
     function parse_search_field() {
@@ -514,7 +509,7 @@ class data_field_admin extends data_field_base {
     // custom methods
     ///////////////////////////////////////////
 
-    /*
+    /**
      * get options for field accessibility (for display in mod.html)
      */
     public function get_access_types() {
@@ -523,7 +518,7 @@ class data_field_admin extends data_field_base {
                      self::ACCESS_EDIT => get_string('accessedit', 'datafield_admin'));
     }
 
-    /*
+    /**
      * format a table row in mod.html
      */
     public function format_table_row($name, $label, $text) {
@@ -534,21 +529,31 @@ class data_field_admin extends data_field_base {
         return $output;
     }
 
-    /*
+    /**
      * format a table cell in mod.html
      */
     public function format_table_cell($text, $class) {
         return html_writer::tag('td', $text, array('class' => $class));
     }
 
-    /*
+    /**
      * format a label in mod.html
      */
     public function format_edit_label($name, $label) {
         return html_writer::tag('label', $label, array('for' => $name));
     }
 
-    /*
+    /**
+     * format a hidden field in mod.html
+     */
+    public function format_edit_hiddenfield($name, $value) {
+        $params = array('type'  => 'hidden',
+                        'name'  => $name,
+                        'value' => $value);
+        return html_writer::empty_tag('input', $params);
+    }
+
+    /**
      * format a text field in mod.html
      */
     public function format_edit_textfield($name, $value, $class, $size=10) {
@@ -561,7 +566,7 @@ class data_field_admin extends data_field_base {
         return html_writer::empty_tag('input', $params);
     }
 
-    /*
+    /**
      * format a textarea field in mod.html
      */
     public function format_edit_textarea($name, $value, $class, $rows=3, $cols=40) {
@@ -573,11 +578,12 @@ class data_field_admin extends data_field_base {
         return html_writer::tag('textarea', $value, $params);
     }
 
-    /*
+    /**
      * format a select field in mod.html
      */
     public function format_edit_selectfield($name, $values, $default) {
-        $params = array('id' => 'id_'.$name, 'name' => $name);
+        $params = array('id'   => 'id_'.$name,
+                        'name' => $name);
         $output = html_writer::start_tag('select', $params);
         foreach ($values as $value => $text) {
             $params = array('value' => $value);
@@ -590,7 +596,7 @@ class data_field_admin extends data_field_base {
         return $output;
     }
 
-    /*
+    /**
      * get list of datafield types (excluding this one)
      * based on /mod/data/field.php
      */
@@ -607,7 +613,7 @@ class data_field_admin extends data_field_base {
         return $types;
     }
 
-    /*
+    /**
      * display a subfield's settings in mod.html
      */
     public function display_edit_subfield() {
@@ -621,7 +627,7 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    /*
+    /**
      * convert subfield's full mod.html to an html snippet
      * that can be appended to this admin field's mod.html
      */
@@ -638,7 +644,7 @@ class data_field_admin extends data_field_base {
         return trim($output);
     }
 
-    /*
+    /**
      * add javascript to disable a field if specified conditions are met
      */
     public function js_setup_fields() {
@@ -697,7 +703,7 @@ class data_field_admin extends data_field_base {
         return $output;
     }
 
-    /*
+    /**
      * determine the id of the form element for the given $field
      */
     public function get_form_element_id($field) {
