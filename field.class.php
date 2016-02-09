@@ -582,18 +582,10 @@ class data_field_admin extends data_field_base {
      * format a select field in mod.html
      */
     public function format_edit_selectfield($name, $values, $default) {
-        $params = array('id'   => 'id_'.$name,
-                        'name' => $name);
-        $output = html_writer::start_tag('select', $params);
-        foreach ($values as $value => $text) {
-            $params = array('value' => $value);
-            if ($value==$default) {
-                $params['selected'] = 'selected';
-            }
-            $output .= html_writer::tag('option', $text, $params);
+        if (isset($this->field->$name)) {
+            $default = $this->field->$name;
         }
-        $output .= html_writer::end_tag('select');
-        return $output;
+        return html_writer::select($values, $name, $default, '');
     }
 
     /**
