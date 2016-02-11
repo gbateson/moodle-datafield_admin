@@ -517,15 +517,11 @@ class data_field_admin extends data_field_base {
      * This allows the value to be used in IF-THEN-ELSE
      * conditions within "template" fields.
      */
-    function get_template_value($recordid, $template, $forcevisibility=false) {
-        if ($force_visibility) {
-            $is_visible = $this->is_visible;
-            $this->is_visible = true;
-        }
+    function get_condition_value($recordid, $template) {
+        $is_visible = $this->is_visible;
+        $this->is_visible = true;
         $value = $this->display_browse_field($recordid, $template);
-        if ($force_visibility) {
-            $this->is_visible = $is_visible;
-        }
+        $this->is_visible = $is_visible;
         return $value;
     }
 
