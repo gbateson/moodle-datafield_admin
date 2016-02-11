@@ -360,7 +360,7 @@ class data_field_admin extends data_field_base {
     /**
      * update content for this field sent from the "Add entry" page
      *
-     * @return HTML to send to browser
+     * @return boolean: TRUE if content was sccessfully updated; otherwise FALSE
      */
     function update_content($recordid, $value, $name='') {
         global $DB;
@@ -373,6 +373,7 @@ class data_field_admin extends data_field_base {
         } else {
             return parent::update_content($recordid, $value, $name);
         }
+        return false;
     }
 
     /**
@@ -386,6 +387,7 @@ class data_field_admin extends data_field_base {
                 return parent::display_browse_field($recordid, $template);
             }
         }
+        return ''; // field is not viewable
     }
 
     /**
@@ -508,6 +510,24 @@ class data_field_admin extends data_field_base {
     ///////////////////////////////////////////
     // custom methods
     ///////////////////////////////////////////
+
+    /**
+     * Allow access to subfield values
+     * even though the subfield may not be viewable.
+     * This allows the value to be used in IF-THEN-ELSE
+     * conditions within "template" fields.
+     */
+    function get_template_value($recordid, $template, $forcevisibility=false) {
+        if ($force_visibility) {
+            $is_visible = $this->is_visible;
+            $this->is_visible = true;
+        }
+        $value = $this->display_browse_field($recordid, $template);
+        if ($force_visibility) {
+            $this->is_visible = $is_visible;
+        }
+        return $value;
+    }
 
     /**
      * get options for field accessibility (for display in mod.html)
