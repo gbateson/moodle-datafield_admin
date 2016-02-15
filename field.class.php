@@ -518,10 +518,10 @@ class data_field_admin extends data_field_base {
      * conditions within "template" fields.
      */
     function get_condition_value($recordid, $template) {
-        $is_visible = $this->is_visible;
-        $this->is_visible = true;
+        $is_viewable = $this->is_viewable;
+        $this->is_viewable = true;
         $value = $this->display_browse_field($recordid, $template);
-        $this->is_visible = $is_visible;
+        $this->is_viewable = $is_viewable;
         return $value;
     }
 
