@@ -92,6 +92,11 @@ class data_field_admin extends data_field_base {
     var $is_editable = false;
 
     /**
+     * TRUE if the field is a special field that cannot be viewed or altered by anyone
+     */
+    var $is_special_field = false;
+
+    /**
      * TRUE if we should force this record to be unapproved; otherwise FALSE
      *
      * This flag is set to TRUE automatically under the following conditions:
@@ -150,7 +155,7 @@ class data_field_admin extends data_field_base {
      * @param object $cm record from "course_modules" table
      */
     function __construct($field=0, $data=0, $cm=0) {
-        global $CFG, $DB;
+        global $CFG, $DB, $datarecord;
 
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
@@ -161,17 +166,44 @@ class data_field_admin extends data_field_base {
         $displaytextparam = $this->displaytextparam;
         $sortorderparam   = $this->sortorderparam;
 
+        $this->is_special_field = ($this->field->name=='unapprove' ||
+                                   $this->field->name=='fixdisabledfields');
+
         // set view and edit permissions for this user
-        if ($this->field && $this->field->name=='unapprove') {
-            // this field is not viewable or editable by anyone
+        if ($this->field && $this->is_special_field) {
+
+            // special fields are not viewable or editable by anyone
             $this->is_editable = false;
             $this->is_viewable = false;
-            // By default records added by teachers and admins
-            // have their "approved" flag set to "1".
-            // We want to detect this situation, so that we can
-            // override it later, in the update_content() method
+
+            // field-specific processing for new fields
             if (optional_param('rid', 0, PARAM_INT)==0) {
-                $this->unapprove = has_capability('mod/data:approve', $this->context);
+                switch ($this->field->name) {
+
+                    case 'fixdisabledfields':
+                        // prevent "missing property" error in data/lib.php
+                        // caused by disabled fields in form
+                        if (isset($datarecord) && is_object($datarecord)) {
+                            $name = $DB->sql_concat('?', 'id').' AS formelementname';
+                            if ($names = $DB->get_records_select_menu('data_fields', 'dataid = ?', array('field_', $this->data->id), 'id', "id, $name")) {
+                                foreach ($names as $name) {
+                                    if (isset($datarecord->$name)) {
+                                        continue;
+                                    }
+                                    $datarecord->$name = null;
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'unapprove':
+                        // By default records added by teachers and admins
+                        // have their "approved" flag set to "1".
+                        // We want to detect this situation, so that we can
+                        // override it later, in the update_content() method
+                        $this->unapprove = has_capability('mod/data:approve', $this->context);
+                        break;
+                }
             }
         } else if (has_capability('mod/data:managetemplates', $this->context)) {
             $this->is_editable = true;
@@ -341,7 +373,7 @@ class data_field_admin extends data_field_base {
      */
     function display_add_field($recordid=0, $formdata=NULL) {
         $output = '';
-        if ($this->unapprove) {
+        if ($this->is_special_field) {
             return $this->format_edit_hiddenfield('field_'.$this->field->id, 1);
         }
         if ($this->is_editable) {
