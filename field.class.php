@@ -184,13 +184,14 @@ class data_field_admin extends data_field_base {
                         // prevent "missing property" error in data/lib.php
                         // caused by disabled fields in form
                         if (isset($datarecord) && is_object($datarecord)) {
-                            $name = $DB->sql_concat('?', 'id').' AS formelementname';
-                            if ($names = $DB->get_records_select_menu('data_fields', 'dataid = ?', array('field_', $this->data->id), 'id', "id, $name")) {
+                            $select = 'dataid = ?';
+                            $params = array('field_', $this->data->id);
+                            $name = $DB->sql_concat('?', 'id').' AS formfieldname';
+                            if ($names = $DB->get_records_select_menu('data_fields', $select, $params, 'id', "id, $name")) {
                                 foreach ($names as $name) {
-                                    if (isset($datarecord->$name)) {
-                                        continue;
+                                    if (! property_exists($datarecord, $name)) {
+                                        $datarecord->$name = null;
                                     }
-                                    $datarecord->$name = null;
                                 }
                             }
                         }
