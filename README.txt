@@ -9,6 +9,27 @@ The Admin database field for Moodle >= 2.3
    an Admin field, but access for other users can be restricted to "Hidden",
    "Visible (and not editable)" or "Visible and editable".
 
+   Additionally the following special "admin" fields are available:
+
+   (a) fixdisabledfields
+       The presence of this field will fix "missing property" errors generated
+       when the form has both disabled fields and required fields, but some of
+       the required fields are not filled in.
+
+   (b) unapprove
+       The presence of this field will force any newly added record to be
+       "unapproved", and therefore "hidden" from other users. This field
+       overrides the default behavior of the database module, which
+       automatically sets records added by teachers/admins as "approved"
+       and therefore "visible" by all other users.
+
+    When creating either of the above two special fields, set "Field type" to
+    "Number" and "Accessibility" to "Hidden from non-managers".
+
+    In the template for adding and editing records, the "fixdisabledfields" field
+    should appear on the FIRST line, and the "unapprove" field should be on the
+    LAST line.
+
 =================================================
 To INSTALL this plugin
 =================================================
@@ -126,9 +147,23 @@ To ADD an Admin field to a database activity
 
     5. From the "Field type" menu at the bottom of the page, select "Admin"
 
-    6. Enter values for "Field name" and "Field description" and select the subtype of this field
+    6. Enter values for "Field name" and "Field description"
 
-    7. Click the "Save changes" button at the bottom of the page.
+    7. Select the subtype of this field
 
-    8. If necessary, you may need to further edit the field in order to add settings
-       that are specific to the selected subtype
+    8. If required, enter conditions for disabling this field in the input form
+
+       Syntax for UNARY operators:
+       ('fieldname', 'checked')
+       ('fieldname', 'notchecked')
+       ('fieldname', 'noitemselected')
+
+       Syntax for BINARY operators:
+       ('fieldname', 'eq',  'value')
+       ('fieldname', 'neq', 'value')
+       ('fieldname', 'in',  'value1,value2,value3')
+
+    9. Click the "Save changes" button at the bottom of the page.
+
+    10. If necessary, you may need to further edit the field in order to add settings
+        that are specific to the selected subtype
