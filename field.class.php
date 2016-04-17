@@ -57,7 +57,7 @@ class data_field_admin extends data_field_base {
 
     /**
      * the full path to the folder of the subfield of this field
-     * e.g. /path/to/moodle/mod/data/field/radiobutton
+     * e.g. /PATH/TO/MOODLE/mod/data/field/radiobutton
      */
     var $subfolder = '';
 
@@ -644,7 +644,7 @@ class data_field_admin extends data_field_base {
     public function get_datafield_types($exclude=array()) {
         $types = array();
         $plugins = core_component::get_plugin_list('datafield');
-        foreach ($plugins as $plugin => $fulldir){
+        foreach ($plugins as $plugin => $fulldir) {
             if ($plugin==$this->type || in_array($plugin, $exclude)) {
                 continue;
             }
