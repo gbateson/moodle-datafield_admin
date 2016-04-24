@@ -177,7 +177,7 @@ class data_field_admin extends data_field_base {
             $this->is_viewable = false;
 
             // field-specific processing for new fields
-            if (optional_param('rid', 0, PARAM_INT)==0) {
+            if (self::is_new_record()) {
                 switch ($this->field->name) {
 
                     case 'fixdisabledfields':
@@ -230,6 +230,33 @@ class data_field_admin extends data_field_base {
         }
     }
 
+    /**
+     * the name of this field type on the page for editing this field's settings
+     */
+    function name() {
+        $name = get_string('admin');
+        if (isset($this->subfield)) {
+            $subname = $this->subfield->name();
+            $subname = core_text::strtolower($subname);
+            $name .= " ($subname)";
+        }
+        return $name;
+    }
+
+    /**
+     * generate HTML to display icon for this field type on the "Fields" page
+     */
+    function image() {
+        if ($this->subfield) {
+            return $this->subfield->image();
+        } else {
+            return parent::image();
+        }
+    }
+
+    /**
+     * define default values for settings in a new admin field
+     */
     function define_default_field() {
         parent::define_default_field();
 
@@ -248,6 +275,19 @@ class data_field_admin extends data_field_base {
         return true;
     }
 
+    /**
+     * display the form for adding/updating settings in an admin field
+     *
+     * @return void, but output is echo'd to browser
+     */
+    function display_edit_field() {
+        self::check_lang_strings($this);
+        parent::display_edit_field();
+    }
+
+    /**
+     * receive $data from the form for adding/updating settings in an admin field
+     */
     function define_field($data) {
         parent::define_field($data);
 
@@ -273,54 +313,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * generate HTML to display icon for this field type on the "Fields" page
-     */
-    function image() {
-        if ($this->subfield) {
-            return $this->subfield->image();
-        } else {
-            return parent::image();
-        }
-    }
-
-    /**
-     * the name of this field type on the page for editing this field's settings
-     */
-    function name() {
-        $name = get_string('admin');
-        if (isset($this->subfield)) {
-            $subname = $this->subfield->name();
-            $subname = core_text::strtolower($subname);
-            $name .= " ($subname)";
-        }
-        return $name;
-    }
-
-    /**
-     * displays the settings for this admin field on the "Fields" page
-     *
-     * @return void, but output is echo'd to browser
-     */
-    function display_edit_field() {
-        global $CFG, $OUTPUT;
-        if (empty($this->field->id)) {
-            $strman = get_string_manager();
-            if (! $strman->string_exists($this->type, 'data')) {
-                $msg = (object)array(
-                    'langfile' => $CFG->dirroot.'/mod/data/lang/en/data.php',
-                    'readfile' => $CFG->dirroot.'/mod/data/field/admin/README.txt',
-                );
-                $msg = get_string('fixlangpack', 'datafield_'.$this->type, $msg);
-                $msg = format_text($msg, FORMAT_MARKDOWN);
-                $msg = html_writer::tag('div', $msg, array('class' => 'alert', 'style' => 'width: 100%; max-width: 640px;'));
-                echo $msg;
-            }
-        }
-        parent::display_edit_field();
-    }
-
-    /**
-     * add a new admin field from the "Fields" page
+     * add a settings for a new admin field
      */
     function insert_field() {
         if ($this->subfield) {
@@ -331,7 +324,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * update settings for this admin field sent from the "Fields" page
+     * update settings in an admin field
      *
      * @return void, but output is echo'd to browser
      */
@@ -344,7 +337,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * delete an admin field from the "Fields" page
+     * delete an admin field
      */
     function delete_field() {
         if ($this->subfield) {
@@ -356,26 +349,15 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * delete user generated content associated with an admin field
-     * when the admin field is deleted from the "Fields" page
-     */
-    function delete_content($recordid=0) {
-        if ($this->subfield) {
-            return $this->subfield->delete_content($recordid);
-        } else {
-            return parent::delete_content($recordid);
-        }
-    }
-
-    /**
-     * display a form element for this field on the "Add entry" page
+     * display a form element for adding/updating
+     * content in an admin field in a user record
      *
      * @return HTML to send to browser
      */
     function display_add_field($recordid=0, $formdata=NULL) {
         $output = '';
         if ($this->is_special_field) {
-            return $this->format_edit_hiddenfield('field_'.$this->field->id, 1);
+            return $this->format_hidden_field('field_'.$this->field->id, 1);
         }
         if ($this->is_editable) {
             $this->js_setup_fields(); // does not add anything to $output
@@ -391,7 +373,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * update content for this field sent from the "Add entry" page
+     * add/update content for an admin field in a user record
      *
      * @return boolean: TRUE if content was sccessfully updated; otherwise FALSE
      */
@@ -410,7 +392,20 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * display this field on the "View list" or "View single" page
+     * delete user generated content associated with an admin field
+     * when the admin field is deleted from the "Fields" page
+     */
+    function delete_content($recordid=0) {
+        if ($this->subfield) {
+            return $this->subfield->delete_content($recordid);
+        } else {
+            return parent::delete_content($recordid);
+        }
+    }
+
+    /**
+     * display content for this field from a user record
+     * on the "View list" or "View single" page
      */
     function display_browse_field($recordid, $template) {
         if ($this->is_viewable) {
@@ -467,6 +462,7 @@ class data_field_admin extends data_field_base {
 
     /**
      * parse search field from "Search" page
+     * (required by view.php)
      */
     function parse_search_field() {
         if ($this->is_viewable) {
@@ -480,54 +476,6 @@ class data_field_admin extends data_field_base {
         }
     }
 
-    function notemptyfield($value, $name) {
-        if ($this->subfield) {
-            return $this->subfield->notemptyfield($value, $name);
-        } else {
-            return parent::notemptyfield($value, $name);
-        }
-    }
-
-    function get_sort_field() {
-        if ($this->subfield) {
-            return $this->subfield->get_sort_field();
-        } else {
-            return parent::get_sort_field();
-        }
-    }
-
-    function get_sort_sql($fieldname) {
-        if ($this->subfield) {
-            return $this->subfield->get_sort_sql($fieldname);
-        } else {
-            return parent::get_sort_sql($fieldname);
-        }
-    }
-
-    function text_export_supported() {
-        if ($this->subfield) {
-            return $this->subfield->text_export_supported();
-        } else {
-            return parent::text_export_supported();
-        }
-    }
-
-    function export_text_value($record) {
-        if ($this->subfield) {
-            return $this->subfield->export_text_value($record);
-        } else {
-            return parent::export_text_value($record);
-        }
-    }
-
-    function file_ok($relativepath) {
-        if ($this->subfield) {
-            return $this->subfield->file_ok($relativepath);
-        } else {
-            return parent::file_ok($relativepath);
-        }
-    }
-
     /**
      * generate sql required for search page
      * Note: this function is missing from the parent class :-(
@@ -538,6 +486,128 @@ class data_field_admin extends data_field_base {
         } else {
             return '';
         }
+    }
+
+    /**
+     * get_sort_field
+     * (required by view.php)
+     */
+    function get_sort_field() {
+        if ($this->subfield) {
+            return $this->subfield->get_sort_field();
+        } else {
+            return parent::get_sort_field();
+        }
+    }
+
+    /**
+     * get_sort_sql
+     * (required by view.php)
+     */
+    function get_sort_sql($fieldname) {
+        if ($this->subfield) {
+            return $this->subfield->get_sort_sql($fieldname);
+        } else {
+            return parent::get_sort_sql($fieldname);
+        }
+    }
+
+    /**
+     * text_export_supported
+     */
+    function text_export_supported() {
+        if ($this->subfield) {
+            return $this->subfield->text_export_supported();
+        } else {
+            return parent::text_export_supported();
+        }
+    }
+
+    /**
+     * export_text_value
+     */
+    function export_text_value($record) {
+        if ($this->subfield) {
+            return $this->subfield->export_text_value($record);
+        } else {
+            return parent::export_text_value($record);
+        }
+    }
+
+    /**
+     * file_ok
+     */
+    function file_ok($relativepath) {
+        if ($this->subfield) {
+            return $this->subfield->file_ok($relativepath);
+        } else {
+            return parent::file_ok($relativepath);
+        }
+    }
+
+    /**
+     * notemptyfield
+     */
+    function notemptyfield($value, $name) {
+        if ($this->subfield) {
+            return $this->subfield->notemptyfield($value, $name);
+        } else {
+            return parent::notemptyfield($value, $name);
+        }
+    }
+
+    ///////////////////////////////////////////
+    // static custom methods
+    ///////////////////////////////////////////
+
+    /**
+     * checks if the descriptor strings for a $datafield
+     * have been added to the mod_data language pack
+     *
+     * @return boolean if strings exist return TRUE;
+     *         otherwise display alert message and return FALSE
+     */
+    static public function check_lang_strings($datafield) {
+
+        // in order to minimize the frequency of this check
+        // we only do full check when adding a new field
+        if (isset($datafield->field->id)) {
+            return true;
+        }
+
+        // alias to datafield type (e.g. "admin")
+        $type = $datafield->type;
+
+        // check if the descriptor string for this data field
+        // has been added to the mod_data language pack
+        $strman = get_string_manager();
+        if ($strman->string_exists($type, 'data')) {
+            return true;
+        }
+
+        // descriptor string for this datafield has not been
+        // added to mod_data language pack, so display alert
+        $params = (object)array(
+            'typelowercase' => $type,
+            'typemixedcase' => $type[0].strtolower(substr($type, 1)),
+            'langfile' => $CFG->dirroot.'/mod/data/lang/en/data.php',
+            'readfile' => $CFG->dirroot."/mod/data/field/$type/README.txt",
+        );
+        $msg = get_string('fixlangpack', 'datafield_admin', $params);
+        $msg = format_text($msg, FORMAT_MARKDOWN);
+        $params = array('class' => 'alert',
+                        'style' => 'width: 100%; max-width: 640px;');
+        echo html_writer::tag('div', $msg, $params);
+        return false;
+    }
+
+    /**
+     * is_new_record
+     *
+     * @return boolean TRUE if we re adding a new record; otherwise FALSE.
+     */
+    static public function is_new_record() {
+        return (optional_param('rid', 0, PARAM_INT)==0);
     }
 
     ///////////////////////////////////////////
@@ -568,76 +638,6 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * format a table row in mod.html
-     */
-    public function format_table_row($name, $label, $text) {
-        $label = $this->format_edit_label($name, $label);
-        $output = $this->format_table_cell($label, 'c0').
-                  $this->format_table_cell($text, 'c1');
-        $output = html_writer::tag('tr', $output, array('class' => $name));
-        return $output;
-    }
-
-    /**
-     * format a table cell in mod.html
-     */
-    public function format_table_cell($text, $class) {
-        return html_writer::tag('td', $text, array('class' => $class));
-    }
-
-    /**
-     * format a label in mod.html
-     */
-    public function format_edit_label($name, $label) {
-        return html_writer::tag('label', $label, array('for' => $name));
-    }
-
-    /**
-     * format a hidden field in mod.html
-     */
-    public function format_edit_hiddenfield($name, $value) {
-        $params = array('type'  => 'hidden',
-                        'name'  => $name,
-                        'value' => $value);
-        return html_writer::empty_tag('input', $params);
-    }
-
-    /**
-     * format a text field in mod.html
-     */
-    public function format_edit_textfield($name, $value, $class, $size=10) {
-        $params = array('type'  => 'text',
-                        'id'    => 'id_'.$name,
-                        'name'  => $name,
-                        'value' => $value,
-                        'class' => $class,
-                        'size'  => $size);
-        return html_writer::empty_tag('input', $params);
-    }
-
-    /**
-     * format a textarea field in mod.html
-     */
-    public function format_edit_textarea($name, $value, $class, $rows=3, $cols=40) {
-        $params = array('id'    => 'id_'.$name,
-                        'name'  => $name,
-                        'class' => $class,
-                        'rows'  => $rows,
-                        'cols'  => $cols);
-        return html_writer::tag('textarea', $value, $params);
-    }
-
-    /**
-     * format a select field in mod.html
-     */
-    public function format_edit_selectfield($name, $values, $default) {
-        if (isset($this->field->$name)) {
-            $default = $this->field->$name;
-        }
-        return html_writer::select($values, $name, $default, '');
-    }
-
-    /**
      * get list of datafield types (excluding this one)
      * based on /mod/data/field.php
      */
@@ -657,11 +657,11 @@ class data_field_admin extends data_field_base {
     /**
      * display a subfield's settings in mod.html
      */
-    public function display_edit_subfield() {
+    public function display_format_sub_field() {
         global $CFG, $DB, $OUTPUT, $PAGE;
         if ($subfolder = $this->subfolder) {
             if (file_exists($subfolder.'/mod.html')) {
-                ob_start(array($this, 'prepare_edit_subfield'));
+                ob_start(array($this, 'prepare_format_sub_field'));
                 include($subfolder.'/mod.html');
                 ob_end_flush();
             }
@@ -672,7 +672,7 @@ class data_field_admin extends data_field_base {
      * convert subfield's full mod.html to an html snippet
      * that can be appended to this admin field's mod.html
      */
-    public function prepare_edit_subfield($output) {
+    public function prepare_format_sub_field($output) {
 
         // remove surrounding <table> tags
         $search = '/(^\s*<table[^>]*>)|(<\/table[^>]*>\s*$)/i';
@@ -758,5 +758,291 @@ class data_field_admin extends data_field_base {
             $id .= '_0'; // this id should always exist
         }
         return $id;
+    }
+
+    //////////////////////////////////////////////////
+    // static methods to generate HTML in mod.html
+    //////////////////////////////////////////////////
+
+    /**
+     * format a core field ("name" or "description") in mod.html
+     */
+    static public function format_core_field($field, $type) {
+        $value  = $field->$type;
+        $name   = 'field'.$type;
+        $label  = get_string($name, 'data');
+        $text   = self::format_text_field($type, $value, $name);
+        echo self::format_table_row($type, $label, $text);
+    }
+
+    /**
+     * format a table row in mod.html
+     */
+    static public function format_table_row($name, $label, $text) {
+        $label  = self::format_label($name, $label);
+        $output = self::format_table_cell($label, 'c0').
+                  self::format_table_cell($text, 'c1');
+        $output = html_writer::tag('tr', $output, array('class' => $name));
+        return $output;
+    }
+
+    /**
+     * format a table cell in mod.html
+     */
+    static public function format_table_cell($text, $class) {
+        return html_writer::tag('td', $text, array('class' => $class));
+    }
+
+    /**
+     * format a label in mod.html
+     */
+    static public function format_label($name, $label) {
+        return html_writer::tag('label', $label, array('for' => $name));
+    }
+
+    /**
+     * format a hidden field in mod.html
+     */
+    static public function format_hidden_field($name, $value) {
+        $params = array('type'  => 'hidden',
+                        'name'  => $name,
+                        'value' => $value);
+        return html_writer::empty_tag('input', $params);
+    }
+
+    /**
+     * format a text field in mod.html
+     */
+    static public function format_text_field($name, $value, $class, $size=10) {
+        $params = array('type'  => 'text',
+                        'id'    => 'id_'.$name,
+                        'name'  => $name,
+                        'value' => $value,
+                        'class' => $class,
+                        'size'  => $size);
+        return html_writer::empty_tag('input', $params);
+    }
+
+    /**
+     * format a textarea field in mod.html
+     */
+    static public function format_textarea_field($name, $value, $class, $rows=3, $cols=40) {
+        $params = array('id'    => 'id_'.$name,
+                        'name'  => $name,
+                        'class' => $class,
+                        'rows'  => $rows,
+                        'cols'  => $cols);
+        return html_writer::tag('textarea', $value, $params);
+    }
+
+    /**
+     * format a select field in mod.html
+     */
+    static public function format_select_field($name, $values, $value, $class) {
+        $params = array('class' => $class);
+        return html_writer::select($values, $name, $value, '', $params);
+    }
+
+    /**
+     * format a checkbox field in mod.html
+     */
+    static public function format_checkbox_field($name, $value, $class, $checkedvalue=1) {
+        $params = array('type'  => 'checkbox',
+                        'id'    => 'id_'.$name,
+                        'name'  => $name,
+                        'value' => $checkedvalue,
+                        'class' => $class);
+        if ($value==$checkedvalue) {
+            $params['checked'] = 'checked';
+        }
+        return html_writer::empty_tag('input', $params);
+    }
+
+    /*
+     * format an html editor for display in mod.html
+     */
+    static public function format_editor_field($datafield, $title, $rows=3, $cols=40) {
+
+        $content = $datafield->contentparam;
+        $format  = $datafield->formatparam;
+        $context = $datafield->context;
+        $field   = $datafield->field;
+
+        $itemid  = $field->id;
+        $name    = 'field_'.$itemid;
+
+        editors_head_setup();
+        $options = self::get_fileoptions($context);
+
+        if ($itemid){
+            $draftitemid = 0;
+            $text = clean_text($field->$content, $field->$format);
+            $text = file_prepare_draft_area($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $text);
+        } else {
+            $draftitemid = file_get_unused_draft_itemid();
+            $text = '';
+        }
+
+        // get filepicker options, if required
+        if (empty($options['maxfiles'])) {
+            $filepicker_options = array();
+        } else {
+            $filepicker_options = self::get_filepicker_options($context, $draftitemid, $options['maxbytes']);
+        }
+
+        // set up editor
+        $editor = editors_get_preferred_editor($field->$format);
+        $editor->set_text($text);
+        $editor->use_editor('id_'.$name.'_content', $options, $filepicker_options);
+
+        // format editor
+        $output = '';
+        $output .= self::format_editor_content($draftitemid, $name, $field->$content, $rows, $cols);
+        $output .= self::format_editor_formats($editor, $name, $field->$format);
+        return html_writer::tag('div', $output, array('title' => $title));
+    }
+
+    /*
+     * get options for editor formats for display in mod.html
+     */
+    static public function get_formats() {
+        return array(
+            FORMAT_MOODLE   => get_string('formattext',     'moodle'), // 0
+            FORMAT_HTML     => get_string('formathtml',     'moodle'), // 1
+            FORMAT_PLAIN    => get_string('formatplain',    'moodle'), // 2
+            // FORMAT_WIKI  => get_string('formatwiki',     'moodle'), // 3 deprecated
+            FORMAT_MARKDOWN => get_string('formatmarkdown', 'moodle')  // 4
+        );
+    }
+
+    /**
+     * Returns options for embedded files
+     *
+     * @return array
+     */
+    static public function get_fileoptions($context) {
+        return array('trusttext'  => false,
+                     'forcehttps' => false,
+                     'subdirs'    => false,
+                     'maxfiles'   => -1,
+                     'context'    => $context,
+                     'maxbytes'   => 0,
+                     'changeformat' => 0,
+                     'noclean'    => false);
+    }
+
+    /*
+     * get filepicker options for editor in mod.html
+     */
+    static public function get_filepicker_options($context, $draftitemid, $maxbytes) {
+
+        // common filepicker arguments
+        $args = (object)array(
+            // need these three to filter repositories list
+            'return_types'   => (FILE_INTERNAL | FILE_EXTERNAL),
+            'context'        => $context,
+            'env'            => 'filepicker'
+        );
+
+        // advimage plugin
+        $args->accepted_types = array('web_image');
+        $image_options = initialise_filepicker($args);
+        $image_options->context = $context;
+        $image_options->client_id = uniqid();
+        $image_options->maxbytes = $maxbytes;
+        $image_options->env = 'editor';
+        $image_options->itemid = $draftitemid;
+
+        // moodlemedia plugin
+        $args->accepted_types = array('video', 'audio');
+        $media_options = initialise_filepicker($args);
+        $media_options->context = $context;
+        $media_options->client_id = uniqid();
+        $media_options->maxbytes  = $maxbytes;
+        $media_options->env = 'editor';
+        $media_options->itemid = $draftitemid;
+
+        // advlink plugin
+        $args->accepted_types = '*';
+        $link_options = initialise_filepicker($args);
+        $link_options->context = $context;
+        $link_options->client_id = uniqid();
+        $link_options->maxbytes  = $maxbytes;
+        $link_options->env = 'editor';
+        $link_options->itemid = $draftitemid;
+
+        return array(
+            'image' => $image_options,
+            'media' => $media_options,
+            'link'  => $link_options
+        );
+    }
+
+    /*
+     * format editor content display in mod.html
+     */
+    static public function format_editor_content($draftitemid, $name, $content, $rows, $cols) {
+        $output = '';
+
+        // hidden element to store $draftitemid
+        $params = array('name'  => $name.'_itemid',
+                        'value' => $draftitemid,
+                        'type'  => 'hidden');
+        $output .= html_writer::empty_tag('input', $params);
+
+        // textarea element to be converted to editor
+        $output .= html_writer::start_tag('div');
+        $params = array('id'   => 'id_'.$name.'_content',
+                        'name' => $name.'_content',
+                        'rows' => $rows,
+                        'cols' => $cols,
+                        'spellcheck' => 'true');
+        $output .= html_writer::tag('textarea', $content, $params);
+        $output .= html_writer::end_tag('div');
+
+        return $output;
+    }
+
+    /*
+     * format list of editor formats for display in mod.html
+     */
+    static public function format_editor_formats($editor, $name, $format) {
+
+        // get the valid formats
+        $strformats = format_text_menu();
+        $formatids =  $editor->get_supported_formats();
+        foreach ($formatids as $formatid) {
+            $formats[$formatid] = $strformats[$formatid];
+        }
+
+        // get label and select element for the formats
+        $output = '';
+        $params = array('for' => 'id_'.$name.'_format',
+                        'class' => 'accesshide');
+        $output .= html_writer::tag('label', get_string('format'), $params);
+        $output .= html_writer::select($formats, $name.'_format', $format);
+
+        // wrap it all in a DIV ... not sure why :-)
+        return html_writer::tag('div', $output);
+    }
+
+    /*
+     * receive editor content from mod.html
+     */
+    static public function get_editor_content($datafield) {
+        $content = $datafield->contentparam;
+        $format  = $datafield->formatparam;
+        $context = $datafield->context;
+        $field   = $datafield->field;
+        if (isset($field->id)) {
+            $itemid = $field->id;
+            $name = 'field_'.$itemid;
+            $field->$format = optional_param($name.'_format',  FORMAT_HTML, PARAM_INT);
+            if ($field->$content = optional_param($name.'_content', '', PARAM_RAW)) {
+                $options = self::get_fileoptions($context);
+                $draftitemid = file_get_submitted_draft_itemid($name.'_itemid');
+                $field->$content = file_save_draft_area_files($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $field->$content);
+            }
+        }
     }
 }

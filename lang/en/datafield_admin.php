@@ -26,23 +26,23 @@
  */
 
 /** required strings */
-$string['pluginname'] = 'Admin field';
+$string['pluginname'] = 'Admin';
 
 /** more string */
 $string['accessnone'] = 'Hidden from non-managers';
 $string['accessview'] = 'Viewable by non-managers';
 $string['accessedit'] = 'Editable by non-managers';
 $string['disabledif'] = 'Conditions for disabling this field';
-$string['fixlangpack'] = '**The Admin field is not yet properly installed**
+$string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
-Please append language strings for the Admin field to Database language file:
+Please append language strings for the {$a->typemixedcase} field to the Database language file:
 
 * EDIT: {$a->langfile}
-* ADD: $string[\'admin\'] = \'Admin\';
-* ADD: $string[\'nameadmin\'] = \'Admin field\';
+* ADD: $string[\'{$a->typelowercase}\'] = \'{$a->typemixedcase}\';
+* ADD: $string[\'name{$a->typelowercase}\'] = \'{$a->typemixedcase} field\';
 
 Then purge the Moodle caches:
 
-* Administration -> Site administration -> Development -> Purge all caches
+* Adminiistration -> Site administration -> Development -> Purge all caches
 
 See {$a->readfile} for more details.';
