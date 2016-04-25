@@ -916,6 +916,15 @@ class data_field_admin extends data_field_base {
     }
 
     /**
+     * get_formatoptions - for use with format_text()
+     */
+    static public function get_formatoptions() {
+        return array('noclean' => true,
+                     'filter'  => false,
+                     'para'    => false);
+    }
+
+    /**
      * Returns options for embedded files
      *
      * @return array
