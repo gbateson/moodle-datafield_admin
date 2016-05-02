@@ -147,5 +147,37 @@ M.datafield_admin = {
             }
         }
         return v;
+    },
+
+    /**
+     * setup_field
+     *
+     * @param object
+     * @param string id    : the id of the element to be disabled
+     * @param string value : the condition value
+     * @return void, but may set value of node with the specified id
+     */
+    set_default_value : function (Y, id, value) {
+
+        var elm = document.getElementById(id);
+        if (elm==null) {
+            return;
+        }
+        var node = null;
+        var t = elm.type;
+        if (t=="text" || t=="textarea" || t=="checkbox" || t=="radio" || t=="select-one" || t=="select-multiple") {
+            node = Y.one(elm);
+        }
+        if (t=="checkbox" || t=="radio") {
+            node = Y.all(elm.form.elements[elm.name]);
+        }
+        if (typeof(t)=="undefined") {
+            node = Y.all(elm);
+        }
+        if (node) {
+            if (M.datafield_admin.get_value(node)=='') {
+                Y.one("#" + id).set("value", value);
+            }
+        }
     }
 };

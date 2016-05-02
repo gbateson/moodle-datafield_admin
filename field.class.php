@@ -451,6 +451,53 @@ class data_field_admin extends data_field_base {
      * add extra HTML after the form on the "Add entry" page
      */
     function print_after_form() {
+        global $DB, $PAGE, $USER;
+
+        if ($this->field->name=='setdefaultvalues' && self::is_new_record()) {
+
+            // set path to js library
+            $module = $this->get_module_js();
+
+            // these user fields are available
+            $userfieldnames = array('firstname', 'lastname',
+                                    'middlename', 'alternatename',
+                                    'lastnamephonetic', 'firstnamephonetic',
+                                    'institution', 'department',
+                                    'address', 'city', 'country',
+                                    'email', 'phone1', 'phone2', 'url',
+                                    'icq', 'skype', 'yahoo', 'aim', 'msn');
+
+            $select = 'dataid = ?';
+            $params = array($this->data->id);
+            $defaults = array();
+            if ($names = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name')) {
+                foreach ($names as $id => $name) {
+                    switch ($name) {
+
+                        case 'firstname_english':
+                        case 'name_english_given':
+                            $name = 'firstname';
+                            break;
+
+                        case 'lastname_english':
+                        case 'name_english_surname':
+                            $name = 'lastname';
+                            break;
+
+                        case 'affiliation_english':
+                            $name = 'institution';
+                            break;
+                    }
+                    $i = array_search($name, $userfieldnames);
+                    if (is_numeric($i) && $USER->$name) {
+                        // add js call to set default value for this field (in browser)
+                        $options = array('id' => 'field_'.$id, 'value' => $USER->$name);
+                        $PAGE->requires->js_init_call('M.datafield_admin.set_default_value', $options, false, $module);
+                    }
+                }
+            }
+        }
+
         if ($this->is_viewable) {
             if ($this->subfield) {
                 $this->subfield->print_after_form();
@@ -708,7 +755,7 @@ class data_field_admin extends data_field_base {
             if (preg_match_all($search, $lines, $matches)) {
 
                 // set path to js library
-                $module = array('name' => 'M.datafield_admin', 'fullpath' => '/mod/data/field/admin/admin.js');
+                $module = $this->get_module_js();
 
                 // cache data id
                 $dataid = $this->field->dataid;
@@ -742,6 +789,14 @@ class data_field_admin extends data_field_base {
             }
         }
         return $output;
+    }
+
+    /**
+     * get_module_js
+     **/
+    public function get_module_js() {
+        return array('name'     => 'M.datafield_admin',
+                     'fullpath' => '/mod/data/field/admin/admin.js');
     }
 
     /**

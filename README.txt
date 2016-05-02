@@ -11,24 +11,39 @@ The Admin database field for Moodle >= 2.3
 
    Additionally the following special "admin" fields are available:
 
-   (a) fixdisabledfields
+   (a) setdefaultvalues
+       The presence of this field will insert values from the user profile
+       as default values for the following fields:
+            firstname, lastname, middlename, alternatename,
+            lastnamephonetic, firstnamephonetic,
+            institution, department, address, city, country,
+            email, phone1, phone2, url, icq, skype, yahoo, aim, msn
+
+       Additionally, the following aliases are available:
+            firstname_english    => firstname
+            name_english_given   => firstname
+            lastname_english     => lastname
+            name_english_surname => lastname
+            affiliation_english  => institution
+
+   (b) fixdisabledfields
        The presence of this field will fix "missing property" errors generated
        when the form has both disabled fields and required fields, but some of
        the required fields are not filled in.
 
-   (b) unapprove
+   (c) unapprove
        The presence of this field will force any newly added record to be
        "unapproved", and therefore "hidden" from other users. This field
        overrides the default behavior of the database module, which
        automatically sets records added by teachers/admins as "approved"
        and therefore "visible" by all other users.
 
-    When creating either of the above two special fields, set "Field type" to
+    When creating any of the above special fields, set "Field type" to
     "Number" and "Accessibility" to "Hidden from non-managers".
 
     In the template for adding and editing records, the "fixdisabledfields" field
-    should appear on the FIRST line, and the "unapprove" field should be on the
-    LAST line.
+    should appear on the FIRST line, and the "setdefaultvalues" and "unapprove"
+    fields should be on the LAST line.
 
 =================================================
 To INSTALL this plugin
