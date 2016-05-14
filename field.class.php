@@ -167,7 +167,8 @@ class data_field_admin extends data_field_base {
         $sortorderparam   = $this->sortorderparam;
 
         $this->is_special_field = ($this->field->name=='unapprove' ||
-                                   $this->field->name=='fixdisabledfields');
+                                   $this->field->name=='fixdisabledfields' ||
+                                   $this->field->name=='setdefaultvalues');
 
         // set view and edit permissions for this user
         if ($this->field && $this->is_special_field) {
