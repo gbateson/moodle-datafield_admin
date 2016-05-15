@@ -485,6 +485,16 @@ class data_field_admin extends data_field_base {
                             $name = 'lastname';
                             break;
 
+                        case 'firstname_japanese':
+                        case 'name_japanese_given':
+                            $name = 'firstnamephonetic';
+                            break;
+
+                        case 'lastname_japanese':
+                        case 'name_japanese_surname':
+                            $name = 'lastnamephonetic';
+                            break;
+
                         case 'affiliation_english':
                             $name = 'institution';
                             break;
