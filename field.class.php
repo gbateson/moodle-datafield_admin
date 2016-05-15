@@ -488,6 +488,14 @@ class data_field_admin extends data_field_base {
                         case 'affiliation_english':
                             $name = 'institution';
                             break;
+
+                        case 'affiliation_state':
+                            $name = 'city';
+                            break;
+
+                        case 'affiliation_country':
+                            $name = 'country';
+                            break;
                     }
                     $i = array_search($name, $userfieldnames);
                     if (is_numeric($i) && $USER->$name) {

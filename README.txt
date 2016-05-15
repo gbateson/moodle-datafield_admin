@@ -12,6 +12,7 @@ The Admin database field for Moodle >= 2.3
    Additionally the following special "admin" fields are available:
 
    (a) setdefaultvalues
+
        The presence of this field will insert values from the user profile
        as default values for the following fields:
             firstname, lastname, middlename, alternatename,
@@ -27,11 +28,13 @@ The Admin database field for Moodle >= 2.3
             affiliation_english  => institution
 
    (b) fixdisabledfields
+
        The presence of this field will fix "missing property" errors generated
        when the form has both disabled fields and required fields, but some of
        the required fields are not filled in.
 
    (c) unapprove
+
        The presence of this field will force any newly added record to be
        "unapproved", and therefore "hidden" from other users. This field
        overrides the default behavior of the database module, which
