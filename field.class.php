@@ -456,6 +456,9 @@ class data_field_admin extends data_field_base {
 
         if ($this->field->name=='setdefaultvalues' && self::is_new_record()) {
 
+            // get string manager
+            $strman = get_string_manager();
+
             // set path to js library
             $module = $this->get_module_js();
 
@@ -509,8 +512,12 @@ class data_field_admin extends data_field_base {
                     }
                     $i = array_search($name, $userfieldnames);
                     if (is_numeric($i) && $USER->$name) {
+                        $value = USER->name;
+                        if ($name=='country' && $strman->string_exists($value, 'countries')) {
+                            $value = $strman->get_string($value, 'countries', null, 'en');
+                        }
                         // add js call to set default value for this field (in browser)
-                        $options = array('id' => 'field_'.$id, 'value' => $USER->$name);
+                        $options = array('id' => 'field_'.$id, 'value' => $value);
                         $PAGE->requires->js_init_call('M.datafield_admin.set_default_value', $options, false, $module);
                     }
                 }
