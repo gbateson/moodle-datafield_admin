@@ -512,7 +512,7 @@ class data_field_admin extends data_field_base {
                     }
                     $i = array_search($name, $userfieldnames);
                     if (is_numeric($i) && $USER->$name) {
-                        $value = USER->name;
+                        $value = $USER->name;
                         if ($name=='country' && $strman->string_exists($value, 'countries')) {
                             $value = $strman->get_string($value, 'countries', null, 'en');
                         }
