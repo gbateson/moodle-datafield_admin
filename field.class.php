@@ -114,6 +114,12 @@ class data_field_admin extends data_field_base {
      */
      var $unapprove = false;
 
+    /**
+     * TRUE if we should synchronize non-blank fields between the user profile and ADD form;
+     * otherwise FALSE
+     */
+    var $setdefaultvalues = false;
+
     ///////////////////////////////////////////
     // fields that are NOT IMPLEMENTED ... yet
     ///////////////////////////////////////////
@@ -204,6 +210,14 @@ class data_field_admin extends data_field_base {
                         // We want to detect this situation, so that we can
                         // override it later, in the update_content() method
                         $this->unapprove = has_capability('mod/data:approve', $this->context);
+                        break;
+
+                    case 'setdefaultvalues':
+                        // setting this flag to true has two effects:
+                        // (1) values from the user profile are inserted into the ADD form
+                        // (2) any user profile fields that are empty will be updated from
+                        //     values in the ADD form
+                        $this->setdefaultvalues = true;
                         break;
                 }
             }
@@ -314,7 +328,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * add a settings for a new admin field
+     * add settings for a new admin field
      */
     function insert_field() {
         if ($this->subfield) {
@@ -379,12 +393,46 @@ class data_field_admin extends data_field_base {
      * @return boolean: TRUE if content was sccessfully updated; otherwise FALSE
      */
     function update_content($recordid, $value, $name='') {
-        global $DB;
-        if ($this->subfield) {
+        global $DB, $USER;
+        if ($this->is_special_field) {
+
             if ($this->unapprove) {
                 // override the automatic approval of records created by teachers and admins
                 return $DB->set_field('data_records', 'approved', 0, array('id' => $recordid));
             }
+
+            if ($this->setdefaultvalues) {
+                $profilefields = $this->get_profile_fields();
+
+                $params = array('dataid' => $this->data->id);
+                if (! $fields = $DB->get_records_menu('data_fields', $params, 'id', 'id, name')) {
+                    $fields = array(); // shouldn't happen !!
+                }
+
+                $params = array('recordid' => $recordid);
+                if (! $values = $DB->get_records_menu('data_content', $params, 'fieldid', 'fieldid, content')) {
+                    $values = array(); // shouldn't happen !!
+                }
+
+                foreach ($fields as $id => $field) {
+                    $field = $this->get_profile_field($field);
+                    if (in_array($field, $profilefields) && $USER->$field=='') {
+                        if (array_key_exists($id, $values)) {
+                            $value = $values[$id];
+                            if ($field=='country') {
+                                $value = $this->get_country_code($value);
+                            }
+                            if ($value) {
+                                $USER->$field = $value;
+                                $DB->set_field('user', $field, $value, array('id' => $USER->id));
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        if ($this->subfield) {
             return $this->subfield->update_content($recordid, $value, $name);
         } else {
             return parent::update_content($recordid, $value, $name);
@@ -454,7 +502,7 @@ class data_field_admin extends data_field_base {
     function print_after_form() {
         global $DB, $PAGE, $USER;
 
-        if ($this->field->name=='setdefaultvalues' && self::is_new_record()) {
+        if ($this->setdefaultvalues) {
 
             // get string manager
             $strman = get_string_manager();
@@ -462,58 +510,18 @@ class data_field_admin extends data_field_base {
             // set path to js library
             $module = $this->get_module_js();
 
-            // these user fields are available
-            $userfieldnames = array('firstname', 'lastname',
-                                    'middlename', 'alternatename',
-                                    'lastnamephonetic', 'firstnamephonetic',
-                                    'institution', 'department',
-                                    'address', 'city', 'country',
-                                    'email', 'phone1', 'phone2', 'url',
-                                    'icq', 'skype', 'yahoo', 'aim', 'msn');
+            // get user profile fields that are available
+            $profilefields = $this->get_profile_fields();
 
             $select = 'dataid = ?';
             $params = array($this->data->id);
             $defaults = array();
-            if ($names = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name')) {
-                foreach ($names as $id => $name) {
-                    switch ($name) {
-
-                        case 'firstname_english':
-                        case 'name_english_given':
-                            $name = 'firstname';
-                            break;
-
-                        case 'lastname_english':
-                        case 'name_english_surname':
-                            $name = 'lastname';
-                            break;
-
-                        case 'firstname_japanese':
-                        case 'name_japanese_given':
-                            $name = 'firstnamephonetic';
-                            break;
-
-                        case 'lastname_japanese':
-                        case 'name_japanese_surname':
-                            $name = 'lastnamephonetic';
-                            break;
-
-                        case 'affiliation_english':
-                            $name = 'institution';
-                            break;
-
-                        case 'affiliation_state':
-                            $name = 'city';
-                            break;
-
-                        case 'affiliation_country':
-                            $name = 'country';
-                            break;
-                    }
-                    $i = array_search($name, $userfieldnames);
-                    if (is_numeric($i) && $USER->$name) {
-                        $value = $USER->$name;
-                        if ($name=='country' && $strman->string_exists($value, 'countries')) {
+            if ($fields = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name')) {
+                foreach ($fields as $id => $field) {
+                    $field = $this->get_profile_field($field);
+                    if (in_array($field, $profilefields) && $USER->$field) {
+                        $value = $USER->$field;
+                        if ($field=='country' && $strman->string_exists($value, 'countries')) {
                             $value = $strman->get_string($value, 'countries', null, 'en');
                         }
                         // add js call to set default value for this field (in browser)
@@ -756,6 +764,90 @@ class data_field_admin extends data_field_base {
         $output = preg_replace($search, '', $output);
 
         return trim($output);
+    }
+
+    /**
+     * return array of profile fields connected with names and affiliation
+     */
+    public function get_profile_fields() {
+        return array('firstname', 'lastname',
+                     'middlename', 'alternatename',
+                     'lastnamephonetic', 'firstnamephonetic',
+                     'institution', 'department',
+                     'address', 'city', 'country',
+                     'email', 'phone1', 'phone2', 'url',
+                     'icq', 'skype', 'yahoo', 'aim', 'msn');
+    }
+
+    /**
+     * convert form field $name to profile fieldname
+     */
+    public function get_profile_field($field) {
+        switch ($field) {
+            case 'firstname_english':
+            case 'name_english_given':
+                return 'firstname';
+
+            case 'lastname_english':
+            case 'name_english_surname':
+                return 'lastname';
+
+            case 'firstname_chinese':
+            case 'name_chinese_given':
+            case 'firstname_japanese':
+            case 'name_japanese_given':
+            case 'firstname_korean':
+            case 'name_korean_given':
+                return 'firstnamephonetic';
+
+            case 'lastname_chinese':
+            case 'name_chinese_surname':
+            case 'lastname_japanese':
+            case 'name_japanese_surname':
+            case 'lastname_korean':
+            case 'name_korean_surname':
+                return 'lastnamephonetic';
+
+            case 'affiliation_english':
+                return 'institution';
+
+            case 'affiliation_state':
+                return 'city';
+
+            case 'affiliation_country':
+                return 'country';
+        }
+        return $field;
+    }
+
+    /**
+     * return array of profile fields connected with names and affiliation
+     */
+    public function get_country_code($value) {
+        global $CFG;
+
+        $filenames = array();
+        $filenames[] = $CFG->dirroot.'/lang/en/countries.php';
+
+        $lang = current_language();
+        $filenames[] = $CFG->dataroot."/lang/$lang/countries.php";
+
+        if (strlen($lang) > 2) {
+            $lang = substr($lang, 0 ,2);
+            $filenames[] = $CFG->dataroot."/lang/$lang/countries.php";
+        }
+
+        foreach ($filenames as $filename) {
+            if (file_exists($filename)) {
+                $string = array();
+                include($filename);
+                if ($code = array_search($value, $string)) {
+                    return $code;
+                }
+            }
+        }
+
+        return ''; // country code could not be established for this $value
     }
 
     /**
