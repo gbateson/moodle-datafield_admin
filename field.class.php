@@ -84,12 +84,12 @@ class data_field_admin extends data_field_base {
     /**
      * TRUE if the current user can view this field; otherwise FALSE
      */
-    var $is_viewable = false;
+    var $is_viewable = null;
 
     /**
      * TRUE if the current user can edit this field; otherwise FALSE
      */
-    var $is_editable = false;
+    var $is_editable = null;
 
     /**
      * TRUE if the field is a special field that cannot be viewed or altered by anyone
@@ -109,7 +109,7 @@ class data_field_admin extends data_field_base {
      * and will be processed below in the "update_content()" method of this PHP class
      *
      * The subtype of the "unapprove" field should be "number" or "text"
-     * because setting  the subtype to "radio" or "checkbox"
+     * because setting the subtype to "radio" or "checkbox"
      * will cause an error when adding a new entry
      */
      var $unapprove = false;
@@ -145,9 +145,15 @@ class data_field_admin extends data_field_base {
     // custom constants
     ///////////////////////////////////////////
 
-    const ACCESS_NONE =  0; // hidden
-    const ACCESS_VIEW =  1; // can view
-    const ACCESS_EDIT =  2; // can edit
+    const ACCESS_NONE         =  0; // owner cannot view or edit;   public cannot view
+    const ACCESS_VIEW_PRIVATE =  2; // owner can view but not edit; public cannot view
+    const ACCESS_EDIT_PRIVATE =  3; // owner can view and edit;     public cannot view
+    const ACCESS_VIEW_PUBLIC  =  6; // owner can view but not edit; public can view
+    const ACCESS_EDIT_PUBLIC  =  7; // owner can view and edit;     public can view
+
+    const ACCESS_ALLOW_EDIT_PRIVATE = 1; // owner can edit
+    const ACCESS_ALLOW_VIEW_PRIVATE = 2; // owner can view
+    const ACCESS_ALLOW_VIEW_PUBLIC  = 4; // public can view
 
     ///////////////////////////////////////////
     // standard methods
@@ -225,8 +231,9 @@ class data_field_admin extends data_field_base {
             $this->is_editable = true;
             $this->is_viewable = true;
         } else if (isset($field->$accessparam)) {
-            $this->is_viewable = ($field->$accessparam >= self::ACCESS_VIEW);
-            $this->is_editable = ($field->$accessparam >= self::ACCESS_EDIT);
+            // don't set viewable or editable yet
+            // instead, we wait till we have a record and then
+            // check to see if the current user is the record's owner
         }
 
         // fetch the subfield if there is one
@@ -237,10 +244,12 @@ class data_field_admin extends data_field_base {
             $filepath = $subfolder.'/field.class.php';
             if (file_exists($filepath)) {
                 require_once($filepath);
-                $this->subtype = $subtype;
-                $this->subclass = $subclass;
-                $this->subfolder = $subfolder;
-                $this->subfield = new $subclass($field, $data, $cm);
+                if (class_exists($subclass)) {
+                    $this->subtype = $subtype;
+                    $this->subclass = $subclass;
+                    $this->subfolder = $subfolder;
+                    $this->subfield = new $subclass($field, $data, $cm);
+                }
             }
         }
     }
@@ -279,7 +288,7 @@ class data_field_admin extends data_field_base {
         $this->field->$param = '';
 
         $param = $this->accessparam;
-        $this->field->$param = self::ACCESS_VIEW;
+        $this->field->$param = self::ACCESS_VIEW_PUBLIC;
 
         $param = $this->disabledifparam;
         $this->field->$param = '';
@@ -374,7 +383,7 @@ class data_field_admin extends data_field_base {
         if ($this->is_special_field) {
             return $this->format_hidden_field('field_'.$this->field->id, 1);
         }
-        if ($this->is_editable) {
+        if ($this->get_editable($recordid)) {
             $this->js_setup_fields(); // does not add anything to $output
             if ($this->subfield) {
                 $output .= $this->subfield->display_add_field($recordid, $formdata);
@@ -388,9 +397,67 @@ class data_field_admin extends data_field_base {
     }
 
     /**
+     * get "is_editable" access setting
+     *
+     * @param  integer: recordid (optional, default=0)
+     * @return boolean: the value of the "is_editable" access setting
+     */
+    function get_editable($recordid=0) {
+        return $this->get_access('is_editable', $recordid);
+    }
+
+    /**
+     * get "is_viewable" access setting
+     *
+     * @param  integer: recordid (optional, default=0)
+     * @return boolean: the value of the "is_viewable" access setting
+     */
+    function get_viewable($recordid=0) {
+        return $this->get_access('is_viewable', $recordid);
+    }
+
+    /**
+     * get access setting, "is_viewable" or "is_editable"
+     *
+     * @param  string: the name of the required $access type
+     * @return boolean: the value of the required $access type
+     */
+    function get_access($access, $recordid) {
+        global $DB, $USER;
+
+        if (isset($this->$access)) {
+            return $this->$access;
+        }
+
+        // get the field's access setting
+        $param = $this->accessparam;
+        $param = $this->field->$param;
+
+        if ($recordid==0) {
+            if ($access=='is_editable') {
+                return ($param & self::ACCESS_ALLOW_EDIT_PRIVATE);
+            }
+            if ($access=='is_viewable') {
+                return ($param & self::ACCESS_ALLOW_VIEW_PUBLIC);
+            }
+        }
+
+        $userid = $DB->get_field('data_records', 'userid', array('id' => $recordid));
+        if ($userid==$USER->id) {
+            $this->is_viewable = ($param & self::ACCESS_ALLOW_VIEW_PRIVATE);
+            $this->is_editable = ($param & self::ACCESS_ALLOW_EDIT_PRIVATE);
+        } else {
+            $this->is_viewable = ($param & self::ACCESS_ALLOW_VIEW_PUBLIC);
+            $this->is_editable = false;
+        }
+
+        return $this->$access;
+    }
+
+    /**
      * add/update content for an admin field in a user record
      *
-     * @return boolean: TRUE if content was sccessfully updated; otherwise FALSE
+     * @return boolean: TRUE if content was successfully updated; otherwise FALSE
      */
     function update_content($recordid, $value, $name='') {
         global $DB, $USER;
@@ -457,7 +524,7 @@ class data_field_admin extends data_field_base {
      * on the "View list" or "View single" page
      */
     function display_browse_field($recordid, $template) {
-        if ($this->is_viewable) {
+        if ($this->get_viewable($recordid)) {
             if ($this->subfield) {
                 return $this->subfield->display_browse_field($recordid, $template);
             } else {
@@ -473,7 +540,7 @@ class data_field_admin extends data_field_base {
      * @return HTML to send to browser
      */
     function display_search_field() {
-        if ($this->is_viewable) {
+        if ($this->get_viewable()) {
             if ($this->subfield) {
                 return $this->subfield->display_search_field();
             } else {
@@ -487,7 +554,7 @@ class data_field_admin extends data_field_base {
      * Note: this method doesn't seem to be used anywhere !!
      */
     function print_before_form() {
-        if ($this->is_viewable) {
+        if ($this->get_editable()) {
             if ($this->subfield) {
                 return $this->subfield->print_before_form();
             } else {
@@ -532,7 +599,7 @@ class data_field_admin extends data_field_base {
             }
         }
 
-        if ($this->is_viewable) {
+        if ($this->get_editable()) {
             if ($this->subfield) {
                 $this->subfield->print_after_form();
             } else {
@@ -546,7 +613,7 @@ class data_field_admin extends data_field_base {
      * (required by view.php)
      */
     function parse_search_field() {
-        if ($this->is_viewable) {
+        if ($this->get_viewable()) {
             if ($this->subfield) {
                 return $this->subfield->parse_search_field();
             } else {
@@ -562,7 +629,7 @@ class data_field_admin extends data_field_base {
      * Note: this function is missing from the parent class :-(
      */
     function generate_sql($tablealias, $value) {
-        if ($this->is_viewable && $this->subfield) {
+        if ($this->get_viewable() && $this->subfield) {
             return $this->subfield->generate_sql($tablealias, $value);
         } else {
             return '';
@@ -713,9 +780,12 @@ class data_field_admin extends data_field_base {
      * get options for field accessibility (for display in mod.html)
      */
     public function get_access_types() {
-        return array(self::ACCESS_NONE => get_string('accessnone', 'datafield_admin'),
-                     self::ACCESS_VIEW => get_string('accessview', 'datafield_admin'),
-                     self::ACCESS_EDIT => get_string('accessedit', 'datafield_admin'));
+        $plugin = 'datafield_admin';
+        return array(self::ACCESS_NONE         => get_string('accessnone',        $plugin),
+                     self::ACCESS_VIEW_PRIVATE => get_string('accessviewprivate', $plugin),
+                     self::ACCESS_EDIT_PRIVATE => get_string('accesseditprivate', $plugin),
+                     self::ACCESS_VIEW_PUBLIC  => get_string('accessviewpublic',  $plugin),
+                     self::ACCESS_EDIT_PUBLIC  => get_string('accesseditpublic',  $plugin));
     }
 
     /**

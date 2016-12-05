@@ -29,9 +29,11 @@
 $string['pluginname'] = 'Admin';
 
 /** more string */
-$string['accessnone'] = 'Hidden from non-managers';
-$string['accessview'] = 'Viewable by non-managers';
-$string['accessedit'] = 'Editable by non-managers';
+$string['accessnone'] = 'Hidden from public and owner; Managers can view and edit.';
+$string['accessviewprivate'] = 'Hidden from public; Owner can view but not edit.';
+$string['accesseditprivate'] = 'Hidden from public; Owner can view and edit.';
+$string['accessviewpublic'] = 'Visible to public; Owner can view but not edit.';
+$string['accesseditpublic'] = 'Visible to public; Owner can view and edit.';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
