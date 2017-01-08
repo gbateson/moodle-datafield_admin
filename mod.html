@@ -33,7 +33,7 @@
     $value = $this->field->$param;
     $name  = 'type';
     $label = get_string($name, 'data');
-    $options = $this->get_datafield_types();
+    $options = $this->get_datafield_types(array('action', 'constant', 'template', 'report'));
     $text  = data_field_admin::format_select_field($param, $options, $value, $name);
     echo data_field_admin::format_table_row($param, $label, $text);
 
