@@ -1282,18 +1282,20 @@ class data_field_admin extends data_field_base {
      * receive editor content from mod.html
      */
     static public function get_editor_content($datafield) {
-        $content = $datafield->contentparam;
-        $format  = $datafield->formatparam;
+        $content = $datafield->contentparam; // e.g. "param1"
+        $format  = $datafield->formatparam;  // e.g. "param2"
         $context = $datafield->context;
         $field   = $datafield->field;
         if (isset($field->id)) {
             $itemid = $field->id;
             $name = 'field_'.$itemid;
-            $field->$format = optional_param($name.'_format',  FORMAT_HTML, PARAM_INT);
-            if ($field->$content = optional_param($name.'_content', '', PARAM_RAW)) {
-                $options = self::get_fileoptions($context);
-                $draftitemid = file_get_submitted_draft_itemid($name.'_itemid');
-                $field->$content = file_save_draft_area_files($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $field->$content);
+            if (isset($_POST[$name.'_content'])) {
+                $field->$format = optional_param($name.'_format',  FORMAT_HTML, PARAM_INT);
+                if ($field->$content = optional_param($name.'_content', '', PARAM_RAW)) {
+                    $options = self::get_fileoptions($context);
+                    $draftitemid = file_get_submitted_draft_itemid($name.'_itemid');
+                    $field->$content = file_save_draft_area_files($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $field->$content);
+                }
             }
         }
     }
