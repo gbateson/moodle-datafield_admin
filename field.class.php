@@ -1011,10 +1011,10 @@ class data_field_admin extends data_field_base {
      * format a core field ("name" or "description") in mod.html
      */
     static public function format_core_field($field, $type) {
-        $value  = $field->$type;
-        $name   = 'field'.$type;
-        $label  = get_string($name, 'data');
-        $text   = self::format_text_field($type, $value, $name);
+        $value = $field->$type;
+        $name  = 'field'.$type;
+        $label = get_string($name, 'data');
+        $text  = self::format_text_field($type, $value, $name);
         echo self::format_table_row($type, $label, $text);
     }
 
@@ -1111,16 +1111,17 @@ class data_field_admin extends data_field_base {
         $context = $datafield->context;
         $field   = $datafield->field;
 
+        $component = 'datafield_'.$field->type;
+        $filearea = 'content';
         $itemid  = $field->id;
-        $name    = 'field_'.$itemid;
+        $name = 'field_'.$itemid;
 
         editors_head_setup();
         $options = self::get_fileoptions($context);
-
         if ($itemid){
             $draftitemid = 0;
             $text = clean_text($field->$content, $field->$format);
-            $text = file_prepare_draft_area($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $text);
+            $text = file_prepare_draft_area($draftitemid, $context->id, $component, $filearea, $itemid, $options, $text);
         } else {
             $draftitemid = file_get_unused_draft_itemid();
             $text = '';
@@ -1140,7 +1141,7 @@ class data_field_admin extends data_field_base {
 
         // format editor
         $output = '';
-        $output .= self::format_editor_content($draftitemid, $name, $field->$content, $rows, $cols);
+        $output .= self::format_editor_content($draftitemid, $name, $text, $rows, $cols);
         $output .= self::format_editor_formats($editor, $name, $field->$format);
         return html_writer::tag('div', $output, array('title' => $title));
     }
@@ -1283,20 +1284,53 @@ class data_field_admin extends data_field_base {
      */
     static public function get_editor_content($datafield) {
         $content = $datafield->contentparam; // e.g. "param1"
-        $format  = $datafield->formatparam;  // e.g. "param2"
+        $format  = $datafield->formatparam; // e.g. "param2"
         $context = $datafield->context;
         $field   = $datafield->field;
         if (isset($field->id)) {
+            $component = 'datafield_'.$field->type;
+            $filearea = 'content';
             $itemid = $field->id;
             $name = 'field_'.$itemid;
-            if (isset($_POST[$name.'_content'])) {
+            if (isset($_POST[$name.'_itemid'])) {
                 $field->$format = optional_param($name.'_format',  FORMAT_HTML, PARAM_INT);
                 if ($field->$content = optional_param($name.'_content', '', PARAM_RAW)) {
                     $options = self::get_fileoptions($context);
                     $draftitemid = file_get_submitted_draft_itemid($name.'_itemid');
-                    $field->$content = file_save_draft_area_files($draftitemid, $context->id, 'mod_data', 'content', $itemid, $options, $field->$content);
+                    $field->$content = file_save_draft_area_files($draftitemid, $context->id, $component, $filearea, $itemid, $options, $field->$content);
                 }
             }
         }
+    }
+
+    /*
+     * format text and rewrite pluginurls in content to be displayed in browser
+     */
+    static public function format_browse_field($datafield, $content=null, $format=null) {
+        $context = $datafield->context;
+        $field   = $datafield->field;
+
+        if ($content===null) {
+            $content = $datafield->contentparam;
+            $content = $field->$content;
+        }
+
+        if ($format===null) {
+            $format = $datafield->formatparam;
+            $format = $field->$format;
+        }
+
+        if ($content) {
+            $options = self::get_formatoptions();
+            $content = format_text($content, $format, $options);
+            if ($itemid = $field->id) {
+                $component = 'datafield_'.$field->type;
+                $filearea = 'content';
+                $options = self::get_fileoptions($context);
+                $content = file_rewrite_pluginfile_urls($content, 'pluginfile.php', $context->id, $component, $filearea, $itemid, $options);
+            }
+        }
+
+        return $content;
     }
 }
