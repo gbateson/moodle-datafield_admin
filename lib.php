@@ -44,6 +44,7 @@ defined('MOODLE_INTERNAL') || die();
 function datafield_admin_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, $options=array(), $fieldtype='admin') {
     global $CFG, $DB;
 
+    // basic sanity checks on input parameters
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
     }
@@ -54,24 +55,33 @@ function datafield_admin_pluginfile($course, $cm, $context, $filearea, $args, $f
         return false;
     }
 
+    // check access rights
     require_course_login($course, true, $cm);
     require_capability('mod/data:viewentry', $context);
 
-    $component = 'datafield_'.$fieldtype;
+    // extract $fieldid and $filename from $args
     $fieldid = array_shift($args);
-    $field = array('id'     => $fieldid,
-                   'type'   => $fieldtype,
-                   'dataid' => $cm->instance);
-    if (! $field = $DB->get_record('data_fields', $field)) {
+    $filename = array_pop($args);
+
+    // check $fieldid is valid
+    if (! $DB->record_exists('data_fields', array('id' => $fieldid, 'type' => $fieldtype, 'dataid' => $cm->instance))) {
         return false;
     }
 
-    $filename = array_pop($args);
+    // force the pluginfile to be downloaded
+    $forcedownload = true;
+
+    // set filearea component
+    $component = 'datafield_'.$fieldtype;
+
+    // extract $filepath from $args
     if (empty($args)) {
         $filepath = '/';
     } else {
         $filepath = '/'.implode('/', $args).'/';
     }
+
+    // set file cache $lifetime
     if (isset($CFG->filelifetime)) {
         $lifetime = $CFG->filelifetime;
     } else {
@@ -81,7 +91,7 @@ function datafield_admin_pluginfile($course, $cm, $context, $filearea, $args, $f
     $fs = get_file_storage();
     if ($file = $fs->get_file($context->id, $component, $filearea, $fieldid, $filepath, $filename)) {
         // file found - this is what we expect to happen
-        send_stored_file($file, $lifetime, 0);
+        send_stored_file($file, $lifetime, 0, $forcedownload, $options);
     }
 
     /////////////////////////////////////////////////////////////
@@ -102,10 +112,18 @@ function datafield_admin_pluginfile($course, $cm, $context, $filearea, $args, $f
         'filename'  => $filename
     );
 
-    // search other fileareas in this Database activity
+    // search the "intro" file area for this activity
     if ($file = $fs->get_file($context->id, 'mod_data', 'intro', 0, $filepath, $filename)) {
         if ($file = $fs->create_file_from_storedfile($file_record, $file)) {
-            send_stored_file($file, $lifetime, 0);
+            send_stored_file($file, $lifetime, 0, $forcedownload, $options);
+        }
+    }
+
+    // search the "content" file area for this activity
+    // e.g. the "picture" field type uses this filearea
+    if ($file = $fs->get_file($context->id, 'mod_data', 'content', $fieldtype, $filepath, $filename)) {
+        if ($file = $fs->create_file_from_storedfile($file_record, $file)) {
+            send_stored_file($file, $lifetime, 0, $forcedownload, $options);
         }
     }
 
