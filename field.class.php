@@ -508,13 +508,14 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * delete user generated content associated with an admin field
-     * when the admin field is deleted from the "Fields" page
+     * delete content associated with an admin field
+     * when the field is deleted from the "Fields" page
      */
     function delete_content($recordid=0) {
         if ($this->subfield) {
             return $this->subfield->delete_content($recordid);
         } else {
+            self::delete_content($this);
             return parent::delete_content($recordid);
         }
     }
@@ -683,7 +684,8 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * file_ok
+     * Whether this plugin supports files.
+     * Default is FALSE, but textarea returns TRUE
      */
     function file_ok($relativepath) {
         if ($this->subfield) {
@@ -694,7 +696,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * notemptyfield
+     * Check if a field from an add form is empty
      */
     function notemptyfield($value, $name) {
         if ($this->subfield) {
@@ -1332,5 +1334,20 @@ class data_field_admin extends data_field_base {
         }
 
         return $content;
+    }
+
+    /**
+     * delete files for the given $datafield
+     */
+    static public function delete_content_files($datafield) {
+        $context = $datafield->context;
+        $field   = $datafield->field;
+
+        $component = 'datafield_'.$field->type;
+        $filearea = 'content';
+        $itemid = $field->id;
+
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, $component, $filearea, $itemid);
     }
 }
