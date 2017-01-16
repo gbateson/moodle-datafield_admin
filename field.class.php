@@ -444,7 +444,8 @@ class data_field_admin extends data_field_base {
 
         $userid = $DB->get_field('data_records', 'userid', array('id' => $recordid));
         if ($userid==$USER->id) {
-            $this->is_viewable = ($param & self::ACCESS_ALLOW_VIEW_PRIVATE);
+            $this->is_viewable = ($param & self::ACCESS_ALLOW_VIEW_PUBLIC) ||
+                                 ($param & self::ACCESS_ALLOW_VIEW_PRIVATE);
             $this->is_editable = ($param & self::ACCESS_ALLOW_EDIT_PRIVATE);
         } else {
             $this->is_viewable = ($param & self::ACCESS_ALLOW_VIEW_PUBLIC);
@@ -515,7 +516,7 @@ class data_field_admin extends data_field_base {
         if ($this->subfield) {
             return $this->subfield->delete_content($recordid);
         } else {
-            self::delete_content($this);
+            self::delete_content_files($this);
             return parent::delete_content($recordid);
         }
     }
