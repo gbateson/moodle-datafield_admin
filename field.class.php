@@ -677,6 +677,9 @@ class data_field_admin extends data_field_base {
      * export_text_value
      */
     function export_text_value($record) {
+        if ($this->is_special_field) {
+            return '';
+        }
         if ($this->subfield) {
             return $this->subfield->export_text_value($record);
         } else {
