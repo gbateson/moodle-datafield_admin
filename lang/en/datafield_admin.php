@@ -27,6 +27,7 @@
 
 /** required strings */
 $string['pluginname'] = 'Admin';
+$string['fieldtypelabel'] = 'Admin field';
 
 /** more string */
 $string['accessnone'] = 'Hidden from public and owner; Managers can view and edit.';
