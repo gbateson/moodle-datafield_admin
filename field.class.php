@@ -470,12 +470,9 @@ class data_field_admin extends data_field_base {
             }
 
             if ($this->setdefaultvalues) {
-                $profilefields = $this->get_profile_fields();
 
-                $params = array('dataid' => $this->data->id);
-                if (! $fields = $DB->get_records_menu('data_fields', $params, 'id', 'id, name')) {
-                    $fields = array(); // shouldn't happen !!
-                }
+                // map data fields to user profile fields
+                list($fieldmap, $fields) = $this->get_profile_fieldmap();
 
                 $params = array('recordid' => $recordid);
                 if (! $values = $DB->get_records_menu('data_content', $params, 'fieldid', 'fieldid, content')) {
@@ -483,16 +480,16 @@ class data_field_admin extends data_field_base {
                 }
 
                 foreach ($fields as $id => $field) {
-                    $field = $this->get_profile_field($field);
-                    if (in_array($field, $profilefields) && $USER->$field=='') {
+                    $userfield = $fieldmap[$field];
+                    if ($USER->$userfield=='') {
                         if (array_key_exists($id, $values)) {
                             $value = $values[$id];
                             if ($field=='country') {
                                 $value = $this->get_country_code($value);
                             }
                             if ($value) {
-                                $USER->$field = $value;
-                                $DB->set_field('user', $field, $value, array('id' => $USER->id));
+                                $USER->$userfield = $value;
+                                $DB->set_field('user', $userfield, $value, array('id' => $USER->id));
                             }
                         }
                     }
@@ -579,24 +576,19 @@ class data_field_admin extends data_field_base {
             // set path to js library
             $module = $this->get_module_js();
 
-            // get user profile fields that are available
-            $profilefields = $this->get_profile_fields();
+            // map data fields to user profile fields
+            list($fieldmap, $fields) = $this->get_profile_fieldmap();
 
-            $select = 'dataid = ?';
-            $params = array($this->data->id);
-            $defaults = array();
-            if ($fields = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name')) {
-                foreach ($fields as $id => $field) {
-                    $field = $this->get_profile_field($field);
-                    if (in_array($field, $profilefields) && $USER->$field) {
-                        $value = $USER->$field;
-                        if ($field=='country' && $strman->string_exists($value, 'countries')) {
-                            $value = $strman->get_string($value, 'countries', null, 'en');
-                        }
-                        // add js call to set default value for this field (in browser)
-                        $options = array('id' => 'field_'.$id, 'value' => $value);
-                        $PAGE->requires->js_init_call('M.datafield_admin.set_default_value', $options, false, $module);
+            // transfer default values, if any
+            foreach ($fields as $id => $field) {
+                $userfield = $fieldmap[$field];
+                if ($value = $USER->$userfield) {
+                    if ($userfield=='country' && $strman->string_exists($value, 'countries')) {
+                        $value = $strman->get_string($value, 'countries', null, 'en');
                     }
+                    // add js call to set default value for this field (in browser)
+                    $options = array('id' => 'field_'.$id, 'value' => $value);
+                    $PAGE->requires->js_init_call('M.datafield_admin.set_default_value', $options, false, $module);
                 }
             }
         }
@@ -853,6 +845,49 @@ class data_field_admin extends data_field_base {
                      'address', 'city', 'country',
                      'email', 'phone1', 'phone2', 'url',
                      'icq', 'skype', 'yahoo', 'aim', 'msn');
+    }
+
+    /**
+     * return array of mapping field in this database
+     * to an accessilble field from the user profile
+     */
+    public function get_profile_fieldmap() {
+        global $DB;
+
+        // get user profile fields that are available
+        // (they can be used as field names)
+        $fieldmap = $this->get_profile_fields();
+        $fieldmap = array_combine($fieldmap, $fieldmap);
+
+        // add extra field mappings defined in subfield
+        // we expect something like: firstname => name_given_en
+        $subparam = $this->subparam;
+        if ($this->field->$subparam=='menu' && $this->field->param1) {
+            $search = '/^\s*(\w+)\s*[=>]+\s*(\w+)\s*$/m';
+            if (preg_match_all($search, $this->field->param1, $fields)) {
+                $fields = array_combine($fields[2], $fields[1]);
+                foreach ($fields as $field => $userfield) {
+                    // We don't allow field mappings to be overwritten.
+                    // i.e. the user profile fields cannot be overridden,
+                    // and if, somehow, there are duplicate field mappings,
+                    // only the first one will be used
+                    if (array_key_exists($field, $fieldmap)) {
+                        continue;
+                    }
+                    // $userfield must one of the allowable profile fields
+                    if (in_array($userfield, $fieldmap)) {
+                        $fieldmap[$field] = $userfield;
+                    }
+                }
+            }
+        }
+
+        // get all mapped fields that exist in this data activity
+        list($select, $params) = $DB->get_in_or_equal(array_keys($fieldmap));
+        $select = "dataid = ? AND name $select";
+        array_unshift($params, $this->data->id);
+        $fields = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name');
+        return array($fieldmap, ($fields ? $fields : array()));
     }
 
     /**
