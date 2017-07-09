@@ -155,6 +155,10 @@ class data_field_admin extends data_field_base {
     const ACCESS_ALLOW_VIEW_PRIVATE = 2; // owner can view
     const ACCESS_ALLOW_VIEW_PUBLIC  = 4; // public can view
 
+    const INFOFIELD_NONE          = 0; // do not fetch additional info fields
+    const INFOFIELD_INCLUDE_EMPTY = 1; // fetch all info fields
+    const INFOFIELD_EXCLUDE_EMPTY = 2; // fetch only info fields with a value
+
     ///////////////////////////////////////////
     // standard methods
     ///////////////////////////////////////////
@@ -472,7 +476,11 @@ class data_field_admin extends data_field_base {
             if ($this->setdefaultvalues) {
 
                 // map data fields to user profile fields
-                list($fieldmap, $fields) = $this->get_profile_fieldmap();
+                list($fieldmap, $fields) = $this->get_profile_fieldmap(self::INFOFIELD_INCLUDE_EMPTY);
+
+                if (! $infofieldids = $DB->get_records_menu('user_info_field', array(), 'shortname', 'shortname, id')) {
+                    $infofieldids = array();
+                }
 
                 $params = array('recordid' => $recordid);
                 if (! $values = $DB->get_records_menu('data_content', $params, 'fieldid', 'fieldid, content')) {
@@ -481,7 +489,7 @@ class data_field_admin extends data_field_base {
 
                 foreach ($fields as $id => $field) {
                     $userfield = $fieldmap[$field];
-                    if ($USER->$userfield=='') {
+                    if (empty($USER->$userfield)) {
                         if (array_key_exists($id, $values)) {
                             $value = $values[$id];
                             if ($field=='country') {
@@ -489,7 +497,14 @@ class data_field_admin extends data_field_base {
                             }
                             if ($value) {
                                 $USER->$userfield = $value;
-                                $DB->set_field('user', $userfield, $value, array('id' => $USER->id));
+                                if (array_key_exists($userfield, $infofieldids)) {
+                                    $params = array('userid' => $USER->id,
+                                                    'fieldid' => $infofieldids[$userfield]);
+                                    $DB->set_field('user_info_data', 'data', $value, $params);
+                                } else {
+                                    $params = array('id' => $USER->id);
+                                    $DB->set_field('user', $userfield, $value, $params);
+                                }
                             }
                         }
                     }
@@ -577,7 +592,7 @@ class data_field_admin extends data_field_base {
             $module = $this->get_module_js();
 
             // map data fields to user profile fields
-            list($fieldmap, $fields) = $this->get_profile_fieldmap();
+            list($fieldmap, $fields) = $this->get_profile_fieldmap(self::INFOFIELD_EXCLUDE_EMPTY);
 
             // transfer default values, if any
             foreach ($fields as $id => $field) {
@@ -837,26 +852,50 @@ class data_field_admin extends data_field_base {
     /**
      * return array of profile fields connected with names and affiliation
      */
-    public function get_profile_fields() {
-        return array('firstname', 'lastname',
-                     'middlename', 'alternatename',
-                     'lastnamephonetic', 'firstnamephonetic',
-                     'institution', 'department',
-                     'address', 'city', 'country',
-                     'email', 'phone1', 'phone2', 'url',
-                     'icq', 'skype', 'yahoo', 'aim', 'msn');
+    public function get_profile_fields($addinfofields) {
+        global $DB, $USER;
+
+        $fields = array('firstname', 'lastname',
+                        'middlename', 'alternatename',
+                        'lastnamephonetic', 'firstnamephonetic',
+                        'institution', 'department',
+                        'address', 'city', 'country',
+                        'email', 'phone1', 'phone2', 'url',
+                        'icq', 'skype', 'yahoo', 'aim', 'msn');
+
+        if ($addinfofields) {
+            $select = 'uif.shortname, uid.data';
+            $from   = '{user_info_data} uid JOIN {user_info_field} uif ON uid.fieldid = uif.id';
+            $where  = 'uid.userid = ?';
+            $params = array($USER->id);
+            if ($addinfofields==self::INFOFIELD_EXCLUDE_EMPTY) {
+                $where .= ' AND uid.data IS NOT NULL AND uid.data <> ?';
+                $params[] = '';
+            }
+            $where .= ' AND ('.$DB->sql_like('uif.shortname', '?').' OR '.$DB->sql_like('uif.shortname', '?').')';
+            $params[] = '%name%';
+            $params[] = '%affiliation%';
+            $infofields = "SELECT $select FROM $from WHERE $where";
+            if ($infofields = $DB->get_records_sql_menu($infofields, $params)) {
+                foreach ($infofields as $infofield => $infodata) {
+                    $fields[] = $infofield;
+                    $USER->$infofield = $infodata;
+                }
+            }
+        }
+        return $fields;
     }
 
     /**
      * return array of mapping field in this database
      * to an accessilble field from the user profile
      */
-    public function get_profile_fieldmap() {
+    public function get_profile_fieldmap($addinfofields) {
         global $DB;
 
         // get user profile fields that are available
         // (they can be used as field names)
-        $fieldmap = $this->get_profile_fields();
+        $fieldmap = $this->get_profile_fields($addinfofields);
         $fieldmap = array_combine($fieldmap, $fieldmap);
 
         // add extra field mappings defined in subfield
@@ -888,47 +927,6 @@ class data_field_admin extends data_field_base {
         array_unshift($params, $this->data->id);
         $fields = $DB->get_records_select_menu('data_fields', $select, $params, 'id', 'id, name');
         return array($fieldmap, ($fields ? $fields : array()));
-    }
-
-    /**
-     * convert form field $name to profile fieldname
-     */
-    public function get_profile_field($field) {
-        switch ($field) {
-            case 'firstname_english':
-            case 'name_english_given':
-                return 'firstname';
-
-            case 'lastname_english':
-            case 'name_english_surname':
-                return 'lastname';
-
-            case 'firstname_chinese':
-            case 'name_chinese_given':
-            case 'firstname_japanese':
-            case 'name_japanese_given':
-            case 'firstname_korean':
-            case 'name_korean_given':
-                return 'firstnamephonetic';
-
-            case 'lastname_chinese':
-            case 'name_chinese_surname':
-            case 'lastname_japanese':
-            case 'name_japanese_surname':
-            case 'lastname_korean':
-            case 'name_korean_surname':
-                return 'lastnamephonetic';
-
-            case 'affiliation_english':
-                return 'institution';
-
-            case 'affiliation_state':
-                return 'city';
-
-            case 'affiliation_country':
-                return 'country';
-        }
-        return $field;
     }
 
     /**
