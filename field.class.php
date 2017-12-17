@@ -278,8 +278,34 @@ class data_field_admin extends data_field_base {
         if ($this->subfield) {
             return $this->subfield->image();
         } else {
-            return parent::image();
+            return self::field_icon($this);
         }
+    }
+
+    /**
+     * Prints the for a 3rd-party datafield
+     *
+     * @global object
+     * @return string
+     */
+    static public function field_icon($field) {
+        global $CFG, $OUTPUT;
+
+        $type = $field->type;
+        $plugin = 'datafield_'.$type;
+        $text = get_string('pluginname', $plugin);
+        $params = array('d' => $field->data->id,
+                        'fid' => $field->field->id,
+                        'mode' => 'display',
+                        'sesskey' => sesskey());
+        $url = new moodle_url('/mod/data/field.php', $params);
+        $icon = glob($CFG->dirroot."/mod/data/field/$type/pix/icon*");
+        if (empty($icon)) {
+            $icon = $OUTPUT->pix_icon('f/unknown', $text);
+        } else {
+            $icon = $OUTPUT->pix_icon('icon', $text, $plugin);
+        }
+        return html_writer::link($url, $icon);
     }
 
     /**
