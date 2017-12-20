@@ -558,34 +558,9 @@ class data_field_admin extends data_field_base {
         if ($this->subfield) {
             return $this->subfield->update_content($recordid, $value, $name);
         } else {
-            return self::update_content_multilang($recordid, $value, $name);
+            return self::update_content_multilang($this->field->id, $recordid, $value, $name);
         }
         return false;
-    }
-
-    /**
-     * Update the content of one data field in the data_content table
-     * @global object
-     * @param int $recordid
-     * @param mixed $value
-     * @param string $name
-     * @return bool
-     */
-    function update_content_multilang($recordid, $value, $name=''){
-        global $DB;
-
-        $content = clean_param($value, PARAM_TEXT);
-        $params = array('fieldid'  => $this->field->id,
-        				'recordid' => $recordid);
-
-        if ($contentid = $DB->get_field('data_content', 'id', $params)) {
-            return $DB->set_field('data_content', 'content', $content, array('id' => $contentid));
-        }
-        
-        $content = (object)array('fieldid'  => $this->field->id,
-                                 'recordid' => $recordid,
-                                 'content'  => $content);
-        return $DB->insert_record('data_content', $content);
     }
 
     /**
@@ -793,60 +768,6 @@ class data_field_admin extends data_field_base {
      */
     public function get_config_for_external() {
     	return self::get_field_params($this->field);
-    }
-
-    ///////////////////////////////////////////
-    // static custom methods
-    ///////////////////////////////////////////
-
-    /**
-     * checks if the descriptor strings for a $datafield
-     * have been added to the mod_data language pack
-     *
-     * @return boolean if strings exist return TRUE;
-     *         otherwise display alert message and return FALSE
-     */
-    static public function check_lang_strings($datafield) {
-
-        // in order to minimize the frequency of this check
-        // we only do full check when adding a new field
-        if (isset($datafield->field->id)) {
-            return true;
-        }
-
-        // alias to datafield type (e.g. "admin")
-        $type = $datafield->type;
-
-        // check if the descriptor string for this data field
-        // has been added to the mod_data language pack
-        $strman = get_string_manager();
-        if ($strman->string_exists($type, 'data')) {
-            return true;
-        }
-
-        // descriptor string for this datafield has not been
-        // added to mod_data language pack, so display alert
-        $params = (object)array(
-            'typelowercase' => $type,
-            'typemixedcase' => $type[0].strtolower(substr($type, 1)),
-            'langfile' => $CFG->dirroot.'/mod/data/lang/en/data.php',
-            'readfile' => $CFG->dirroot."/mod/data/field/$type/README.txt",
-        );
-        $msg = get_string('fixlangpack', 'datafield_admin', $params);
-        $msg = format_text($msg, FORMAT_MARKDOWN);
-        $params = array('class' => 'alert',
-                        'style' => 'width: 100%; max-width: 640px;');
-        echo html_writer::tag('div', $msg, $params);
-        return false;
-    }
-
-    /**
-     * is_new_record
-     *
-     * @return boolean TRUE if we re adding a new record; otherwise FALSE.
-     */
-    static public function is_new_record() {
-        return (optional_param('rid', 0, PARAM_INT)==0);
     }
 
     ///////////////////////////////////////////
@@ -1118,6 +1039,102 @@ class data_field_admin extends data_field_base {
             $id .= '_0'; // this id should always exist
         }
         return $id;
+    }
+
+    ///////////////////////////////////////////
+    // static custom methods
+    ///////////////////////////////////////////
+
+    /**
+     * checks if the descriptor strings for a $datafield
+     * have been added to the mod_data language pack
+     *
+     * @return boolean if strings exist return TRUE;
+     *         otherwise display alert message and return FALSE
+     */
+    static public function check_lang_strings($datafield) {
+
+        // in order to minimize the frequency of this check
+        // we only do full check when adding a new field
+        if (isset($datafield->field->id)) {
+            return true;
+        }
+
+        // alias to datafield type (e.g. "admin")
+        $type = $datafield->type;
+
+        // check if the descriptor string for this data field
+        // has been added to the mod_data language pack
+        $strman = get_string_manager();
+        if ($strman->string_exists($type, 'data')) {
+            return true;
+        }
+
+        // descriptor string for this datafield has not been
+        // added to mod_data language pack, so display alert
+        $params = (object)array(
+            'typelowercase' => $type,
+            'typemixedcase' => $type[0].strtolower(substr($type, 1)),
+            'langfile' => $CFG->dirroot.'/mod/data/lang/en/data.php',
+            'readfile' => $CFG->dirroot."/mod/data/field/$type/README.txt",
+        );
+        $msg = get_string('fixlangpack', 'datafield_admin', $params);
+        $msg = format_text($msg, FORMAT_MARKDOWN);
+        $params = array('class' => 'alert',
+                        'style' => 'width: 100%; max-width: 640px;');
+        echo html_writer::tag('div', $msg, $params);
+        return false;
+    }
+
+    /**
+     * is_new_record
+     *
+     * @return boolean TRUE if we re adding a new record; otherwise FALSE.
+     */
+    static public function is_new_record() {
+        return (optional_param('rid', 0, PARAM_INT)==0);
+    }
+
+    /**
+     * Update the content of one data field in the data_content table
+     * @global object
+     * @param int $fieldid
+     * @param int $recordid
+     * @param mixed $value
+     * @param string $name
+     * @return bool
+     */
+    static function update_content_multilang($fieldid, $recordid, $value, $name=''){
+        global $DB;
+
+        $content = clean_param($value, PARAM_TEXT);
+        $params = array('fieldid'  => $fieldid,
+        				'recordid' => $recordid);
+
+        if ($contentid = $DB->get_field('data_content', 'id', $params)) {
+            return $DB->set_field('data_content', 'content', $content, array('id' => $contentid));
+        }
+
+        $content = (object)array('fieldid'  => $fieldid,
+                                 'recordid' => $recordid,
+                                 'content'  => $content);
+        return $DB->insert_record('data_content', $content);
+    }
+
+    /**
+     * Central method to return params 1-10 for a field
+     * as requied for the "get_config_for_external" method
+     *
+     * @return array the list of config parameters
+     * @since Moodle 3.3
+     */
+    static public function get_field_params($field) {
+        $params = array();
+        for ($i = 1; $i <= 10; $i++) {
+        	$param = "param$i";
+            $params[$param] = $field->$param;
+        }
+        return $params;
     }
 
     //////////////////////////////////////////////////
@@ -1464,21 +1481,5 @@ class data_field_admin extends data_field_base {
 
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, $component, $filearea, $itemid);
-    }
-
-    /**
-     * Central method to return params 1-10 for a field
-     * as requied for the "get_config_for_external" method
-     *
-     * @return array the list of config parameters
-     * @since Moodle 3.3
-     */
-    static public function get_field_params($field) {
-        $params = array();
-        for ($i = 1; $i <= 10; $i++) {
-        	$param = "param$i";
-            $params[$param] = $field->$param;
-        }
-        return $params;
     }
 }
