@@ -182,9 +182,10 @@ class data_field_admin extends data_field_base {
         $displaytextparam = $this->displaytextparam;
         $sortorderparam   = $this->sortorderparam;
 
-        $this->is_special_field = ($this->field->name=='unapprove' ||
+        $this->is_special_field = ($this->field->name=='setdefaultvalues' ||
                                    $this->field->name=='fixdisabledfields' ||
-                                   $this->field->name=='setdefaultvalues');
+                                   $this->field->name=='fixmultilangvalues' ||
+                                   $this->field->name=='unapprove');
 
         // set view and edit permissions for this user
         if ($this->field && $this->is_special_field) {
@@ -196,6 +197,14 @@ class data_field_admin extends data_field_base {
             // field-specific processing for new fields
             if (self::is_new_record()) {
                 switch ($this->field->name) {
+
+                    case 'setdefaultvalues':
+                        // setting this flag to true has two effects:
+                        // (1) values from the user profile are inserted into the ADD form
+                        // (2) any user profile fields that are empty will be updated from
+                        //     values in the ADD form
+                        $this->setdefaultvalues = true;
+                        break;
 
                     case 'fixdisabledfields':
                         // prevent "missing property" error in data/lib.php
@@ -220,14 +229,6 @@ class data_field_admin extends data_field_base {
                         // We want to detect this situation, so that we can
                         // override it later, in the update_content() method
                         $this->unapprove = has_capability('mod/data:approve', $this->context);
-                        break;
-
-                    case 'setdefaultvalues':
-                        // setting this flag to true has two effects:
-                        // (1) values from the user profile are inserted into the ADD form
-                        // (2) any user profile fields that are empty will be updated from
-                        //     values in the ADD form
-                        $this->setdefaultvalues = true;
                         break;
                 }
             }
@@ -491,7 +492,7 @@ class data_field_admin extends data_field_base {
      * @return boolean: TRUE if content was successfully updated; otherwise FALSE
      */
     function update_content($recordid, $value, $name='') {
-        global $DB, $USER;
+        global $datarecord, $fields, $DB, $USER;
         if ($this->is_special_field) {
 
             if ($this->unapprove) {
@@ -536,14 +537,55 @@ class data_field_admin extends data_field_base {
                     }
                 }
             }
+
+            if ($this->field->name=='fixmultilangvalues') {
+                $types = array('menu', 'radiobutton', 'text');
+                foreach ($fields as $fieldid => $field) {
+                    $name = 'field_'.$field->id;
+                    if (in_array($field->type, $types) && isset($datarecord->$name)) {
+                        if ($value = clean_param($datarecord->$name, PARAM_TEXT)) {
+                            if (strpos($value, '</span>') || strpos($value, '</lang>')) {
+                                $params = array('recordid' => $recordid, 'fieldid' => $fieldid);
+                                $DB->set_field('data_content', 'content', $value, $params);
+                            }
+                        }
+                    }
+                }
+            }
+
             return true;
         }
         if ($this->subfield) {
             return $this->subfield->update_content($recordid, $value, $name);
         } else {
-            return parent::update_content($recordid, $value, $name);
+            return self::update_content_multilang($recordid, $value, $name);
         }
         return false;
+    }
+
+    /**
+     * Update the content of one data field in the data_content table
+     * @global object
+     * @param int $recordid
+     * @param mixed $value
+     * @param string $name
+     * @return bool
+     */
+    function update_content_multilang($recordid, $value, $name=''){
+        global $DB;
+
+        $content = clean_param($value, PARAM_TEXT);
+        $params = array('fieldid'  => $this->field->id,
+        				'recordid' => $recordid);
+
+        if ($contentid = $DB->get_field('data_content', 'id', $params)) {
+            return $DB->set_field('data_content', 'content', $content, array('id' => $contentid));
+        }
+        
+        $content = (object)array('fieldid'  => $this->field->id,
+                                 'recordid' => $recordid,
+                                 'content'  => $content);
+        return $DB->insert_record('data_content', $content);
     }
 
     /**
@@ -741,6 +783,16 @@ class data_field_admin extends data_field_base {
         } else {
             return parent::notemptyfield($value, $name);
         }
+    }
+
+    /**
+     * Return the plugin configs for external functions.
+     *
+     * @return array the list of config parameters
+     * @since Moodle 3.3
+     */
+    public function get_config_for_external() {
+    	return self::get_field_params($this->field);
     }
 
     ///////////////////////////////////////////
@@ -1412,5 +1464,21 @@ class data_field_admin extends data_field_base {
 
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, $component, $filearea, $itemid);
+    }
+
+    /**
+     * Central method to return params 1-10 for a field
+     * as requied for the "get_config_for_external" method
+     *
+     * @return array the list of config parameters
+     * @since Moodle 3.3
+     */
+    static public function get_field_params($field) {
+        $params = array();
+        for ($i = 1; $i <= 10; $i++) {
+        	$param = "param$i";
+            $params[$param] = $field->$param;
+        }
+        return $params;
     }
 }
