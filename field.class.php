@@ -503,7 +503,7 @@ class data_field_admin extends data_field_base {
             if ($this->setdefaultvalues) {
 
                 // map data fields to user profile fields
-                list($fieldmap, $fields) = $this->get_profile_fieldmap(self::INFOFIELD_INCLUDE_EMPTY);
+                list($fieldmap, $fieldnames) = $this->get_profile_fieldmap(self::INFOFIELD_INCLUDE_EMPTY);
 
                 if (! $infofieldids = $DB->get_records_menu('user_info_field', array(), 'shortname', 'shortname, id')) {
                     $infofieldids = array();
@@ -514,12 +514,12 @@ class data_field_admin extends data_field_base {
                     $values = array(); // shouldn't happen !!
                 }
 
-                foreach ($fields as $id => $field) {
-                    $userfield = $fieldmap[$field];
+                foreach ($fieldnames as $id => $fieldname) {
+                    $userfield = $fieldmap[$fieldname];
                     if (empty($USER->$userfield)) {
                         if (array_key_exists($id, $values)) {
                             $value = $values[$id];
-                            if ($field=='country') {
+                            if ($fieldname=='country') {
                                 $value = $this->get_country_code($value);
                             }
                             if ($value) {
@@ -660,11 +660,11 @@ class data_field_admin extends data_field_base {
             $module = $this->get_module_js();
 
             // map data fields to user profile fields
-            list($fieldmap, $fields) = $this->get_profile_fieldmap(self::INFOFIELD_EXCLUDE_EMPTY);
+            list($fieldmap, $fieldnames) = $this->get_profile_fieldmap(self::INFOFIELD_EXCLUDE_EMPTY);
 
             // transfer default values, if any
-            foreach ($fields as $id => $field) {
-                $userfield = $fieldmap[$field];
+            foreach ($fieldnames as $id => $fieldname) {
+                $userfield = $fieldmap[$fieldname];
                 if ($value = $USER->$userfield) {
                     if ($userfield=='country' && $strman->string_exists($value, 'countries')) {
                         $value = $strman->get_string($value, 'countries', null, 'en');
