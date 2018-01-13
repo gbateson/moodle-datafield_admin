@@ -542,7 +542,12 @@ class data_field_admin extends data_field_base {
                 $types = array('menu', 'radiobutton', 'text');
                 foreach ($fields as $fieldid => $field) {
                     $name = 'field_'.$field->id;
-                    if (in_array($field->type, $types) && isset($datarecord->$name)) {
+                    if ($field->type=='admin') {
+                        $type = $this->subparam;
+                    } else {
+                        $type = 'type';
+                    }
+                    if (in_array($field->$type, $types) && isset($datarecord->$name)) {
                         if ($value = clean_param($datarecord->$name, PARAM_TEXT)) {
                             if (strpos($value, '</span>') || strpos($value, '</lang>')) {
                                 $params = array('recordid' => $recordid, 'fieldid' => $fieldid);
