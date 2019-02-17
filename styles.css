@@ -29,3 +29,7 @@
     padding-top: 10px;
     vertical-align: top;
 }
+
+.path-mod-data-field input[type="checkbox"] {
+    margin-top: -8px;
+}

@@ -35,6 +35,7 @@ $string['accessviewprivate'] = 'Hidden from public; Owner can view but not edit.
 $string['accesseditprivate'] = 'Hidden from public; Owner can view and edit.';
 $string['accessviewpublic'] = 'Visible to public; Owner can view but not edit.';
 $string['accesseditpublic'] = 'Visible to public; Owner can view and edit.';
+$string['autolinkdisabled'] = 'Autolinking is not available for this field type';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 

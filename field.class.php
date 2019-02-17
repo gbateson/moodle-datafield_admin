@@ -97,6 +97,20 @@ class data_field_admin extends data_field_base {
     var $is_special_field = false;
 
     /**
+     * TRUE if we should reset the userid according to the email address
+     *
+     * This flag is set to TRUE automatically under the following conditions:
+     * (1) field name is "fixuserid"
+     * (2) a record is being added, updated or imported
+     * (3) user is a teacher or admin in this activity
+     * (2) the target user is enroled in the current course
+     *
+     * The subtype of the "fixuserid" field should be "number" (or "text")
+     * setting the subtype to "radio" or "checkbox" causes an error when adding a new entry
+     */
+    var $fixuserid = false;
+
+    /**
      * TRUE if we should force this record to be unapproved; otherwise FALSE
      *
      * This flag is set to TRUE automatically under the following conditions:
@@ -108,9 +122,8 @@ class data_field_admin extends data_field_base {
      * It will not be displayed or editable, but it will be added as a hidden field,
      * and will be processed below in the "update_content()" method of this PHP class
      *
-     * The subtype of the "unapprove" field should be "number" or "text"
-     * because setting the subtype to "radio" or "checkbox"
-     * will cause an error when adding a new entry
+     * The subtype of the "unapprove" field should be "number" (or "text")
+     * setting the subtype to "radio" or "checkbox" causes an error when adding a new entry
      */
      var $unapprove = false;
 
@@ -171,7 +184,7 @@ class data_field_admin extends data_field_base {
      * @param object $cm record from "course_modules" table
      */
     function __construct($field=0, $data=0, $cm=0) {
-        global $CFG, $DB, $datarecord;
+        global $CFG, $DB, $datarecord, $USER;
 
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
@@ -185,14 +198,23 @@ class data_field_admin extends data_field_base {
         $this->is_special_field = ($this->field->name=='setdefaultvalues' ||
                                    $this->field->name=='fixdisabledfields' ||
                                    $this->field->name=='fixmultilangvalues' ||
+                                   $this->field->name=='fixuserid' ||
                                    $this->field->name=='unapprove');
 
-        // set view and edit permissions for this user
+        // cache view, edit and other permissions for this user
         if ($this->field && $this->is_special_field) {
 
             // special fields are not viewable or editable by anyone
             $this->is_editable = false;
             $this->is_viewable = false;
+
+            if ($this->field->name=='fixuserid') {
+                // By default new records are assigned the userid of the person
+                // adding the record, but if this field is set, and the user has
+                // sufficient capability, then we can reset the record userid
+                // to match the email address
+                $this->fixuserid = has_capability('mod/data:manageentries', $this->context);
+            }
 
             // field-specific processing for new fields
             if (self::is_new_record()) {
@@ -558,6 +580,16 @@ class data_field_admin extends data_field_base {
                 }
             }
 
+            if ($this->fixuserid) {
+                $params = array('dataid' => $this->data->id, 'name' => 'email');
+                if ($fieldid = $DB->get_field('data_fields', 'id', $params)) {
+                    $email = 'field_'.$fieldid; // form field name of "email" field
+                    if (isset($datarecord) || isset($datarecord->$email)) {
+                        $this->fix_record_userid($recordid, $datarecord->$email);
+                    }
+                }
+            }
+
             return true;
         }
         if ($this->subfield) {
@@ -850,6 +882,16 @@ class data_field_admin extends data_field_base {
         $search = '/^(\s*<tr[^>]*>.*?<\/tr[^>]*>){1,2}/is';
         $output = preg_replace($search, '', $output);
 
+        // disable "Allow autolink" field from Admin (text) fields
+        // because the data filter only recognizes type=text fields
+        if ($this->type=='admin' && $this->subtype='text') {
+            $label = get_string('autolinkdisabled', 'datafield_admin');
+            $label = html_writer::tag('label', "($label)", array('class' => 'dimmed_text'));
+            $search = '/<input [^>]*(name="param1)"[^>]*>/is';
+            $replace = '<input type="hidden" name="param1 id="param1" value="0" />'.$label;
+            $output = preg_replace($search, $replace, $output);
+        }
+
         return trim($output);
     }
 
@@ -1044,6 +1086,47 @@ class data_field_admin extends data_field_base {
             $id .= '_0'; // this id should always exist
         }
         return $id;
+    }
+
+    /**
+     * determine the id of the form element for the given $field
+     */
+    public function update_content_import($recordid, $value, $formfieldid) {
+        global $DB, $record, $fieldnames; // see mod/data/import.php
+        if ($this->fixuserid) {
+            if (array_key_exists('email', $fieldnames)) {
+                $this->fix_record_userid($recordid, $record[$fieldnames['email']]);
+            }
+        }
+        // update content in the normal way
+        $content = (object)array(
+            'fieldid' => $this->field->id,
+            'recordid' => $recordid,
+            'content' => $value
+        );
+        $DB->insert_record('data_content', $content);
+    }
+
+    /**
+     * Change record userid to match the given email address
+     */
+    public function fix_record_userid($recordid, $email) {
+        global $DB, $USER;
+        if (! $email) {
+            return false; // no email address given
+        }
+        if ($email==$USER->email && data_isowner($recordid)) {
+            return false; // current $USER already owns this record
+        }
+        // Verify that the email address belongs to a user on this site
+        if (! $userid = $DB->get_field('user', 'id', array('email' => $email))) {
+            return false;
+        }
+        // Ensure that the target user has write access to this database activity
+        if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
+            return false;
+        }
+        return $DB->set_field('data_records', 'userid', $userid, array('id' => $recordid));
     }
 
     ///////////////////////////////////////////
