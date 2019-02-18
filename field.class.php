@@ -1093,11 +1093,53 @@ class data_field_admin extends data_field_base {
      */
     public function update_content_import($recordid, $value, $formfieldid) {
         global $DB, $record, $fieldnames; // see mod/data/import.php
+
+		// special processing for "fixuserid" field
+		// which allows imported records to be assigned
+		// to other users participating in this database activity
         if ($this->fixuserid) {
-            if (array_key_exists('email', $fieldnames)) {
-                $this->fix_record_userid($recordid, $record[$fieldnames['email']]);
+
+            $userid = 0;
+            $names = array('username', 'email');
+            foreach ($names as $name) {
+				$label = get_string($name);
+                if ($userid==0 && array_key_exists($label, $fieldnames)) {
+                    $value = $record[$fieldnames[$label]];
+                    $userid = $this->fix_record_userid($recordid, $name, $value);
+                }
+            }
+            if ($userid) {
+            	// cache full name of target user
+            	$fullname = fullname($DB->get_record('user', array('id' => $userid)));
+
+				// ensure we have not exceeded the max number of entries for the target user
+                $params = array('dataid' => $this->data->id, 'userid' => $userid);
+				if (empty($this->data->maxentries) || has_capability('mod/data:manageentries', $this->context, $userid)) {
+					// no limit on number of entries
+				} else if ($oldrecords = $DB->get_records('data_records', $params, 'timecreated')) {
+                	unset($oldrecords[$recordid]); // keep the record we are adding
+					while (count($oldrecords) > $this->data->maxentries) {
+						$oldrecord = array_shift($oldrecords); // delete oldest records first
+						data_delete_record($oldrecord->id, $this->data, $this->data->course, $this->cm->id);
+						$a = (object)array(
+							'userid' => $userid,
+							'fullname' => $fullname,
+							'recordid' => $oldrecord->id
+						);
+						echo get_string('deletedrecord', 'datafield_admin', $a)."<br />\n";
+					}
+                }
+
+            	// tell importing user that we fixed the userid on this record
+                $a = (object)array(
+                    'userid' => $userid,
+                    'fullname' => $fullname,
+                    'recordid' => $recordid
+                );
+                echo get_string('fixeduserid', 'datafield_admin', $a)."<br />\n";
             }
         }
+
         // update content in the normal way
         $content = (object)array(
             'fieldid' => $this->field->id,
@@ -1109,24 +1151,29 @@ class data_field_admin extends data_field_base {
 
     /**
      * Change record userid to match the given email address
+     *
+     * @param string $name of field
+     * @param string $value of field
+     * @return integer $userid if record was assigned a new user ID; otherwise 0.
      */
-    public function fix_record_userid($recordid, $email) {
+    public function fix_record_userid($recordid, $name, $value) {
         global $DB, $USER;
-        if (! $email) {
-            return false; // no email address given
+        if (empty($value) || empty($name) || empty($USER->$name)) {
+            return 0; // unexpected $name and/or $value
         }
-        if ($email==$USER->email && data_isowner($recordid)) {
-            return false; // current $USER already owns this record
+        if ($value==$USER->$name && data_isowner($recordid)) {
+            return 0; // current $USER already owns this record
         }
-        // Verify that the email address belongs to a user on this site
-        if (! $userid = $DB->get_field('user', 'id', array('email' => $email))) {
-            return false;
+        if (! $userid = $DB->get_field('user', 'id', array($name => $value))) {
+            return 0; // ($name, $value) pair not found on this site
         }
-        // Ensure that the target user has write access to this database activity
         if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
-            return false;
+            return 0; // target user cannot access this database activity
         }
-        return $DB->set_field('data_records', 'userid', $userid, array('id' => $recordid));
+        if (! $DB->set_field('data_records', 'userid', $userid, array('id' => $recordid))) {
+            return 0; // could not update userid - shouldn't happen !!
+        }
+        return $userid;
     }
 
     ///////////////////////////////////////////

@@ -36,7 +36,9 @@ $string['accesseditprivate'] = 'Hidden from public; Owner can view and edit.';
 $string['accessviewpublic'] = 'Visible to public; Owner can view but not edit.';
 $string['accesseditpublic'] = 'Visible to public; Owner can view and edit.';
 $string['autolinkdisabled'] = 'Autolinking is not available for this field type';
+$string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
 $string['disabledif'] = 'Conditions for disabling this field';
+$string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
 Please append language strings for the {$a->typemixedcase} field to the Database language file:
