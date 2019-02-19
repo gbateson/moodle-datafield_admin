@@ -1100,12 +1100,11 @@ class data_field_admin extends data_field_base {
         if ($this->fixuserid) {
 
             $userid = 0;
-            $names = array('username', 'email');
-            foreach ($names as $name) {
-				$label = get_string($name);
+            foreach (array('username', 'email') as $fieldname) {
+				$label = get_string($fieldname);
                 if ($userid==0 && array_key_exists($label, $fieldnames)) {
-                    $value = $record[$fieldnames[$label]];
-                    $userid = $this->fix_record_userid($recordid, $name, $value);
+                    $fieldvalue = $record[$fieldnames[$label]];
+                    $userid = $this->fix_record_userid($recordid, $fieldname, $fieldvalue);
                 }
             }
             if ($userid) {
@@ -1184,7 +1183,6 @@ class data_field_admin extends data_field_base {
 				$instance = reset($instances);
 				$enrol = enrol_get_plugin($instance->enrol);
 				$enrol->enrol_user($instance, $userid, $roleid);
-				$enrolled = true;
 			}
 		}
         if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
