@@ -585,7 +585,7 @@ class data_field_admin extends data_field_base {
                 if ($fieldid = $DB->get_field('data_fields', 'id', $params)) {
                     $email = 'field_'.$fieldid; // form field name of "email" field
                     if (isset($datarecord) || isset($datarecord->$email)) {
-                        $this->fix_record_userid($recordid, $datarecord->$email);
+                        $this->fix_record_userid($recordid, 'email', $datarecord->$email);
                     }
                 }
             }
