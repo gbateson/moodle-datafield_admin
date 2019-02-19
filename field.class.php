@@ -1158,6 +1158,13 @@ class data_field_admin extends data_field_base {
      */
     public function fix_record_userid($recordid, $name, $value) {
         global $DB, $USER;
+
+		// The "student" role ID will be fetched only the first time
+        static $roleid = null;
+		if ($roleid===null) {
+			$roleid = $DB->get_field('role', 'id', array('shortname' => 'student'));
+		}
+
         if (empty($value) || empty($name) || empty($USER->$name)) {
             return 0; // unexpected $name and/or $value
         }
@@ -1167,6 +1174,19 @@ class data_field_admin extends data_field_base {
         if (! $userid = $DB->get_field('user', 'id', array($name => $value))) {
             return 0; // ($name, $value) pair not found on this site
         }
+        $params = array('userid' => $userid,
+        				'contextid' => $this->context->id);
+        if (! $DB->record_exists('role_assignments', $params)) {
+        	// target user is not enrolled, so try and enrol him/her automatically
+			$select = 'enrol IN (?, ?) AND courseid = ? AND status = ?';
+			$params = array('self', 'manual', $this->data->course, ENROL_INSTANCE_ENABLED);
+			if ($instances = $DB->get_records_select('enrol', $select, $params, 'sortorder,id ASC')) {
+				$instance = reset($instances);
+				$enrol = enrol_get_plugin($instance->enrol);
+				$enrol->enrol_user($instance, $userid, $roleid);
+				$enrolled = true;
+			}
+		}
         if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
             return 0; // target user cannot access this database activity
         }
