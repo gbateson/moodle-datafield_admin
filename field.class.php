@@ -172,6 +172,11 @@ class data_field_admin extends data_field_base {
     const INFOFIELD_INCLUDE_EMPTY = 1; // fetch all info fields
     const INFOFIELD_EXCLUDE_EMPTY = 2; // fetch only info fields with a value
 
+	const FIXUSERID_NONE   = 0; // do not fix userid
+	const FIXUSERID_ADD    = 1; // fix userid in newly added record
+	const FIXUSERID_DELETE = 2; // fix userid and delete old record
+	const FIXUSERID_MERGE  = 3; // fix userid and merge with previous records
+
     ///////////////////////////////////////////
     // standard methods
     ///////////////////////////////////////////
@@ -184,7 +189,7 @@ class data_field_admin extends data_field_base {
      * @param object $cm record from "course_modules" table
      */
     function __construct($field=0, $data=0, $cm=0) {
-        global $CFG, $DB, $datarecord, $USER;
+        global $CFG, $DB, $USER, $datarecord;
 
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
@@ -514,7 +519,7 @@ class data_field_admin extends data_field_base {
      * @return boolean: TRUE if content was successfully updated; otherwise FALSE
      */
     function update_content($recordid, $value, $name='') {
-        global $datarecord, $fields, $DB, $USER;
+        global $DB, $USER, $datarecord, $fields;
         if ($this->is_special_field) {
 
             if ($this->unapprove) {
@@ -585,7 +590,7 @@ class data_field_admin extends data_field_base {
                 if ($fieldid = $DB->get_field('data_fields', 'id', $params)) {
                     $email = 'field_'.$fieldid; // form field name of "email" field
                     if (isset($datarecord) || isset($datarecord->$email)) {
-                        $this->fix_record_userid($recordid, 'email', $datarecord->$email);
+                        $this->fix_userid($recordid, 'email', $datarecord->$email);
                     }
                 }
             }
@@ -1090,79 +1095,75 @@ class data_field_admin extends data_field_base {
 
     /**
      * determine the id of the form element for the given $field
+     *
+     * @uses $fieldnames (setup in mod/data/import.php)
+     * @uses $record array of values from the CSV file
+     * @param integer $recordid of newly added data record
+     * @param string $value of this field for current record in CSV file
+     * @param string $formfieldid e.g. "field_999", where "999" is the field id
      */
     public function update_content_import($recordid, $value, $formfieldid) {
-        global $DB, $record, $fieldnames; // see mod/data/import.php
+        global $DB, $fieldnames, $record;
 
 		// special processing for "fixuserid" field
 		// which allows imported records to be assigned
 		// to other users participating in this database activity
         if ($this->fixuserid) {
 
+            // Sanity check on $value.
+            if (is_numeric($value)) {
+                $value = intval($value);
+            } else {
+                $value = self::FIXUSERID__NONE;
+            }
             $userid = 0;
-            foreach (array('username', 'email') as $fieldname) {
-				$label = get_string($fieldname);
-                if ($userid==0 && array_key_exists($label, $fieldnames)) {
-                    $fieldvalue = $record[$fieldnames[$label]];
-                    $userid = $this->fix_record_userid($recordid, $fieldname, $fieldvalue);
+            if ($value==self::FIXUSERID_ADD || $value==self::FIXUSERID_DELETE || $value==self::FIXUSERID_MERGE) {
+                foreach (array('username', 'email') as $fieldname) {
+                    $label = get_string($fieldname);
+                    if ($userid==0 && array_key_exists($label, $fieldnames)) {
+                        $fieldvalue = $record[$fieldnames[$label]];
+                        $userid = $this->fix_userid($recordid, $fieldname, $fieldvalue);
+                    }
                 }
             }
             if ($userid) {
             	// cache full name of target user
             	$fullname = fullname($DB->get_record('user', array('id' => $userid)));
 
-				// ensure we have not exceeded the max number of entries for the target user
-                $params = array('dataid' => $this->data->id, 'userid' => $userid);
-				if (empty($this->data->maxentries) || has_capability('mod/data:manageentries', $this->context, $userid)) {
-					// no limit on number of entries
-				} else if ($oldrecords = $DB->get_records('data_records', $params, 'timecreated')) {
-                	unset($oldrecords[$recordid]); // keep the record we are adding
-					while (count($oldrecords) > $this->data->maxentries) {
-						$oldrecord = array_shift($oldrecords); // delete oldest records first
-						data_delete_record($oldrecord->id, $this->data, $this->data->course, $this->cm->id);
-						$a = (object)array(
-							'userid' => $userid,
-							'fullname' => $fullname,
-							'recordid' => $oldrecord->id
-						);
-						echo get_string('deletedrecord', 'datafield_admin', $a)."<br />\n";
-					}
-                }
+				if ($value==self::FIXUSERID_DELETE) {
+					$this->delete_old_data_records($recordid, $userid, $fullname);
+				}
+				if ($value==self::FIXUSERID_MERGE) {
+					$this->merge_old_data_records($recordid, $userid, $fullname);
+				}
 
             	// tell importing user that we fixed the userid on this record
-                $a = (object)array(
-                    'userid' => $userid,
-                    'fullname' => $fullname,
-                    'recordid' => $recordid
-                );
-                echo get_string('fixeduserid', 'datafield_admin', $a)."<br />\n";
+				$this->report_fix('fixeduserid', $recordid, $userid, $fullname);
             }
         }
 
-        // update content in the normal way
-        $content = (object)array(
-            'fieldid' => $this->field->id,
-            'recordid' => $recordid,
-            'content' => $value
-        );
-        $DB->insert_record('data_content', $content);
+        // update content in the normal way ("latlong" and "url" have their own method)
+        if ($this->subfield && method_exists($this->subfield, 'update_content_import')) {
+            $this->subfield->update_content_import($recordid, $value, $formfieldid);
+        } else {
+			$content = (object)array(
+				'fieldid' => $this->field->id,
+				'recordid' => $recordid,
+				'content' => $value
+			);
+			$DB->insert_record('data_content', $content);
+        }
     }
 
     /**
      * Change record userid to match the given email address
      *
-     * @param string $name of field
+     * @param string $name of field (e.g. "username" or "email")
      * @param string $value of field
      * @return integer $userid if record was assigned a new user ID; otherwise 0.
      */
-    public function fix_record_userid($recordid, $name, $value) {
+    protected function fix_userid($recordid, $name, $value) {
         global $DB, $USER;
-
-		// The "student" role ID will be fetched only the first time
-        static $roleid = null;
-		if ($roleid===null) {
-			$roleid = $DB->get_field('role', 'id', array('shortname' => 'student'));
-		}
 
         if (empty($value) || empty($name) || empty($USER->$name)) {
             return 0; // unexpected $name and/or $value
@@ -1173,18 +1174,9 @@ class data_field_admin extends data_field_base {
         if (! $userid = $DB->get_field('user', 'id', array($name => $value))) {
             return 0; // ($name, $value) pair not found on this site
         }
-        $params = array('userid' => $userid,
-        				'contextid' => $this->context->id);
-        if (! $DB->record_exists('role_assignments', $params)) {
-        	// target user is not enrolled, so try and enrol him/her automatically
-			$select = 'enrol IN (?, ?) AND courseid = ? AND status = ?';
-			$params = array('self', 'manual', $this->data->course, ENROL_INSTANCE_ENABLED);
-			if ($instances = $DB->get_records_select('enrol', $select, $params, 'sortorder,id ASC')) {
-				$instance = reset($instances);
-				$enrol = enrol_get_plugin($instance->enrol);
-				$enrol->enrol_user($instance, $userid, $roleid);
-			}
-		}
+        if (! $this->check_enrolment($userid)) {
+            return 0; // could not enrol user in this course
+        }
         if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
             return 0; // target user cannot access this database activity
         }
@@ -1193,6 +1185,158 @@ class data_field_admin extends data_field_base {
         }
         return $userid;
     }
+
+    /**
+     * Ensure target $userid is enrolled in the current course.
+     *
+     * @param integer $userid of the target user
+     * @return void
+     */
+    protected function check_enrolment($userid) {
+    	global $DB;
+
+		// The "student" role ID, enrol instance, and enrol object will be fetched only the first time
+        static $roleid   = null; // "id" of student role
+        static $instance = null; // enrol instance
+        static $enrol    = null; // enrol plugin object
+
+		// Is the user is already assigned a role in this course?
+        if ($DB->record_exists('role_assignments', array('userid' => $userid, 'contextid' => $this->context->id))) {
+        	return true;
+        }
+
+		// Setup $roleid, $instance, $and $enrol (first time only)
+		if ($roleid===null) {
+			if ($roleid = $DB->get_field('role', 'id', array('shortname' => 'student'))) {
+				// Check for "self" or "manual" enrolment methods in this course.
+				$select = 'enrol IN (?, ?) AND courseid = ? AND status = ?';
+				$params = array('self', 'manual', $this->data->course, ENROL_INSTANCE_ENABLED);
+				if ($instances = $DB->get_records_select('enrol', $select, $params, 'sortorder,id ASC')) {
+					$instance = reset($instances);
+					$enrol = enrol_get_plugin($instance->enrol);
+				}
+			}
+		}
+
+		if ($enrol===null) {
+			return false; // Shouldn't happen!!
+		}
+
+		// Enrol the user in this course as a student
+		$enrol->enrol_user($instance, $userid, $roleid);
+
+		// If user was successfully enrolled, there should now be a record in the "user_enrolments" table.
+        return $DB->record_exists('user_enrolments', array('enrolid' => $instance->id, 'userid' => $userid));
+    }
+
+    /**
+     * Change record userid to match the given email address
+     *
+     * @param string $name of field
+     * @param string $value of field
+     * @return integer $userid if record was assigned a new user ID; otherwise 0.
+     */
+	protected function delete_old_data_records($recordid, $userid, $fullname) {
+		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
+			while (count($oldrecords)) {
+				$oldrecord = array_shift($oldrecords); // get OLDEST remaining record
+				$this->delete_data_record($oldrecord, $userid, $fullname);
+			}
+		}
+	}
+
+    /**
+     * Merge values in "old" reocrds for the target $userid
+     * into the "new" record, as specified by $recordid,
+     *
+     * @uses $fields (setup in mod/data/import.php)
+     * @param integer $recordid id of the "new" record
+     * @param integer $userid id of target user
+     * @param string $fullname of target user
+     * @return mixed either an array of old records, or FALSE if there are no old records.
+     */
+	protected function merge_old_data_records($recordid, $userid, $fullname) {
+		global $DB, $fields;
+		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
+
+			// setup SQL to get contents for a given record id
+			$sql = 'SELECT df.name, dc.content '.
+			       'FROM {data_content} dc, {data_fields} df '.
+			       'WHERE dc.recordid = ? AND dc.fieldid = df.id';
+
+			// Get all the "new" contents
+			$newcontents = $DB->get_records_sql_menu($sql, array($recordid));
+
+			// merge "old" contents into "new" contents
+			while (count($oldrecords)) {
+
+				// get most recent "old" record and its contents
+				$oldrecord = array_pop($oldrecords);
+				$oldcontents = $DB->get_records_sql_menu($sql, array($oldrecord->id));
+
+				foreach ($newcontents as $fieldname => $fieldvalue) {
+					if (empty($oldcontents[$fieldname]) || $oldcontents[$fieldname]=='0') {
+						continue;
+					}
+					if (empty($fieldvalue) || $fieldvalue=='0') {
+						$fieldvalue = $oldcontents[$fieldname];
+						$newcontents[$fieldname] = $fieldvalue;
+						$params = array('recordid' => $recordid,
+										'fieldid' => $fields[$fieldname]->field->id);
+						$DB->set_field('data_content', 'content', $fieldvalue, $params);
+					}
+				}
+				$this->delete_data_record($oldrecord, $userid, $fullname);
+			}
+		}
+	}
+
+    /**
+     * Get old data records for the target $userid,
+     * excluding the "new" record specified by $recordid
+     *
+     * @param integer $userid id of the target user
+     * @param integer $recordid id of the "new" record
+     * @return mixed either an array of old records, or FALSE if there are no old records.
+     */
+	protected function get_old_data_records($userid, $recordid) {
+		global $DB;
+		$select = 'dataid = ? AND userid = ? AND id <> ?';
+		$params = array($this->data->id, $userid, $recordid);
+		return $DB->get_records_select('data_records', $select, $params, 'timecreated');
+	}
+
+    /**
+     * Delete $oldrecord from the database activty and show message to user
+     *
+     * @param object $oldrecord from the "data_records" table
+     * @param integer $userid id of target user
+     * @param string $fullname of target user
+     * @return integer $userid if record was assigned a new user ID; otherwise 0.
+     */
+	protected function delete_data_record($oldrecord, $userid, $fullname) {
+		data_delete_record($oldrecord->id, $this->data, $this->data->course, $this->cm->id);
+		$this->report_fix('deletedrecord', $oldrecord->id, $userid, $fullname);
+	}
+
+    /**
+     * Report on a record that was deleted or updated
+     *
+     * @param string $stringname name of a string in this plugin's lang pack
+     * @param integer $recordid id of the record that was deleted or fixed
+     * @param integer $userid id of target user
+     * @param string $fullname of target user
+     * @return void
+     */
+	protected function report_fix($stringname, $recordid, $userid, $fullname) {
+		$a = (object)array(
+			'userid' => $userid,
+			'fullname' => $fullname,
+			'recordid' => $recordid
+		);
+		$text = get_string($stringname, 'datafield_admin', $a);
+		echo html_writer::tag('span', $text, array('class' => 'dimmed_text'))."<br />\n";
+	}
 
     ///////////////////////////////////////////
     // static custom methods
