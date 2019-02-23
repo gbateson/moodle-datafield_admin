@@ -1177,9 +1177,6 @@ class data_field_admin extends data_field_base {
         if (! $this->check_enrolment($userid)) {
             return 0; // could not enrol user in this course
         }
-        if (! has_capability('mod/data:writeentry', $this->context, $userid)) {
-            return 0; // target user cannot access this database activity
-        }
         if (! $DB->set_field('data_records', 'userid', $userid, array('id' => $recordid))) {
             return 0; // could not update userid - shouldn't happen !!
         }
@@ -1205,17 +1202,33 @@ class data_field_admin extends data_field_base {
         	return true;
         }
 
-		// Setup $roleid, $instance, $and $enrol (first time only)
+		// Setup $roleid, $instance, and $enrol (first time only)
 		if ($roleid===null) {
-			if ($roleid = $DB->get_field('role', 'id', array('shortname' => 'student'))) {
-				// Check for "self" or "manual" enrolment methods in this course.
-				$select = 'enrol IN (?, ?) AND courseid = ? AND status = ?';
-				$params = array('self', 'manual', $this->data->course, ENROL_INSTANCE_ENABLED);
-				if ($instances = $DB->get_records_select('enrol', $select, $params, 'sortorder,id ASC')) {
-					$instance = reset($instances);
-					$enrol = enrol_get_plugin($instance->enrol);
-				}
-			}
+            if ($roleid = $DB->get_field('role', 'id', array('shortname' => 'student'))) {
+
+                // cache the course id and context
+                $courseid = $this->data->course;
+                $coursecontext = context_course::instance($courseid);
+
+                // Confirm that current user can enrol other users in this course
+                // using "self" or "manual" enrolment methods.
+                $params = array();
+                if (has_capability('enrol/self:manage', $coursecontext)) {
+                    $params[] = 'self';
+                }
+                if (has_capability('enrol/manual:manage', $coursecontext)) {
+                    $params[] = 'manual';
+                }
+                if (count($params)) {
+                    list($select, $params) = $DB->get_in_or_equal($params);
+                    $select = "enrol $select AND courseid = ? AND status = ?";
+                    array_push($params, $courseid, ENROL_INSTANCE_ENABLED);
+                    if ($instances = $DB->get_records_select('enrol', $select, $params, 'sortorder,id')) {
+                        $instance = reset($instances);
+                        $enrol = enrol_get_plugin($instance->enrol);
+                    }
+                }
+            }
 		}
 
 		if ($enrol===null) {
@@ -1238,7 +1251,7 @@ class data_field_admin extends data_field_base {
      */
 	protected function delete_old_data_records($recordid, $userid, $fullname) {
 		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
-			while (count($oldrecords)) {
+			while (count($oldrecords) >= $this->data->maxentries) {
 				$oldrecord = array_shift($oldrecords); // get OLDEST remaining record
 				$this->delete_data_record($oldrecord, $userid, $fullname);
 			}
@@ -1268,7 +1281,7 @@ class data_field_admin extends data_field_base {
 			$newcontents = $DB->get_records_sql_menu($sql, array($recordid));
 
 			// merge "old" contents into "new" contents
-			while (count($oldrecords)) {
+			while (count($oldrecords) >= $this->data->maxentries) {
 
 				// get most recent "old" record and its contents
 				$oldrecord = array_pop($oldrecords);
