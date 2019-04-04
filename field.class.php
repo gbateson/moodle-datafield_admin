@@ -1171,9 +1171,16 @@ class data_field_admin extends data_field_base {
         if ($value==$USER->$name && data_isowner($recordid)) {
             return 0; // current $USER already owns this record
         }
-        if (! $userid = $DB->get_field('user', 'id', array($name => $value))) {
-            return 0; // ($name, $value) pair not found on this site
+        if (strpos($value, '*')===false && strpos($value, '%')===false) {
+        	$select = "$name = ?";
+        } else {
+        	$select = $DB->sql_like($name, '?');
+        	$value = preg_replace('/[*%]+/', '%', $value);
         }
+		if (! $users = $DB->get_records_select('user', $select, array($value), $name, "id,$name", 0, 1)) {
+			return 0; // ($name, $value) pair not found on this site
+		}
+		$userid = reset($users)->id;
         if (! $this->check_enrolment($userid)) {
             return 0; // could not enrol user in this course
         }
@@ -1287,6 +1294,7 @@ class data_field_admin extends data_field_base {
 				$oldrecord = array_pop($oldrecords);
 				$oldcontents = $DB->get_records_sql_menu($sql, array($oldrecord->id));
 
+                $merged = false;
 				foreach ($newcontents as $fieldname => $fieldvalue) {
 					if (empty($oldcontents[$fieldname]) || $oldcontents[$fieldname]=='0') {
 						continue;
@@ -1297,7 +1305,15 @@ class data_field_admin extends data_field_base {
 						$params = array('recordid' => $recordid,
 										'fieldid' => $fields[$fieldname]->field->id);
 						$DB->set_field('data_content', 'content', $fieldvalue, $params);
+					    $merged = true;
 					}
+				}
+				if ($merged) {
+                    $a = (object)array(
+                        'newrecordid' => $recordid,
+                        'oldrecordid' => $oldrecord->id
+                    );
+				    $this->report_string('mergedrecord', $a);
 				}
 				$this->delete_data_record($oldrecord, $userid, $fullname);
 			}
@@ -1347,6 +1363,17 @@ class data_field_admin extends data_field_base {
 			'fullname' => $fullname,
 			'recordid' => $recordid
 		);
+		$this->report_string($stringname, $a);
+	}
+
+    /**
+     * Report action taken on a record
+     *
+     * @param string $stringname name of a string in this plugin's lang pack
+     * @param object $a parameters to be inserted into the lang pack string
+     * @return void
+     */
+	protected function report_string($stringname, $a) {
 		$text = get_string($stringname, 'datafield_admin', $a);
 		echo html_writer::tag('span', $text, array('class' => 'dimmed_text'))."<br />\n";
 	}

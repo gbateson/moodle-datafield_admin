@@ -75,7 +75,7 @@ To INSTALL this plugin
     1. download the zip file from one of the following locations
 
         * https://github.com/gbateson/moodle-datafield_admin/archive/master.zip
-        * http://bateson.kanazawa-gu.ac.jp/moodle/zip/plugins_datafield_admin.zip
+        * https://bateson.kochi-tech.ac.jp/zip/plugins_datafield_admin.zip
 
     2. Unzip the zip file - if necessary renaming the resulting folder to "admin".
        Then upload, or move, the "admin" folder into the "mod/data/field" folder on

@@ -52,3 +52,4 @@ Then purge the Moodle caches:
 * Adminiistration -> Site administration -> Development -> Purge all caches
 
 See {$a->readfile} for more details.';
+$string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
