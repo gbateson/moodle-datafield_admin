@@ -1295,17 +1295,30 @@ class data_field_admin extends data_field_base {
 				$oldcontents = $DB->get_records_sql_menu($sql, array($oldrecord->id));
 
                 $merged = false;
-				foreach ($newcontents as $fieldname => $fieldvalue) {
-					if (empty($oldcontents[$fieldname]) || $oldcontents[$fieldname]=='0') {
+				foreach ($newcontents as $name => $value) {
+					if (empty($oldcontents[$name]) || $oldcontents[$name]=='0') {
 						continue;
 					}
-					if (empty($fieldvalue) || $fieldvalue=='0') {
-						$fieldvalue = $oldcontents[$fieldname];
-						$newcontents[$fieldname] = $fieldvalue;
+                    $merge = false;
+                    $update = false;
+					if (empty($value) || $value=='0') {
+						$value = $oldcontents[$name];
+                        $merge = true;
+                        $update = true;
+                    } else if ($fields[$name]->field->type=='date' && is_numeric($value)==false) {
+                        // Dates are a special case. We may need to convert
+                        // a text date, e.g. 13-Apr-2017, to a UNIX timestamp.
+                        $value = strtotime($value);
+                        $update = true;
+					}
+					if ($update) {
+						$newcontents[$name] = $value;
 						$params = array('recordid' => $recordid,
-										'fieldid' => $fields[$fieldname]->field->id);
-						$DB->set_field('data_content', 'content', $fieldvalue, $params);
-					    $merged = true;
+										'fieldid' => $fields[$name]->field->id);
+						$DB->set_field('data_content', 'content', $value, $params);
+						if ($merge) {
+                            $merged = true;
+						}
 					}
 				}
 				if ($merged) {
