@@ -1098,6 +1098,7 @@ class data_field_admin extends data_field_base {
      *
      * @uses $fieldnames (setup in mod/data/import.php)
      * @uses $record array of values from the CSV file
+     *
      * @param integer $recordid of newly added data record
      * @param string $value of this field for current record in CSV file
      * @param string $formfieldid e.g. "field_999", where "999" is the field id
@@ -1105,10 +1106,26 @@ class data_field_admin extends data_field_base {
     public function update_content_import($recordid, $value, $formfieldid) {
         global $DB, $fieldnames, $record;
 
-		// special processing for "fixuserid" field
+        // Cache of labels for user and data_record fields in the CSV file.
+        // (only used if required by a "fixuserid" field)
+        static $labels = null;
+
+		// Special processing for "fixuserid" field,
 		// which allows imported records to be assigned
-		// to other users participating in this database activity
+		// to other users participating in this database activity.
         if ($this->fixuserid) {
+
+            // Cache the column labels for "safe-to-skip" fields.
+            // Standard import ignores these fields, but we will try to import them.
+            if ($labels===null) {
+                $labels = (object)array(
+                    'user' => array('username' => get_string('username'),
+                                    'email'    => get_string('email')),
+                    'record' => array('approved' => get_string('approved', 'data'),
+                                    'timecreated' => get_string('timeadded', 'data'), // ouch !!
+                                    'timemodified' => get_string('timemodified', 'data')),
+                );
+            }
 
             // Sanity check on $value.
             if (is_numeric($value)) {
@@ -1118,11 +1135,22 @@ class data_field_admin extends data_field_base {
             }
             $userid = 0;
             if ($value==self::FIXUSERID_ADD || $value==self::FIXUSERID_DELETE || $value==self::FIXUSERID_MERGE) {
-                foreach (array('username', 'email') as $fieldname) {
-                    $label = get_string($fieldname);
+                foreach ($labels->user as $fieldname => $label) {
                     if ($userid==0 && array_key_exists($label, $fieldnames)) {
                         $fieldvalue = $record[$fieldnames[$label]];
                         $userid = $this->fix_userid($recordid, $fieldname, $fieldvalue);
+                    }
+                }
+                // Update "approved" and "timecreated/modified" for this record.
+                foreach ($labels->record as $fieldname => $label) {
+                    if (array_key_exists($label, $fieldnames)) {
+                        $fieldvalue = $record[$fieldnames[$label]];
+                        if ($fieldname=='timecreated' || $fieldname=='timemodified') {
+                            // Convert text date to a UNIX timestamp,
+                            // e.g. Tuesday, 2 April 2019, 9:55 pm
+                            $fieldvalue = strtotime($fieldvalue);
+                        }
+                        $DB->set_field('data_records', $fieldname, $fieldvalue, array('id' => $recordid));
                     }
                 }
             }
