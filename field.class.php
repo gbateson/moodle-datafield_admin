@@ -1131,7 +1131,7 @@ class data_field_admin extends data_field_base {
             if (is_numeric($value)) {
                 $value = intval($value);
             } else {
-                $value = self::FIXUSERID__NONE;
+                $value = self::FIXUSERID_NONE;
             }
             $userid = 0;
             if ($value==self::FIXUSERID_ADD || $value==self::FIXUSERID_DELETE || $value==self::FIXUSERID_MERGE) {
@@ -1297,53 +1297,104 @@ class data_field_admin extends data_field_base {
      * Merge values in "old" reocrds for the target $userid
      * into the "new" record, as specified by $recordid,
      *
-     * @uses $fields (setup in mod/data/import.php)
+     * This method is called from "mod/data/import.php"
+     * which is where $fieldnames, $rawfields and $fields are setup.
+     *
+     * @uses $rawfields array of all fields names in the current data activity
+     * @uses $fields array of data_field_xxx objects, one for each column in the import file
      * @param integer $recordid id of the "new" record
      * @param integer $userid id of target user
      * @param string $fullname of target user
      * @return mixed either an array of old records, or FALSE if there are no old records.
      */
 	protected function merge_old_data_records($recordid, $userid, $fullname) {
-		global $DB, $fields;
+		global $DB, $rawfields, $fields;
+		static $contentsql = null,
+		       $contentparams = null;
+
 		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
 
-			// setup SQL to get contents for a given record id
-			$sql = 'SELECT df.name, dc.content '.
-			       'FROM {data_content} dc, {data_fields} df '.
-			       'WHERE dc.recordid = ? AND dc.fieldid = df.id';
+            // setup SQL to get contents for a given record id (first time only)
+            if ($contentsql===null) {
+                $params = array();
+                foreach ($rawfields as $field) {
+                    $params[] = $field->id;
+                }
+                if (count($params)) {
+                    list($contentsql, $contentparams) = $DB->get_in_or_equal($params);
+                    $contentsql = 'SELECT df.name, dc.content '.
+                                  'FROM {data_fields} df LEFT JOIN {data_content} dc ON df.id = dc.fieldid '.
+                                  "WHERE df.id $contentsql AND dc.recordid = ?";
+                } else {
+                    // shouldn't happen !!
+                    $contentsql = '';
+                    $contentparams = array();
+                }
+
+            }
 
 			// Get all the "new" contents
-			$newcontents = $DB->get_records_sql_menu($sql, array($recordid));
+			$params = array_merge($contentparams, array($recordid));
+			$newcontents = $DB->get_records_sql_menu($contentsql, $params);
 
 			// merge "old" contents into "new" contents
 			while (count($oldrecords) >= $this->data->maxentries) {
 
 				// get most recent "old" record and its contents
 				$oldrecord = array_pop($oldrecords);
-				$oldcontents = $DB->get_records_sql_menu($sql, array($oldrecord->id));
+                $params = array_merge($contentparams, array($oldrecord->id));
+				$oldcontents = $DB->get_records_sql_menu($contentsql, $params);
 
                 $merged = false;
 				foreach ($newcontents as $name => $value) {
+
+				    // cache the $field object
+                    $field = $fields[$name]->field;
+
+                    // ensure $oldcontent for this field $name is set
 					if (empty($oldcontents[$name]) || $oldcontents[$name]=='0') {
-						continue;
+					    $oldcontents[$name] = '';
 					}
-                    $merge = false;
-                    $update = false;
+
+					// Determine if we need to merge or update.
 					if (empty($value) || $value=='0') {
-						$value = $oldcontents[$name];
+					    $value = $oldcontents[$name];
                         $merge = true;
                         $update = true;
-                    } else if ($fields[$name]->field->type=='date' && is_numeric($value)==false) {
-                        // Dates are a special case. We may need to convert
-                        // a text date, e.g. 13-Apr-2017, to a UNIX timestamp.
+                    } else {
+                        $merge = false;
+                        $update = false;
+                    }
+
+                    // Dates are a special case. We may need to convert
+                    // a text date, e.g. 13-Apr-2017, to a UNIX timestamp.
+                    if ($field->type=='date' && $value && is_numeric($value)==false) {
                         $value = strtotime($value);
                         $update = true;
 					}
+
+                    // Update $newcontents, if necessary
 					if ($update) {
 						$newcontents[$name] = $value;
 						$params = array('recordid' => $recordid,
-										'fieldid' => $fields[$name]->field->id);
-						$DB->set_field('data_content', 'content', $value, $params);
+										'fieldid' => $field->id);
+                        if ($DB->record_exists('data_content', $params)) {
+                            // Update content in the new $recordid.
+                            $DB->set_field('data_content', 'content', $value, $params);
+                        } else {
+                            $params = array('recordid' => $oldrecord->id,
+                                            'fieldid' => $field->id);
+                            if ($DB->record_exists('data_content', $params)) {
+                                // Assign the old content to the new $recordid.
+                                $DB->set_field('data_content', 'recordid', $recordid, $params);
+                            } else {
+                                // Add new content record - unexpected !?
+                                $params = array('recordid' => $recordid,
+                                                'fieldid' => $field->id,
+                                                'content' => $value);
+                                $DB->add_record('data_content', $params);
+                            }
+                        }
 						if ($merge) {
                             $merged = true;
 						}
