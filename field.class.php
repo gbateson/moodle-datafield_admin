@@ -489,7 +489,11 @@ class data_field_admin extends data_field_base {
 
         // get the field's access setting
         $param = $this->accessparam;
-        $param = $this->field->$param;
+        if (empty($this->field->$param)) {
+            $param = self::ACCESS_NONE;
+        } else {
+            $param = intval($this->field->$param);
+        }
 
         if ($recordid==0) {
             if ($access=='is_editable') {
