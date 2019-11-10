@@ -2,238 +2,203 @@
 Change log for datafield_admin
 ========================================
 
+2019-10-12 (48)
+ - standardize layout and spelling in CHANGES.txt
+
 2019-09-02 (47)
- -  datafield_admin: fix warning about non-numeric value encountered in field.class.php on line 509 
+ - fix warning about non-numeric value encountered in field.class.php on line 509
 
 2019-08-30 (46)
- -  error message from array_merge during import to merge new data into old records 
+ - error message from array_merge during import to merge new data into old records
 
 2019-05-09 (45)
- -  transfer data_record fields, if present, during import 
+ - transfer data_record fields, if present, during import
 
 2019-04-05 (44)
- -  when importing date fields, convert text dates to UNIX timestamps if necessary 
+ - when importing date fields, convert text dates to UNIX timestamps if necessary
 
 2019-04-04 (43)
- -  add new fixuserid field to allow an admin to assign a record to another user when adding or importing data 
+ - add new fixuserid field to allow an admin to assign a record to another user when adding or importing data
 
 2018-02-26 (42)
- -  fix URL of secondary zip download site 
+ - fix URL of secondary zip download site
 
 2018-02-26 (42)
- -  allow asterisk and percent-sign in usernames and emails to try to locate owners using parital match on values 
+ - allow asterisk and percent-sign in usernames and emails to try to locate owners using parital match on values
 
 2018-02-23 (41)
- -  add capability checks that importing user can manage self/manual enrolments; remove capability checks on target user 
-
-2018-02-23 (41)
- -  add capability checks that importing user can manage self/manual enrolments; remove capability checks on target user 
+ - add capability checks that importing user can manage self/manual enrolments; remove capability checks on target user
 
 2018-02-22 (40)
- -  modify fixuserid functionality based on value in import CSV file: 1=add new only, 2=add new and delete old, 3=add new, merge old and delete old 
+ - modify fixuserid functionality based on value in import CSV file: 1=add new only, 2=add new and delete old, 3=add new, merge old and delete old
 
 2018-02-19 (39)
- -  allow action of fixuserid to be determine by value (0,1,2,3) given in import CSV file 
+ - allow action of fixuserid to be determine by value (0,1,2,3) given in import CSV file
 
 2018-02-19 (39)
- -  enrol users in current course when fixing userid to match username/email 
+ - enrol users in current course when fixing userid to match username/email
 
 2018-02-19 (38)
- -  rename temp variables so the names do not clash with incoming values 
+ - rename temp variables so the names do not clash with incoming values
 
 2018-02-19 (37)
- -  enrol users in current course when fixing userid to match username/email 
+ - enrol users in current course when fixing userid to match username/email
 
 2018-02-18 (36)
- -  ensure 'max number of entries' is not exceeded when importing entries using the fixuserid field 
+ - ensure 'max number of entries' is not exceeded when importing entries using the fixuserid field
 
 2018-02-18 (35)
- -  modify fixuserid functionality to detect and use 'username' fields during import 
+ - modify fixuserid functionality to detect and use 'username' fields during import
 
 2018-02-17 (34)
- -  add new special field, 'fixuserid', to change the owner of a new record 
+ - add new special field, 'fixuserid', to change the owner of a new record
 
 2018-01-13 (33)
- -  add new special field, 'fixuserid', to change the owner of a new record 
+ - disable autolinking for Admin(Text) fields
 
 2018-01-13 (33)
- -  add new special field, 'fixuserid', to change the owner of a new record 
-
-2018-01-13 (33)
- -  disable autolinking for Admin(Text) fields 
-
-2018-01-13 (33)
- -  allow fixmultilangvalues to work on admin-protected fields too 
+ - allow fixmultilangvalues to work on admin-protected fields too
 
 2017-12-20 (31)
- -  make update_content_multilang explicity a 'static' method 
+ - make update_content_multilang explicity a 'static' method
 
 2017-12-20 (30)
- -  add new special field, 'fixmultilangvalues', to allow multilang tags in menu, radio and text fields 
-
-2017-12-20 (30)
- -  add new special field, 'fixmultilangvalues', to allow multilang tags in menu, radio and text fields 
+ - add new special field, 'fixmultilangvalues', to allow multilang tags in menu, radio and text fields
 
 2017-12-18 (29)
- -  add pix/icon for this plugin 
-
-2017-12-18 (29)
- -  datafield_admincd ~ add pix/icon for this plugin 
-
-2017-12-17 (28)
- -  add pix/icon.gif for this plugin; add method to allow other 3rd-party datafields to add their icon 
+ - add pix/icon for this plugin
+ - add method to allow other 3rd-party datafields to add their icon
 
 2017-07-10 (27)
- -  fetch and set default values from additional info user fields 
-
-2017-07-10 (27)
- -  fetch and set default values from additional info user fields 
+ - fetch and set default values from additional info user fields
 
 2017-07-09 (26)
- -  allow user defined mapping of data fields -> profile fields by declaring 'setdefaultvalues' as a'menu' subfield 
+ - allow user defined mapping of data fields -> profile fields by declaring 'setdefaultvalues' as a'menu' subfield
 
 2017-01-18 (25)
- -  don't export values from 'special' admin fields, i.e. fixdisabledfields, setdefaultvalues, unapprove 
+ - don't export values from 'special' admin fields, i.e. fixdisabledfields, setdefaultvalues, unapprove
 
 2017-01-18 (24)
- -  add strings required for Moodle >= 3.2 
+ - add strings required for Moodle >= 3.2
 
 2017-01-16 (23)
- -  fix small typo that might cause program loop when deleting admin fields 
+ - fix small typo that might cause program loop when deleting admin fields
 
 2017-01-13 (22)
- -  datafield_action ensure files are deleted from filearea when fields of this type are deleted from Fields page 
+ - datafield_action ensure files are deleted from filearea when fields of this type are deleted from Fields page
 
 2017-01-12 (21)
- -  add search of fieldtype spcific file areas when search for missing pluginfiles 
+ - add search of fieldtype spcific file areas when search for missing pluginfiles
 
 2017-01-11 (20)
- -  add lib.php with function to rewrite file URLs 
+ - add lib.php with function to rewrite file URLs
 
 2017-11-09 (29)
- -  only set editor content/format fields if they exist in the incoming form data, otherwise we mess up settings when importing a preset 
+ - only set editor content/format fields if they exist in the incoming form data, otherwise we mess up settings when importing a preset
 
 2017-01-08 (28)
- -  exclude 'action', 'constant' and 'report' fields from list of subfields allowed for 'admin' fields 
+ - exclude 'action', 'constant' and 'report' fields from list of subfields allowed for 'admin' fields
 
 2016-12-04 (27)
- -  add new access settings to allow record to view/edit while remaining hidden from public view 
+ - add new access settings to allow record to view/edit while remaining hidden from public view
 
 2016-09-17 (26)
- -  update empty profile fields from ADD form if setdefaultfields is enabled 
+ - update empty profile fields from ADD form if setdefaultfields is enabled
 
 2016-05-16 (25)
- -  convert country code to English country name when filling in defaults 
-
-2016-05-16 (25)
- -  convert country code to English country name when filling in defaults 
-
-2016-05-16 (25)
- -  convert country code to English country name when filling in defaults 
+ - convert country code to English country name when filling in defaults
 
 2016-05-15 (24)
- -  use phonetic names as Japanese names 
+ - use phonetic names as Japanese names
 
 2016-05-15 (23)
- -  set default values for state and country if available in user profile 
+ - set default values for state and country if available in user profile
 
 2016-05-14 (22)
- -  ensure setdefaultvalues field is never displayed 
+ - ensure setdefaultvalues field is never displayed
 
 2016-05-02 (21)
- -  add new special field, 'setdefaultvalues' to set default values when creating a new record 
+ - add new special field, 'setdefaultvalues' to set default values when creating a new record
 
 2016-04-25 (20)
- -  add static method to return format options 
+ - add static method to return format options
 
 2016-04-24 (19)
- -  use static methods to format fields in mod.html 
-
-2016-04-24 (19)
- -  use static methods to format fields in mod.html 
+ - use static methods to format fields in mod.html
 
 2016-04-17 (18)
- -  small improvments to whitespace and comments 
+ - small improvments to whitespace and comments
 
 2016-02-17 (17)
- -  small improvments to whitespace and comments 
+ - improve explanation in README.txt
 
 2016-02-17 (17)
- -  improve explanation in README.txt 
-
-2016-02-17 (17)
- -  small improvement to readability of code handling "fixdisabledfields" 
+ - small improvement to readability of code handling "fixdisabledfields"
 
 2016-02-16 (16)
- -  add new field to fix disabled fields not being returned to the server 
+ - add new field to fix disabled fields not being returned to the server
 
 2016-02-14 (15)
- -  fix use of unknown property 'is_visible'. Should be 'is_viewable' 
+ - fix use of unknown property 'is_visible'. Should be 'is_viewable'
 
 2016-02-11 (14)
- -  add new method to allow access to value of subfield for use in IF-THEN-ELSE conditions within template fields, even though the subfield may be hidden 
-
-2016-02-11 (14)
- -  add new method to allow access to value of subfield for use in IF-THEN-ELSE conditions within template fields, even though the subfield may be hidden 
+ - add new method to allow access to value of subfield for use in IF-THEN-ELSE conditions within template fields, even though the subfield may be hidden
 
 2016-02-09 (13)
- -  fix passing of default value in method to generate SELECT form elements 
+ - fix passing of default value in method to generate SELECT form elements
 
 2016-01-30 (12)
- -  small improvements to comments and code layout 
+ - small improvements to comments and code layout
 
 2016-01-30 (12)
- -  small improvement in layout of PHP code to generate hidden fields 
+ - small improvement in layout of PHP code to generate hidden fields
 
 2016-01-27 (11)
- -  tidy up PHP code that generates items in mod.html 
+ - tidy up PHP code that generates items in mod.html
 
 2016-01-27 (10)
- -  remove $name paramter from format_cell method 
+ - remove $name paramter from format_cell method
 
 2016-01-25 (09)
- -  fix passing of $record in export_text_value() method 
+ - fix passing of $record in export_text_value() method
 
 2016-01-25 (08)
- -  improve workding on descriptions of accessibility 
+ - improve workding on descriptions of accessibility
 
 2016-01-11 (07)
- -  reorder items in admin.js so that method are completely contained within the main object 
+ - reorder items in admin.js so that method are completely contained within the main object
 
 2016-01-11 (06)
- -  rename disapprove field to unapprove 
+ - rename disapprove field to unapprove
 
 2016-01-11 (04)
- -  add styles to rows and cells in mod.html 
+ - add styles to rows and cells in mod.html
 
 2016-01-11 (04)
- -  complete functionality to conditionally disable form fields depending on value of other forms fields 
-
-2016-01-11 (04)
- -  complete functionality to conditionally disable form fields depending on value of other forms fields 
+ - complete functionality to conditionally disable form fields depending on value of other forms fields
 
 2016-01-10 (03)
- -  add special functionality for field called 'disapprove' that will override automtic setting of 'approve' field for teachers and admins 
+ - add special functionality for field called 'disapprove' that will override automtic setting of 'approve' field for teachers and admins
 
 2016-01-05 (02)
- -  ensure disabledif param is initialized in new admin fields 
+ - ensure disabledif param is initialized in new admin fields
 
 2016-01-05 (02)
- -  small improvements to the README.txt file 
+ - small improvements to the README.txt file
 
 2016-01-05 (02)
- -  initial implementation of functionality to mimic disabledIf 
+ - initial implementation of functionality to mimic disabledIf
 
 2016-01-05 (02)
- -  generate mod.html content using html_writer 
+ - generate mod.html content using html_writer
 
 2015-12-30 (01)
- -  add framework for more meta fields: disabledif, displaytext, and sortorder 
+ - add framework for more meta fields: disabledif, displaytext, and sortorder
 
 2015-12-30 (01)
- -  remove debug statements 
+ - remove debug statements
 
 2015-12-30 (00)
- -  fix version.php, update README, and warn if lang strings are missing 
- -  datafield/admin add README field 
- -  poppulate initial version of the plugin
+ - fix version.php, update README, and warn if lang strings are missing
+ - datafield/admin add README field
+ - poppulate initial version of the plugin
