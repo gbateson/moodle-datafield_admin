@@ -1108,7 +1108,7 @@ class data_field_admin extends data_field_base {
      * @param string $formfieldid e.g. "field_999", where "999" is the field id
      */
     public function update_content_import($recordid, $value, $formfieldid) {
-        global $DB, $fieldnames, $record;
+        global $DB, $fieldnames, $record, $recordsadded;
 
         // Cache of labels for user and data_record fields in the CSV file.
         // (only used if required by a "fixuserid" field)
@@ -1171,7 +1171,17 @@ class data_field_admin extends data_field_base {
 
             	// tell importing user that we fixed the userid on this record
 				$this->report_fix('fixeduserid', $recordid, $userid, $fullname);
+
+            } else if (count(array_filter($record))==0) {
+                // empty record
+                data_delete_record($recordid, $this->data, $this->data->course, $this->cm->id);
+                $a = (object)array('row' => ($recordsadded + 1),
+                                   'recordid' => $recordid);
+                $this->report_string('emptyrecord', $a);
             }
+            // TODO:
+            // (1) use javascript to reformat get_string('added', 'moodle', $recordsadded) . ". " . get_string('entry', 'data') . " (ID $recordid)<br />\n"
+            // (2) use javascript to hide lines following "emptyrecord" lines
         }
 
         // update content in the normal way ("latlong" and "url" have their own method)

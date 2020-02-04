@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-02-04 (50)
+ - when importing, tell user about empty records that were skipped or deleted
+
 2019-10-12 (48)
  - standardize layout and spelling in CHANGES.txt
 
