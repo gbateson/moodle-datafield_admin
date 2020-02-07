@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-02-07 (51)
+ - small fix to error when saving admin fields whose subfield is a checkbox
+
 2020-02-04 (50)
  - when importing, tell user about empty records that were skipped or deleted
 

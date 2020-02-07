@@ -800,6 +800,11 @@ class data_field_admin extends data_field_base {
      */
     function notemptyfield($value, $name) {
         if ($this->subfield) {
+            if ($this->subfield->type=='checkbox') {
+                if (is_scalar($value)) {
+                    $value = array($value);
+                }
+            }
             return $this->subfield->notemptyfield($value, $name);
         } else {
             return parent::notemptyfield($value, $name);
