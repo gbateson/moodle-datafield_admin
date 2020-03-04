@@ -189,7 +189,8 @@ class data_field_admin extends data_field_base {
      * @param object $cm record from "course_modules" table
      */
     function __construct($field=0, $data=0, $cm=0) {
-        global $CFG, $DB, $USER, $datarecord;
+        global $CFG, $DB, $USER;
+        global $datarecord, $possiblefields, $rid, $replacements;
 
         // set up this field in the normal way
         parent::__construct($field, $data, $cm);
@@ -257,6 +258,63 @@ class data_field_admin extends data_field_base {
                         // override it later, in the update_content() method
                         $this->unapprove = has_capability('mod/data:approve', $this->context);
                         break;
+                }
+
+            } else if ($this->field->name == 'setdefaultvalues') {
+
+                $edit_old_record = false;
+                if (empty($datarecord) && isset($rid) && is_numeric($rid)) {
+                    if (isset($possiblefields) && is_array($possiblefields)) {
+                        if (isset($replacements) && is_array($replacements)) {
+                            $edit_old_record = true;
+                        }
+                    }
+                }
+                if ($edit_old_record) {
+
+                    // Fetch non-empty content in current record.
+                    $content = $DB->get_records_menu('data_content', array('recordid' => $rid), 'fieldid', 'fieldid,content');
+                    $content = array_map('trim', $content);
+                    $content = array_filter($content);
+
+                    $types = array('menu', 'radiobutton', 'checkbox');
+                    foreach ($possiblefields as $fieldid => $field) {
+                        if (! array_key_exists($fieldid, $content)) {
+                            continue;
+                        }
+                        if ($field->type=='admin') {
+                            $type = $this->subparam;
+                        } else {
+                            $type = 'type';
+                        }
+                        if (! in_array($field->$type, $types)) {
+                            continue;
+                        }
+                        if (! strpos($field->param1, '</span>')) {
+                            continue;
+                        }
+                        if (strpos($content[$fieldid], '</span>')) {
+                            continue;
+                        }
+                        $values = explode("\n", $field->param1);
+                        $values = array_map('trim', $values);
+                        $values = array_filter($values);
+                        foreach ($values as $value) {
+                            if (strip_tags($value) == $content[$fieldid]) {
+
+                                // Replace record content value in Moodle DB.
+                                $params = array('recordid' => $rid, 'fieldid' => $fieldid);
+                                $DB->set_field('data_content', 'content', $value, $params);
+
+                                // Replace value in form.
+                                if ($i = array_search('field_'.$field->id, $replacements)) {
+                                    $search = 'value="'.s($value).'"';
+                                    $replace = $search.($field->type=='menu' ? ' selected' : ' checked');
+                                    $replacements[$i - 1] = str_replace($search, $replace, $replacements[$i - 1]);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } else if (has_capability('mod/data:managetemplates', $this->context)) {

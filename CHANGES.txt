@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-03-04 (52)
+ - use fixdefaultvalues to fix stripped multilang values in menu, radiobutton and checkbox fields
+
 2020-02-07 (51)
  - small fix to error when saving admin fields whose subfield is a checkbox
 
