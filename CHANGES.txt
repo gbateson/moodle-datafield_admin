@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-06 (57)
+ - fix syntax error in generatetemplates.js
+
 2020-08-06 (56)
  - add js and css files for the tool to generate templates
 

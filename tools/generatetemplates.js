@@ -20,7 +20,7 @@
             icons.classList.add("text-dark");
             icons.classList.add("px-2");
             icons.classList.add("py-0");
-            icons.classList.add("mx-4");
+            icons.classList.add("mx-2");
             icons.classList.add("my-0");
 
             icons.style.display = "inline-block";
@@ -89,7 +89,7 @@
                             container.style.position = "fixed";
                             container.style.pointerEvents = "none"
                             container.style.opacity = 0;
-                            container.appendChild(document.createTextNode(html);
+                            container.appendChild(document.createTextNode(html));
                             document.body.appendChild(container)
 
                             if (document.body.createTextRange) {
