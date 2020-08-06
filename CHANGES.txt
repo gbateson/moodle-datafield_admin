@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-06 (56)
+ - add js and css files for the tool to generate templates
+
 2020-03-04 (52)
  - use fixdefaultvalues to fix stripped multilang values in menu, radiobutton and checkbox fields
 

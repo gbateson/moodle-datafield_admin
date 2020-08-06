@@ -1,0 +1,6 @@
+.lang-en [lang=ja]  {
+    display: none;
+}
+.lang-ja [lang=en]  {
+    display: none;
+}

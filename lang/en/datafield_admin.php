@@ -53,4 +53,6 @@ Then purge the Moodle caches:
 * Adminiistration -> Site administration -> Development -> Purge all caches
 
 See {$a->readfile} for more details.';
+$string['generatetemplates'] = 'Generate templates';
 $string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
+$string['reorderfields'] = 'Reorder fields';

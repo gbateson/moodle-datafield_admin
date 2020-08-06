@@ -421,7 +421,10 @@ class data_field_admin extends data_field_base {
      * @return void, but output is echo'd to browser
      */
     function display_edit_field() {
-        self::check_lang_strings($this);
+        if (empty($this->field->id)) {
+            self::check_lang_strings($this);
+            self::display_tool_links($this->cm->id);
+        }
         parent::display_edit_field();
     }
 
@@ -1559,10 +1562,11 @@ class data_field_admin extends data_field_base {
      *         otherwise display alert message and return FALSE
      */
     static public function check_lang_strings($datafield) {
+        global $CFG;
 
         // in order to minimize the frequency of this check
         // we only do full check when adding a new field
-        if (isset($datafield->field->id)) {
+        if (isset($datafield->field->id) && $datafield->field->id) {
             return true;
         }
 
@@ -1572,8 +1576,13 @@ class data_field_admin extends data_field_base {
         // check if the descriptor string for this data field
         // has been added to the mod_data language pack
         $strman = get_string_manager();
+
+        if ($strman->string_exists('fieldtypelabel', 'datafield_'.$type)) {
+            return true; // Moodle >= 3.2
+        }
+
         if ($strman->string_exists($type, 'data')) {
-            return true;
+            return true; // adjusted Moodle <= 3.1
         }
 
         // descriptor string for this datafield has not been
@@ -1590,6 +1599,27 @@ class data_field_admin extends data_field_base {
                         'style' => 'width: 100%; max-width: 640px;');
         echo html_writer::tag('div', $msg, $params);
         return false;
+    }
+
+
+    /**
+     * display tabbed links to datafield_admin tools
+     *
+     * @return void, but output is echo'd to browser
+     */
+    static function display_tool_links($cmid, $currenttool='') {
+        $tools = array('generatetemplates', 'reorderfields');
+        foreach ($tools as $i => $tool) {
+            $label = get_string($tool, 'datafield_admin');
+            $url = new moodle_url("/mod/data/field/admin/tools/$tool.php", array('id' => $cmid));
+            if ($tool == $currenttool) {
+                $link = html_writer::link($url, $label, array('class' => 'nav-link active'));
+            } else {
+                $link = html_writer::link($url, $label, array('class' => 'nav-link'));
+            }
+            $tools[$i] = html_writer::tag('li', $link, array('class' => "nav-item $tool"));
+        }
+        echo html_writer::tag('ul', implode('', $tools), array('class' => 'nav nav-tabs'));
     }
 
     /**
