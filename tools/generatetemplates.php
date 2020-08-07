@@ -173,13 +173,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
         $dl = '';
 
         // start FIELDSET
-        $params = array('class' => "template $template border border-dark rounded mt-4 pl-4 bg-light",
-                        'style' => 'max-width: 840px;');
+        $params = array('class' => "template $template border border-dark rounded mt-4 px-4 bg-light");
         echo $newline.html_writer::start_tag('fieldset', $params).$newline;
 
         // LEGEND (acts as the title for the FIELDSET)
-        $params = array('class' => 'border border-dark rounded ml-2 px-2 bg-info text-light',
-                        'style' => 'max-width: max-content;');
+        $params = array('class' => 'border border-dark rounded ml-2 px-2 bg-info text-light');
         echo html_writer::tag('legend', get_string($template, 'data'), $params).$newline;
 
         // start DIV

@@ -1,6 +1,31 @@
-.lang-en [lang=ja]  {
-    display: none;
+.lang-en .multilang:not([lang=en]),
+.lang-ja .multilang:not([lang=ja]) {
+    display:none;
 }
-.lang-ja [lang=en]  {
-    display: none;
+
+fieldset.template {
+    max-width: 840px;
 }
+fieldset.template legend {
+    max-width: max-content;
+}
+
+legend .icons {
+    display: inline-block;
+    line-height: 24px;
+    font-size: 0.5em;
+    position: relative;
+    bottom: 5px;
+    left: 10px;
+}
+
+h4 {
+    background-color: #236AB9;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 700;
+    padding: 8px 16px;
+}
+/**
+    <h4 class="rounded bg-primary text-light font-weight-bold py-2 px-3">Level 4 heading</h4>
+**/

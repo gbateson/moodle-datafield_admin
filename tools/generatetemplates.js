@@ -1,31 +1,37 @@
-//<![CDATA[
 (function() {
     var TOOL = {};
 
     TOOL.str = {};
     TOOL.plugin = "datafield_admin";
 
-    if (window.require) {
-        //
-        // mod/englishcentral/amd/src/report.js
-        //
-        //require(["jquery", "jqueryui", "core/str"], function($, JUI, STR) {
-        //    STR.get_strings([
-        //        {"key": "viewhtml", "component": TOOL.plugin},
-        //        {"key": "copyhtml", "component": TOOL.plugin}
-        //    ]).done(function(s) {
-        //        var i = 0;
-        //        TOOL.str.viewhtml = s[i++];
-        //        TOOL.str.copyhtml = s[i++];
-        //    });
-        //});
-    } else {
-        // use English defaults
-    }
+    TOOL.commands = new Array("viewhtml", "copyhtml");
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
-    TOOL.showicon = TOOL.wwwroot + "/pix/i/preview.svg";
-    TOOL.copyicon = TOOL.wwwroot + "/pix/t/download.svg";
+    TOOL.img = {
+        "viewhtml" : TOOL.wwwroot + "/pix/i/preview.svg",
+        "copyhtml" : TOOL.wwwroot + "/pix/t/download.svg"
+    };
+
+    TOOL.get_text_content = function(elm){
+        var txt = new Array();
+        elm.childNodes.forEach(function(node){
+            if (node.nodeType == 3) { // Node.TEXT_NODE
+                txt.push(node.nodeValue);
+            } else {
+                txt.push(node.textContent || node.innerText);
+                // txt.push(TOOL.get_text_content(node));
+            }
+        });
+        return txt.join("\n");
+    };
+
+    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
+        if (obj.addEventListener) {
+            obj.addEventListener(evt, fn, (useCapture || false));
+        } else if (obj.attachEvent) {
+            obj.attachEvent("on" + evt, fn);
+        }
+    }
 
     TOOL.onclick_viewhtml = function(){
         var p = this;
@@ -36,11 +42,12 @@
                     if (elm.matches("div")) {
                         var pre = document.createElement("pre");
                         pre.classList.add("defaulttemplate");
+                        pre.classList.add("p-2");
                         pre.contentEditable = true;
                         pre.appendChild(document.createTextNode(elm.outerHTML));
                         elm.parentNode.replaceChild(pre, elm);
                     } else if (elm.matches("pre")) {
-                        elm.outerHTML = elm.childNodes[0].nodeValue;
+                        elm.outerHTML = TOOL.get_text_content(elm);
                     }
                 });
                 p = null; // stop looping
@@ -59,7 +66,7 @@
                     if (elm.matches("div")) {
                         html = elm.outerHTML;
                     } else if (elm.matches("pre")) {
-                        html = elm.childNodes[0].nodeValue;
+                        html = TOOL.get_text_content(elm);
                     }
 
                     var container = document.createElement("pre");
@@ -81,7 +88,7 @@
                     }
 
                     document.execCommand("Copy");
-                    alert("Copied content to clipboard");
+                    alert(TOOL.str.copiedhtml);
 
                     document.body.removeChild(container);
                 });
@@ -90,71 +97,68 @@
         }
     };
 
-    TOOL.init = function() {
+    TOOL.get_strings = function() {
+        return new Promise(function(resolve, reject){
+            if (window.require) {
+                require(["core/str"], function(STR) {
 
+                    var strings = new Array();
+                    TOOL.commands.forEach(function(command){
+                        strings.push({"key": command, "component": TOOL.plugin});
+                    });
+                    strings.push({"key": "copiedhtml", "component": TOOL.plugin});
+
+                    STR.get_strings(strings).done(function(s) {
+                        TOOL.commands.forEach(function(command, i){
+                            TOOL.str[command] = s[i];
+                        });
+                        var i = TOOL.commands.length;
+                        TOOL.str.copiedhtml = s[i++];
+                        resolve();
+                    });
+                });
+            } else {
+                // use English defaults
+                TOOL.str.viewhtml = "View HTML";
+                TOOL.str.copyhtml = "Copy HTML";
+                TOOL.str.copiedhtml = "HTML was copied to clipboard";
+                resolve();
+            }
+        });
+    };
+
+    TOOL.setup_commands = function() {
         document.querySelectorAll("fieldset.template legend").forEach(function(legend){
 
             var icons = document.createElement("div");
-            icons.classList.add("border");
-            icons.classList.add("border-light");
-            icons.classList.add("rounded");
-            icons.classList.add("bg-light");
-            icons.classList.add("text-dark");
-            icons.classList.add("px-2");
-            icons.classList.add("py-0");
-            icons.classList.add("mx-2");
-            icons.classList.add("my-0");
-            // NOTE: the above classes could be set all at once using the following:
-            // icons.className = "border border-light rounded "
-            //                 + "bg-light text-dark "
-            //                 + "px-2 py-0 mx-2 my-0";
+            icons.className = "icons "
+                            + "border border-light rounded "
+                            + "bg-light text-dark "
+                            + "px-2 py-0 mx-2 my-0";
+            // The classes could be added individually
+            // e.g. icons.classList.add("border");
 
-            icons.style.display = "inline-block";
-            icons.style.lineHeight = "24px";
-            icons.style.fontSize = "0.5em";
-            icons.style.position = "relative";
-            icons.style.bottom = "5px";
-            icons.style.left = "10px";
-            // NOTE; the above styles could be set all at once using the following:
-            // icons.style.cssText = "display: inline-block; "
-            //                     + "line-height: 24px; font-size: 0.5em; "
-            //                     + "position: relative; bottom: 5px; left: 10px";
+            TOOL.commands.forEach(function(command){
+                var title = TOOL.str[command];
+                var icon = document.createElement("img");
+                icon.src = TOOL.img[command];
 
-            var title = "View";
-            var icon = document.createElement("img");
-            icon.src = TOOL.showicon;
+                var span = document.createElement("span");
+                span.title = title;
+                span.classList.add("mx-sm-2");
+                span.appendChild(icon);
+                span.appendChild(document.createTextNode(" " + title));
+                TOOL.add_event_listener(span, "click", TOOL["onclick_" + command]);
+                icons.appendChild(span);
+            });
 
-            var span = document.createElement("span");
-            span.title = title;
-            span.classList.add("mx-sm-2");
-            span.appendChild(icon);
-            span.appendChild(document.createTextNode(" " +  title));
-            span.onclick = TOOL.onclick_viewhtml;
-            icons.appendChild(span);
-
-            var title = "Copy";
-            var icon = document.createElement("img");
-            icon.src = TOOL.copyicon;
-
-            var span = document.createElement("span");
-            span.title = title;
-            span.classList.add("mx-sm-2");
-            span.appendChild(icon);
-            span.appendChild(document.createTextNode(" " +  title));
-            span.onclick = TOOL.onclick_copyhtml;
-            icons.appendChild(span);
             legend.appendChild(icons);
         });
     };
 
-    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
-        if (obj.addEventListener) {
-            obj.addEventListener(evt, fn, (useCapture || false));
-        } else if (obj.attachEvent) {
-            obj.attachEvent("on" + evt, fn);
-        }
-    }
+    TOOL.init = function() {
+        TOOL.get_strings().then(TOOL.setup_commands);
+    };
 
     TOOL.add_event_listener(window, "load", TOOL.init);
 }());
-//]]>
