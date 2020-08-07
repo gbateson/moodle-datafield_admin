@@ -79,17 +79,52 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
 
     // TODO: set table format from user form
     // TODO: set languages from user form
-    // TODO: set headcols from user form
+    // TODO: set titlecols from user form
     $lowlang = 'en';
     $highlang = 'ja';
-    $headcols = 3;
-    $datacols = (12 - $headcols);
 
-    $headclass = "col-sm-$headcols";
-    $dataclass = "col-sm-$datacols";
+    $dt_cols = 3;
+    $dd_cols = (12 - $dt_cols);
+
+    $dt_class = "col-sm-$dt_cols";
+    $dd_class = "col-sm-$dd_cols";
 
     $multilanglowhigh = '/^([ -~].*?) ([^ -~]+)$/u';
     $multilanghighlow = '/^([^ -~].*?) ([ -~]+)$/u';
+
+    // Cache some language strings
+    $str = (object)array(
+
+        'actions' => get_string('actions'),
+        'labelsep' => get_string('labelsep', 'langconfig'),
+
+        'commentstart' => '<!-- '.str_repeat('=', 46),
+        'commentend' => str_repeat('=', 47).' -->',
+
+        'fixdisabledfields' => 'The "fixdisabledfields" field is required to prevent'.$newline.
+                               'errors in data/lib.php caused by disabled fields in form',
+
+        'unapprove' => ' The "unapprove" field is required to override'.$newline.
+                       ' the automatic approval of teacher/admin entries.',
+
+        'setdefaultvalues' => ' The "setdefaultvalues" field is required to set'.$newline.
+                              ' default values in new records.',
+
+        'fixuserid' => ' The "fixuserid" field is required to match the userid'.$newline.
+                       ' to the email address on records added by a site admin.',
+
+        'fixmultilangvalues' => ' The "fixmultilangvalues" field is required to fix'.$newline.
+                                ' multilang values in "menu", "radio" and "text" fields.',
+
+        'confirm_add_record' => ' The "confirm_add_record" field is required to send'.$newline.
+                                ' a confirmation email when a new record is added.',
+
+        'confirm_update_record' => ' The "confirm_update_record" field is required to send'.$newline.
+                                   ' a confirmation email when a record is updated.',
+
+        'printfields' => ' The following fields are required to set serial numbers'.$newline.
+                         ' for conference badges, receipts and certificates',
+    );
 
     $templates = array('listtemplate' =>  '##more## ##edit## ##delete##',
                        'singletemplate' =>  '##edit## ##delete##',
@@ -97,10 +132,48 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
                        'asearchtemplate' =>  '',
                        'csstemplate' =>  '',
                        'jstemplate' =>  '');
+
     foreach ($templates as $template  => $actions) {
 
+        $specialfields = array();
+        $printfields = array();
+        $types = array('admin',  'checkbox',
+                       'date',   'menu',
+                       'number', 'radiobutton',
+                       'text',   'textarea');
+
+        switch ($template) {
+            case 'addtemplate':
+                $specialfields = array('setdefaultvalues'   => '',
+                                       'fixdisabledfields'  => '',
+                                       'fixmultilangvalues' => '',
+                                       'fixuserid'          => '',
+                                       'unapprove'          => '',
+                                       'confirm_add_record' => '',
+                                       'confirm_update_record' => '');
+
+                $printfields = array('print_badges'         => '',
+                                     'print_fee_receipt'    => '',
+                                     'print_ticket'         => '',
+                                     'print_dinner_receipt' => '',
+                                     'print_certificate'    => '');
+                break;
+
+            case 'listtemplate':
+                $printfields = array('badges'         => '',
+                                     'ticket'         => '',
+                                     'fee_receipt'    => '',
+                                     'dinner_receipt' => '',
+                                     'certificate'    => '');
+                $types[] = 'constant';
+                $types[] = 'template';
+                break;
+        }
+
+        $dl = '';
+
         // start FIELDSET
-        $params = array('class' => 'template '.$template.' border border-dark rounded mt-4 pl-4 bg-light',
+        $params = array('class' => "template $template border border-dark rounded mt-4 pl-4 bg-light",
                         'style' => 'max-width: 840px;');
         echo $newline.html_writer::start_tag('fieldset', $params).$newline;
 
@@ -114,50 +187,130 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
 
         // Generate responsive table/list of fields.
         switch ($template) {
+
             case 'listtemplate':
             case 'singletemplate':
             case 'addtemplate':
             case 'asearchtemplate':
-                echo $indent1.html_writer::start_tag('dl', array('class' => 'row')).$newline;
+
                 foreach ($fields as $field) {
-                    $classname = preg_replace($illegalchars, '_', $field->name);
-                    $classname = preg_replace($trimstartend, '', $classname);
-                    if ($classname == '') {
-                        $classname = 'field_'.$field->id;
-                    }
-                    if ($text = trim($field->description)) {
-                        switch (true) {
-                            case preg_match($multilanglowhigh, $text, $matches):
-                                $text = $newline.
-                                        $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
-                                        $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $highlang)).$newline.
-                                        $indent2;
-                                break;
-                            case preg_match($multilanghighlow, $text, $matches):
-                                $text = $newline.
-                                        $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $highlang)).$newline.
-                                        $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
-                                        $indent2;
-                                break;
-                        }
+
+                    if ($field->type == 'admin') {
+                        $type = $field->param10;
                     } else {
-                        $text = $field->name;
+                        $type = $field->type;
                     }
-                    echo $newline.
-                         $indent2.html_writer::tag('dt', $text, array('class' => $headclass.' '.$classname)).$newline;
-                    echo $indent2.html_writer::tag('dd', '[['.$field->name.']]', array('class' => $dataclass.' '.$classname)).$newline;
+
+                    if (array_key_exists($field->name, $specialfields)) {
+                        $specialfields[$field->name] = '[['.$field->name.']]';
+                    } else if (array_key_exists($field->name, $printfields)) {
+                        $printfields[$field->name] = "[[{$field->name}]]";
+                    } else {
+                        $fieldname = preg_replace($illegalchars, '_', $field->name);
+                        $fieldname = preg_replace($trimstartend, '', $fieldname);
+                        if ($fieldname == '') {
+                            $fieldname = 'field_'.$field->id;
+                        }
+
+                        if ($term = trim($field->description)) {
+                            switch (true) {
+                                case preg_match($multilanglowhigh, $term, $matches):
+                                    $term = $newline.
+                                            $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
+                                            $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $highlang)).$newline.
+                                            $indent2;
+                                    break;
+                                case preg_match($multilanghighlow, $term, $matches):
+                                    $term = $newline.
+                                            $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $highlang)).$newline.
+                                            $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
+                                            $indent2;
+                                    break;
+                            }
+                        } else {
+                            $term = $field->name;
+                        }
+
+                        if ($template == 'addtemplate' | $template == 'asearchtemplate') {
+                            $class = "$dt_class {$field->type} $fieldname";
+                        } else {
+                            $class = "$dt_class $fieldname";
+                        }
+                        $dl .= $newline;
+                        $dl .= $indent2.html_writer::tag('dt', $term.$str->labelsep, array('class' => $class)).$newline;
+
+                        if ($template == 'addtemplate' | $template == 'asearchtemplate') {
+                            $class = "$dd_class {$field->type} $fieldname";
+                        } else {
+                            $class = "$dd_class $fieldname";
+                        }
+                        $dl .= $indent2.html_writer::tag('dd', '[['.$field->name.']]', array('class' => $class)).$newline;
+                    }
                 }
                 if ($actions) {
-                    echo $newline.
-                         $indent2.html_writer::tag('dt', get_string('actions'), array('class' => $headclass.' actions')).$newline;
-                    echo $indent2.html_writer::tag('dd', $actions, array('class' => $dataclass.' actions')).$newline;
+                    $dl .= $newline;
+                    $dl .= $indent2.html_writer::tag('dt', $str->actions.$str->labelsep, array('class' => $dt_class.' actions')).$newline;
+                    $dl .= $indent2.html_writer::tag('dd', $actions, array('class' => $dd_class.' actions')).$newline;
                 }
-                echo $indent1.html_writer::end_tag('dl').$newline;
                 break;
+
             default:
                 $label = get_string($template, 'data');
                 echo $indent1.html_writer::tag('p', 'Sorry, the generator for "'.$label.'" is not ready yet.').$newline;
         }
+
+        if ($dl) {
+
+            $name = 'fixdisabledfields';
+            if (isset($specialfields[$name]) && $specialfields[$name]) {
+                if (isset($str->$name)) {
+                    echo $newline.
+                         $str->commentstart.$newline.
+                         $str->$name.$newline.
+                         $str->commentend.$newline;
+                }
+                echo $specialfields[$name].$newline.$newline;
+                $specialfields[$name] = '';
+            }
+
+            echo $indent1.html_writer::start_tag('dl', array('class' => 'row')).$newline;
+            echo $dl;
+            echo $indent1.html_writer::end_tag('dl').$newline;
+
+            $printfields = array_values($printfields);
+            $printfields = array_map('trim', $printfields);
+            $printfields = array_filter($printfields);
+
+             $name = 'printfields';
+             if ($printfields = implode($newline, $printfields)) {
+                echo html_writer::start_tag('div', array('class' => $name)).$newline;
+                if (isset($str->$name)) {
+                    echo $str->commentstart.$newline.
+                         $str->$name.$newline.
+                         $str->commentend.$newline;
+                }
+                echo $printfields.$newline;
+                echo html_writer::end_tag('div').$newline;
+            }
+
+            $counttokens = 0;
+            foreach ($specialfields as $name => $token) {
+                if ($token) {
+                    if (isset($str->$name)) {
+                        echo $newline.
+                             $str->commentstart.$newline.
+                             $str->$name.$newline.
+                             $str->commentend.$newline;
+                    }
+                    echo $token.$newline;
+                    $counttokens ++;
+                }
+            }
+            if ($counttokens) {
+                echo $newline;
+            }
+        }
+
 
         // finish DIV and FIELDSET
         echo html_writer::end_tag('div').$newline;
