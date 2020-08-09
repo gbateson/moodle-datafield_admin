@@ -66,7 +66,7 @@ data_field_admin::display_tool_links($id, $tool);
 echo html_writer::tag('h3', get_string($tool, $plugin));
 
 // Responsive table suitable for Boost in Moodle >= 3.6
-if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
+if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
 
     // Cache regular expressions to generate CSS classname from field name.
     $illegalchars = '/[^A-Za-z0-9-]+/u';

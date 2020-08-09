@@ -66,7 +66,7 @@ data_field_admin::display_tool_links($id, $tool);
 
 echo html_writer::tag('h3', get_string($tool, $plugin));
 
-if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
+if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
 
     // If necessary, sort the fields.
     if ($sort && confirm_sesskey()) {
@@ -79,7 +79,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
             $DB->set_field('data_content', 'fieldid', -$newid, array('fieldid' => $oldid));
         }
         $DB->execute('UPDATE {data_content} SET fieldid = ABS(fieldid) WHERE fieldid < ?', array(0));
-        $fields = $DB->get_records('data_fields', array('dataid' => $data->id));
+        $fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id');
     }
 
     // TODO: set languages from user form

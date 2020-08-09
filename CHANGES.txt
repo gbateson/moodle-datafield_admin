@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-09 (61)
+ - always sort fields by id in tools to generate templates and reorder fields
+
 2020-08-09 (60)
  - implement new tool to reorder database fields
 
