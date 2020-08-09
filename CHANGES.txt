@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-09 (60)
+ - implement new tool to reorder database fields
+
 2020-08-07 (59)
  - fetch strings from Moodle using 'require' to get the 'core/str' library
 

@@ -57,6 +57,7 @@ $PAGE->set_title(get_string('course').get_string('labelsep', 'langconfig').$cour
 $PAGE->set_heading($course->fullname);
 
 $PAGE->requires->js("/mod/data/field/admin/tools/$tool.js", true);
+$PAGE->requires->css("/mod/data/field/admin/tools/tools.css");
 $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 
 data_print_header($course, $cm, $data, $tool);
@@ -86,44 +87,26 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
     $dt_cols = 3;
     $dd_cols = (12 - $dt_cols);
 
-    $dt_class = "col-sm-$dt_cols";
-    $dd_class = "col-sm-$dd_cols";
+    $dt_class = "col-sm-$dt_cols my-0 py-1";
+    $dd_class = "col-sm-$dd_cols my-0 py-1";
 
     $multilanglowhigh = '/^([ -~].*?) ([^ -~]+)$/u';
     $multilanghighlow = '/^([^ -~].*?) ([ -~]+)$/u';
 
     // Cache some language strings
     $str = (object)array(
-
-        'actions' => get_string('actions'),
+        'actions'  => get_string('actions'),
         'labelsep' => get_string('labelsep', 'langconfig'),
-
         'commentstart' => '<!-- '.str_repeat('=', 46),
         'commentend' => str_repeat('=', 47).' -->',
-
-        'fixdisabledfields' => 'The "fixdisabledfields" field is required to prevent'.$newline.
-                               'errors in data/lib.php caused by disabled fields in form',
-
-        'unapprove' => ' The "unapprove" field is required to override'.$newline.
-                       ' the automatic approval of teacher/admin entries.',
-
-        'setdefaultvalues' => ' The "setdefaultvalues" field is required to set'.$newline.
-                              ' default values in new records.',
-
-        'fixuserid' => ' The "fixuserid" field is required to match the userid'.$newline.
-                       ' to the email address on records added by a site admin.',
-
-        'fixmultilangvalues' => ' The "fixmultilangvalues" field is required to fix'.$newline.
-                                ' multilang values in "menu", "radio" and "text" fields.',
-
-        'confirm_add_record' => ' The "confirm_add_record" field is required to send'.$newline.
-                                ' a confirmation email when a new record is added.',
-
-        'confirm_update_record' => ' The "confirm_update_record" field is required to send'.$newline.
-                                   ' a confirmation email when a record is updated.',
-
-        'printfields' => ' The following fields are required to set serial numbers'.$newline.
-                         ' for conference badges, receipts and certificates',
+        'confirm_add_record' => get_string('comment_confirm_add_record', $plugin),
+        'confirm_update_record' => get_string('comment_confirm_update_record', $plugin),
+        'fixdisabledfields'  => get_string('comment_fixdisabledfields', $plugin),
+        'fixmultilangvalues' => get_string('comment_fixmultilangvalues', $plugin),
+        'fixuserid'          => get_string('comment_fixuserid', $plugin),
+        'printfields'        => get_string('comment_printfields', $plugin),
+        'setdefaultvalues'   => get_string('comment_setdefaultvalues', $plugin),
+        'unapprove'          => get_string('comment_unapprove', $plugin),
     );
 
     $templates = array('listtemplate' =>  '##more## ##edit## ##delete##',
@@ -202,7 +185,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
                     if (array_key_exists($field->name, $specialfields)) {
                         $specialfields[$field->name] = '[['.$field->name.']]';
                     } else if (array_key_exists($field->name, $printfields)) {
-                        $printfields[$field->name] = "[[{$field->name}]]";
+                        $printfields[$field->name] = '[['.$field->name.']]';
                     } else {
                         $fieldname = preg_replace($illegalchars, '_', $field->name);
                         $fieldname = preg_replace($trimstartend, '', $fieldname);
@@ -235,7 +218,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
                             $class = "$dt_class $fieldname";
                         }
                         $dl .= $newline;
-                        $dl .= $indent2.html_writer::tag('dt', $term.$str->labelsep, array('class' => $class)).$newline;
+                        $dl .= $indent2.html_writer::tag('dt', $term, array('class' => $class)).$newline;
 
                         if ($template == 'addtemplate' | $template == 'asearchtemplate') {
                             $class = "$dd_class {$field->type} $fieldname";
@@ -247,7 +230,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
                 }
                 if ($actions) {
                     $dl .= $newline;
-                    $dl .= $indent2.html_writer::tag('dt', $str->actions.$str->labelsep, array('class' => $dt_class.' actions')).$newline;
+                    $dl .= $indent2.html_writer::tag('dt', $str->actions, array('class' => $dt_class.' actions')).$newline;
                     $dl .= $indent2.html_writer::tag('dd', $actions, array('class' => $dd_class.' actions')).$newline;
                 }
                 break;
@@ -261,17 +244,19 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
 
             $name = 'fixdisabledfields';
             if (isset($specialfields[$name]) && $specialfields[$name]) {
+                echo $newline;
+                echo html_writer::start_tag('div', array('class' => 'specialfields')).$newline;
                 if (isset($str->$name)) {
-                    echo $newline.
-                         $str->commentstart.$newline.
+                    echo $str->commentstart.$newline.
                          $str->$name.$newline.
                          $str->commentend.$newline;
                 }
-                echo $specialfields[$name].$newline.$newline;
+                echo $specialfields[$name].$newline;
+                echo html_writer::end_tag('div').$newline.$newline;
                 $specialfields[$name] = '';
             }
 
-            echo $indent1.html_writer::start_tag('dl', array('class' => 'row')).$newline;
+            echo $indent1.html_writer::start_tag('dl', array('class' => 'row'));
             echo $dl;
             echo $indent1.html_writer::end_tag('dl').$newline;
 
@@ -279,8 +264,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
             $printfields = array_map('trim', $printfields);
             $printfields = array_filter($printfields);
 
-             $name = 'printfields';
-             if ($printfields = implode($newline, $printfields)) {
+            $trailngspace = '';
+
+            $name = 'printfields';
+            if ($printfields = implode($newline, $printfields)) {
+                echo $newline;
                 echo html_writer::start_tag('div', array('class' => $name)).$newline;
                 if (isset($str->$name)) {
                     echo $str->commentstart.$newline.
@@ -289,26 +277,32 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id))) {
                 }
                 echo $printfields.$newline;
                 echo html_writer::end_tag('div').$newline;
+                $trailngspace = $newline;
             }
 
-            $counttokens = 0;
-            foreach ($specialfields as $name => $token) {
-                if ($token) {
-                    if (isset($str->$name)) {
-                        echo $newline.
-                             $str->commentstart.$newline.
-                             $str->$name.$newline.
-                             $str->commentend.$newline;
-                    }
-                    echo $token.$newline;
-                    $counttokens ++;
-                }
-            }
-            if ($counttokens) {
+            $specialfields = array_filter($specialfields);
+            if (count($specialfields)) {
                 echo $newline;
+                echo html_writer::start_tag('div', array('class' => 'specialfields')).$newline;
+                $leadingspace = '';
+                foreach ($specialfields as $name => $token) {
+                    if ($token) {
+                        echo $leadingspace;
+                        if (isset($str->$name)) {
+                            echo $str->commentstart.$newline.
+                                 $str->$name.$newline.
+                                 $str->commentend.$newline;
+                        }
+                        echo $token.$newline;
+                        $leadingspace = $newline;
+                    }
+                }
+                echo html_writer::end_tag('div').$newline;
+                $trailngspace = $newline;
             }
-        }
 
+            echo $trailngspace;
+        }
 
         // finish DIV and FIELDSET
         echo html_writer::end_tag('div').$newline;

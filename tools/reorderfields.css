@@ -1,0 +1,17 @@
+.stripes li:nth-of-type(odd) {
+    background-color: #f0f0f0;
+}
+.stripes li:nth-of-type(even) {
+    background-color: #f4f4f4;
+}
+
+.stripes li {
+    border-top: 1px solid #999;
+}
+.stripes li:last-of-type {
+    border-bottom: 1px solid #999;
+}
+
+.row input[type=text] {
+    max-width: 2em;
+}

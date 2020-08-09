@@ -1,8 +1,3 @@
-.lang-en .multilang:not([lang=en]),
-.lang-ja .multilang:not([lang=ja]) {
-    display:none;
-}
-
 fieldset.template {
     max-width: 840px;
 }
@@ -19,13 +14,34 @@ legend .icons {
     left: 10px;
 }
 
-h4 {
-    background-color: #236AB9;
-    border-radius: 4px;
-    color: #fff;
-    font-weight: 700;
-    padding: 8px 16px;
+.specialfields {
+    display: none;
 }
-/**
-    <h4 class="rounded bg-primary text-light font-weight-bold py-2 px-3">Level 4 heading</h4>
-**/
+
+.row.stripes dt:nth-of-type(odd),
+.row.stripes dd:nth-of-type(odd) {
+    background-color: #f0f0f0;
+}
+
+.row.stripes dt:nth-of-type(even),
+.row.stripes dd:nth-of-type(even) {
+    background-color: #f4f4f4;
+}
+
+.row.stripes dt {
+    border-top: 1px solid #999;
+}
+
+.row.stripes dd:last-of-type {
+    border-bottom: 1px solid #999;
+}
+
+/** (sm) small screens and above **/
+@media print, screen and (min-width: 576px) {
+    .row.stripes dd {
+        border-top: 1px solid #999;
+    }
+    .row.stripes dt:last-of-type {
+        border-bottom: 1px solid #999;
+    }
+}

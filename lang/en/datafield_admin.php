@@ -36,6 +36,22 @@ $string['accesseditprivate'] = 'Hidden from public; Owner can view and edit.';
 $string['accessviewpublic'] = 'Visible to public; Owner can view but not edit.';
 $string['accesseditpublic'] = 'Visible to public; Owner can view and edit.';
 $string['autolinkdisabled'] = 'Autolinking is not available for this field type';
+$string['comment_confirm_add_record'] = ' The "confirm_add_record" field is required to send
+ a confirmation email when a new record is added.';
+$string['comment_confirm_update_record'] = ' The "confirm_update_record" field is required to send
+ a confirmation email when a record is updated.';
+$string['comment_fixdisabledfields'] = ' The "fixdisabledfields" field is required to prevent
+ errors in data/lib.php caused by disabled fields in form';
+$string['comment_fixmultilangvalues'] = ' The "fixmultilangvalues" field is required to fix
+ multilang values in "menu", "radio" and "text" fields.';
+$string['comment_fixuserid'] = ' The "fixuserid" field is required to match the userid
+ to the email address on records added by a site admin.';
+$string['comment_printfields'] = ' The following fields are required to set serial numbers
+ for conference badges, receipts and certificates';
+$string['comment_setdefaultvalues'] = ' The "setdefaultvalues" field is required to set
+ default values in new records.';
+$string['comment_unapprove'] = ' The "unapprove" field is required to override
+ the automatic approval of teacher/admin entries.';
 $string['copiedhtml'] = "HTML was copied to clipboard";
 $string['copyhtml'] = 'Copy HTML';
 $string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
@@ -58,4 +74,5 @@ See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
 $string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
 $string['reorderfields'] = 'Reorder fields';
+$string['stripes'] = 'Stripes';
 $string['viewhtml'] = 'View HTML';

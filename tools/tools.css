@@ -1,0 +1,27 @@
+.lang-en .multilang:not([lang=en]),
+.lang-ja .multilang:not([lang=ja]) {
+    display:none;
+}
+/** get_string('labelsep', 'langconfig') **/
+.lang-en dt:not(:empty):after {
+    content: ":";
+}
+.lang-ja dt:not(:empty):after {
+    content: "：";
+}
+
+h4 {
+    background-color: #236AB9;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 700;
+    padding: 8px 16px;
+}
+/**
+    <h4 class="rounded bg-primary text-light font-weight-bold py-2 px-3">Level 4 heading</h4>
+**/
+
+.row .hover,
+.row .hover {
+    background-color: pink!important;
+}
