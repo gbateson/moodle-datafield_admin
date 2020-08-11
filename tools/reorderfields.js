@@ -30,7 +30,22 @@
                 };
 
                 TOOL.setup_nav_links = function(){
-                    $("a.nav-link[href*='/mod/data/field.php']").addClass("active");
+                    document.querySelectorAll("a.nav-link[href*='/mod/data/field.php']").forEach(function(elm){
+                        elm.classList.add("active");
+                    });
+                };
+
+                TOOL.setup_admin_menus = function(){
+                    document.querySelectorAll("select[name^='admin']").forEach(function(elm){
+                         TOOL.add_event_listener(elm, "change", function(){
+                            if (this.options[this.selectedIndex].value == "1") {
+                                this.classList.add("admin");
+                            } else {
+                                this.classList.remove("admin");
+                            }
+                         }, false);
+                         elm.dispatchEvent(new Event("change"));
+                    });
                 };
 
                 TOOL.setup_row_hover = function(){
@@ -60,6 +75,7 @@
                 TOOL.setup = function() {
                     var p = TOOL.setup_strings();
                     p.then(TOOL.setup_nav_links);
+                    p.then(TOOL.setup_admin_menus);
                     p.then(TOOL.setup_row_hover);
                     p.then(TOOL.setup_row_drag);
                 };

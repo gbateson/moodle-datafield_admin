@@ -32,6 +32,8 @@ require_once($CFG->dirroot.'/mod/data/field/admin/field.class.php');
 
 $id = required_param('id', PARAM_INT); // course module id
 $sort = optional_param_array('sort', null, PARAM_INT);
+$admin = optional_param_array('admin', null, PARAM_INT);
+$type = optional_param_array('type', null, PARAM_ALPHANUM);
 
 $url = new moodle_url($SCRIPT, array('id' => $id));
 $PAGE->set_url($url);
@@ -68,16 +70,61 @@ echo html_writer::tag('h3', get_string($tool, $plugin));
 
 if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
 
+    $typeoptions = array();
+    foreach (core_component::get_plugin_list('datafield') as $name => $dir){
+        if ($name == 'admin') {
+            continue; // skip
+        }
+        $typeoptions[$name] = get_string('pluginname', 'datafield_'.$name);
+    }
+    asort($typeoptions); // sort alphabetically
+
+    $adminoptions = array(0 => get_string('normal'), 
+                          1 => get_string('pluginname', 'datafield_admin'));
+
     // If necessary, sort the fields.
     if ($sort && confirm_sesskey()) {
         asort($sort); // should be sorted anyway ;-)
+
         $newids = array_keys($fields);
         foreach ($sort as $oldid => $i) {
+
+            // Get data_field record.
+            $field = $fields[$oldid];
+
+            // Set field id to acheieve required sort order.
             $newid = $newids[$i - 1];
-            $fields[$oldid]->id = $newid;
-            $DB->update_record('data_fields', $fields[$oldid]);
-            $DB->set_field('data_content', 'fieldid', -$newid, array('fieldid' => $oldid));
+            $field->id = $newid;
+
+            // Get required field type.
+            if (isset($type[$oldid]) && array_key_exists($type[$oldid], $typeoptions)) {
+                $fieldtype = $type[$oldid];
+            } else if ($field->type == 'admin') {
+                $fieldtype = $field->param10;
+            } else {
+                $fieldtype = $field->type;
+            }
+
+            // Set required field type.
+            if (empty($admin[$oldid])) {
+                $field->type = $fieldtype;
+            } else {
+                $field->type = 'admin';
+                $field->param10 = $fieldtype;
+            }
+
+            // Update data_field record.
+            $DB->update_record('data_fields', $field);
+
+            // Update data_content, if necessary
+            if ($oldid != $newid) {
+                // In data_content records that refer to this field, we set the fieldid
+                // to the NEGATIVE value of the new fieldid. This prevents clashes during this loop.
+                $DB->set_field('data_content', 'fieldid', -$newid, array('fieldid' => $oldid));
+            }
         }
+
+        // Set all negative fieldid values to their positive equivalent i.e. the ABSolute value.
         $DB->execute('UPDATE {data_content} SET fieldid = ABS(fieldid) WHERE fieldid < ?', array(0));
         $fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id');
     }
@@ -86,9 +133,9 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     $lowlang = 'en';
     $highlang = 'ja';
 
-    $nameclass = "col-sm-2 my-0 py-1";
-    $typeclass = "col-sm-2 my-0 py-1";
-    $descclass = "col-sm-8 my-0 py-1";
+    $nameclass = "col-sm-4 col-lg-3 col-xl-3 my-0 py-1";
+    $typeclass = "col-sm-8 col-lg-5 col-xl-4 my-0 py-1";
+    $descclass = "col-sm-12 col-lg-4 col-xl-5 my-0 py-1";
 
     $multilanglowhigh = '/^([ -~].*?) ([^ -~]+)$/u';
     $multilanghighlow = '/^([^ -~].*?) ([ -~]+)$/u';
@@ -100,7 +147,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $i++;
 
         $nametext = $field->name;
-        $typetext = $field->type;
+        $typemenu = $field->type;
         $desctext = $field->description;
 
         $params = array('type' => 'text',
@@ -109,10 +156,17 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         'class' => 'text-center mr-2');
         $nametext = html_writer::empty_tag('input', $params).$nametext;
 
-        $typetext = get_string('fieldtypelabel', 'datafield_'.$field->type);
         if ($field->type == 'admin') {
-            $typetext .= ' ('.get_string('fieldtypelabel', 'datafield_'.$field->param10).')';
+            $fieldtype = $field->param10;
+            $adminvalue = 1;
+        } else {
+            $fieldtype = $field->type;
+            $adminvalue = 0;
         }
+        $typemenu = '';
+        $typemenu .= html_writer::select($adminoptions, 'admin['.$field->id.']', $adminvalue, null);
+        $typemenu .= html_writer::select($typeoptions, 'type['.$field->id.']', $fieldtype, null);
+        $typemenu = html_writer::tag('small', $typemenu);
 
         if ($desctext) {
             switch (true) {
@@ -132,7 +186,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $list .= html_writer::start_tag('li', array('class' => 'px-2'));
         $list .= html_writer::start_tag('dl', array('class' => 'row my-0'));
         $list .= html_writer::tag('dt', $nametext, array('class' => $nameclass));
-        $list .= html_writer::tag('dd', $typetext, array('class' => $typeclass));
+        $list .= html_writer::tag('dd', $typemenu, array('class' => $typeclass));
         $list .= html_writer::tag('dd', $desctext, array('class' => $descclass));
         $list .= html_writer::end_tag('dl');
         $list .= html_writer::end_tag('li');

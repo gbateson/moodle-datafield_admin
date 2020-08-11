@@ -15,3 +15,8 @@
 .row input[type=text] {
     max-width: 2em;
 }
+
+.row select.admin {
+    border: 1px solid #939;
+    background-color: #fef;
+}
