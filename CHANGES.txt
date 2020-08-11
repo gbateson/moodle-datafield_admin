@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-11 (63)
+ - use touch.punch.js to allow drag-and-drop functionality in reorderfields tool to work on smart phones
+
 2020-08-11 (62)
  - in the 'reorderfields' tool, allow user to change field type, including to an 'admin' field
 
