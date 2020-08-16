@@ -53,6 +53,16 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/data:managetemplates', $context);
 
+// If "cancel" was pressed, return to "Add new admin field".
+if (optional_param('cancel', false, PARAM_BOOL)) {
+    $params = array('d' => $data->id,
+                    'mode' => 'new',
+                    'newtype' => 'admin',
+                    'sesskey' => sesskey());
+    $url = new moodle_url('/mod/data/field.php', $params);
+    redirect($url);
+}
+
 $plugin = 'datafield_admin';
 $tool = substr(basename($SCRIPT), 0, -4);
 
@@ -86,6 +96,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     if ($sort && confirm_sesskey()) {
         asort($sort); // should be sorted anyway ;-)
 
+        $update = false;
         $newids = array_keys($fields);
         foreach ($sort as $oldid => $i) {
 
@@ -116,17 +127,20 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
             // Update data_field record.
             $DB->update_record('data_fields', $field);
 
-            // Update data_content, if necessary
+            // Update data_content, if necessary.
             if ($oldid != $newid) {
                 // In data_content records that refer to this field, we set the fieldid
-                // to the NEGATIVE value of the new fieldid. This prevents clashes during this loop.
+                // to the NEGATIVE value of the new fieldid. It will be set to positive later.
                 $DB->set_field('data_content', 'fieldid', -$newid, array('fieldid' => $oldid));
+                $update = true;
             }
         }
 
         // Set all negative fieldid values to their positive equivalent i.e. the ABSolute value.
-        $DB->execute('UPDATE {data_content} SET fieldid = ABS(fieldid) WHERE fieldid < ?', array(0));
-        $fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id');
+        if ($update) {
+            $DB->execute('UPDATE {data_content} SET fieldid = ABS(fieldid) WHERE fieldid < ?', array(0));
+            $fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id');
+        }
     }
 
     // TODO: set languages from user form
@@ -202,6 +216,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                                    'name' => 'savechanges',
                                                    'class' => 'btn btn-primary',
                                                    'value' => get_string('savechanges')));
+        echo ' ';
+        echo html_writer::empty_tag('input', array('type' => 'submit',
+                                                   'name' => 'cancel',
+                                                   'class' => 'btn btn-secondary',
+                                                   'value' => get_string('cancel')));
         echo html_writer::end_tag('form');
     }
 }

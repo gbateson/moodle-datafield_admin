@@ -57,6 +57,21 @@ $string['copyhtml'] = 'Copy HTML';
 $string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['emptyrecord'] = 'Row {$a->row} was empty so record {$a->recordid} will be deleted.';
+$string['fielddescription_help'] = 'The field description is a meaningful explaination of what this field contains. In standard Moodle, it is only used in the "Fields" tab, which shows a list of fields in this database.
+
+In 3rd-party plugins, it also used in "Generate templates" tool in the "datafield_admin" plugin, and in the following formats offered by the "datafield_template" plugin:
+
+* [[FORMATHTML fieldname]]
+* [[FORMATTEXT fieldname]]
+* [[BILINGUALTITLE fieldname]]
+* [[MULTILANGTITLE fieldname]]';
+$string['fielddescription'] = 'Description';
+$string['fieldname_help'] = 'The name of the field is a short, unique name that is used to identify where the field is placed in the display templates for this database. It is recommended that the field name confirms to the following rules:
+
+* is meaningful
+* contains no spaces
+* contains only lowercase letters and numbers';
+$string['fieldname'] = 'Field name';
 $string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
@@ -73,6 +88,7 @@ Then purge the Moodle caches:
 See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
 $string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
+$string['moresettings'] = 'More settings will appear here after selecting "Field type" and clicking/tapping the "Add" button.';
 $string['reorderfields'] = 'Reorder fields';
 $string['stripes'] = 'Stripes';
 $string['viewhtml'] = 'View HTML';

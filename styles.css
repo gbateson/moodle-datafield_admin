@@ -33,3 +33,19 @@
 .path-mod-data-field input[type="checkbox"] {
     margin-top: -8px;
 }
+
+.path-mod-data-field .fieldname, .path-mod-data-field .icon {
+    margin-right: 0px;
+}
+
+.path-mod-data-field .fieldname, .path-mod-data-field .widetext,
+.path-mod-data-field .fieldname, .path-mod-data-field .fieldname,
+.path-mod-data-field .fieldname, .path-mod-data-field .fielddescription {
+    max-width: 300px;
+    width: 100%;
+}
+
+.path-mod-data-field .fieldname, .path-mod-data-field .narrowtext {
+    max-width: 150px;
+    width: 100%;
+}

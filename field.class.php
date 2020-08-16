@@ -149,6 +149,11 @@ class data_field_admin extends data_field_base {
      */
     var $sortorderparam = 'param6';
 
+    /**
+     * should we use TABLE or DL + bootstrap classes 
+     */
+    protected static $bootstrap = false;
+
     // implement validation on values
     //  - PARAM_xxx
     // can we filter_string output to view pages?
@@ -940,6 +945,14 @@ class data_field_admin extends data_field_base {
                 include($subfolder.'/mod.html');
                 ob_end_flush();
             }
+        } else {
+            $text = get_string('moresettings', 'datafield_admin');
+            $text = html_writer::tag('p', $text, array('style' => 'width: 90%;'));
+            if (self::$bootstrap) {
+                echo html_writer::tag('dd', $text, array('class' => 'col'));
+            } else {
+                echo html_writer::tag('tr', html_writer::tag('td', $text, array('colspan' => '2')));
+            }
         }
     }
 
@@ -956,6 +969,18 @@ class data_field_admin extends data_field_base {
         // remove first two rows (field name and description)
         $search = '/^(\s*<tr[^>]*>.*?<\/tr[^>]*>){1,2}/is';
         $output = preg_replace($search, '', $output);
+
+        if  (self::$bootstrap) {
+            // Remove <tr> tags
+            $search = '/[ \t]*<\/?tr[^>]*>[\r\n]*/';
+            $output = preg_replace($search, '', $output);
+
+            // convert <td> tags to <dt> + <dd> pairs
+            $search = '/\s*<td[^>]*>(.*?)<\/td[^>]*>\s*<td[^>]*>(.*?)<\/td[^>]*>/is';
+            $replace = '<dt class="col-sm-4 col-lg-3 col-xl-2 text-sm-right">$1</dt>'.
+                       '<dd class="col-sm-8 col-lg-9 col-xl-10">$2</dd>';
+            $output = preg_replace($search, $replace, $output);
+        }
 
         // disable "Allow autolink" field from Admin (text) fields
         // because the data filter only recognizes type=text fields
@@ -1678,39 +1703,70 @@ class data_field_admin extends data_field_base {
     //////////////////////////////////////////////////
 
     /**
+     * Set the $bootstrap variable.
+     */
+    static public function set_bootstrap($truefalse) {
+        self::$bootstrap = $truefalse;
+    }
+
+    /**
+     * start the main TABLE in the mod.html files
+     */
+    static public function mod_html_start($field) {
+        if (self::$bootstrap) {
+            $params = array('class' => 'row datafield_'.$field->type);
+            echo html_writer::start_tag('dl', $params);
+        } else {
+            $params = array('width' => '100%',
+                            'cellpadding' => '5',
+                            'class' => 'datafield_'.$field->type);
+            echo html_writer::start_tag('table', $params);
+            echo html_writer::start_tag('tbody');
+        }
+    }
+
+    /**
+     * end the main TABLE in the mod.html files
+     */
+    static public function mod_html_end($bootstrap=true) {
+        if (self::$bootstrap) {
+            echo html_writer::end_tag('dl');
+        } else {
+            echo html_writer::end_tag('tbody');
+            echo html_writer::end_tag('table');
+        }
+    }
+
+    /**
      * format a core field ("name" or "description") in mod.html
      */
     static public function format_core_field($field, $type) {
+        global $OUTPUT;
         $value = $field->$type;
         $name  = 'field'.$type;
-        $label = get_string($name, 'data');
+        $label = get_string($name, 'datafield_admin');
+        $help = $OUTPUT->help_icon($name, 'datafield_admin');
         $text  = self::format_text_field($type, $value, $name);
-        echo self::format_table_row($type, $label, $text);
+        echo self::format_table_row($type, $label, $text, $help);
     }
 
     /**
      * format a table row in mod.html
      */
-    static public function format_table_row($name, $label, $text) {
-        $label  = self::format_label($name, $label);
-        $output = self::format_table_cell($label, 'c0').
-                  self::format_table_cell($text, 'c1');
-        $output = html_writer::tag('tr', $output, array('class' => $name));
+    static public function format_table_row($name, $label, $text, $help='') {
+        $label = html_writer::tag('label', $label, array('for' => $name));
+        if ($help) {
+            $label .= " $help";
+        }
+        if (self::$bootstrap) {
+            $output = html_writer::tag('dt', $label, array('class' => 'col-sm-4 col-lg-3 col-xl-2 text-sm-right')).
+                      html_writer::tag('dd', $text, array('class' => 'col-sm-8 col-lg-9 col-xl-10'));
+        } else {
+            $output = html_writer::tag('td', $label, array('class' => 'c0')).
+                      html_writer::tag('td', $text, array('class' => 'c1'));
+            $output = html_writer::tag('tr', $output, array('class' => $name));
+        }
         return $output;
-    }
-
-    /**
-     * format a table cell in mod.html
-     */
-    static public function format_table_cell($text, $class) {
-        return html_writer::tag('td', $text, array('class' => $class));
-    }
-
-    /**
-     * format a label in mod.html
-     */
-    static public function format_label($name, $label) {
-        return html_writer::tag('label', $label, array('for' => $name));
     }
 
     /**
@@ -1731,8 +1787,17 @@ class data_field_admin extends data_field_base {
                         'id'    => 'id_'.$name,
                         'name'  => $name,
                         'value' => $value,
-                        'class' => $class,
-                        'size'  => $size);
+                        'class' => $class);
+        if (self::$bootstrap) {
+            if ($size <= 10) {
+                $params['class'] .= ' narrowtext';
+            }
+            if ($size >= 40) {
+                $params['class'] .= ' widetext';
+            }
+        } else {
+            $params['size'] = $size;
+        }
         return html_writer::empty_tag('input', $params);
     }
 
@@ -1743,8 +1808,17 @@ class data_field_admin extends data_field_base {
         $params = array('id'    => 'id_'.$name,
                         'name'  => $name,
                         'class' => $class,
-                        'rows'  => $rows,
-                        'cols'  => $cols);
+                        'rows'  => $rows);
+        if (self::$bootstrap) {
+            if ($cols <= 10) {
+                $params['class'] .= ' narrowtext';
+            }
+            if ($cols >= 40) {
+                $params['class'] .= ' widetext';
+            }
+        } else {
+            $params['cols'] = $cols;
+        }
         return html_writer::tag('textarea', $value, $params);
     }
 
@@ -1918,8 +1992,17 @@ class data_field_admin extends data_field_base {
         $params = array('id'   => 'id_'.$name.'_content',
                         'name' => $name.'_content',
                         'rows' => $rows,
-                        'cols' => $cols,
                         'spellcheck' => 'true');
+        if (self::$bootstrap) {
+            if ($cols <= 10) {
+                $params['class'] = 'narrowtext';
+            }
+            if ($cols >= 40) {
+                $params['class'] = 'widetext';
+            }
+        } else {
+            $params['cols'] = $cols;
+        }
         $output .= html_writer::tag('textarea', $content, $params);
         $output .= html_writer::end_tag('div');
 

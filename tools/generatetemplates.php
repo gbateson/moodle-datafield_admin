@@ -50,6 +50,16 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/data:managetemplates', $context);
 
+// If "cancel" was pressed, return to "Add new admin field".
+if (optional_param('cancel', false, PARAM_BOOL)) {
+    $params = array('d' => 1,
+                    'mode' => 'new',
+                    'newtype' => 'admin',
+                    'sesskey' => sesskey());
+    $url = new moodle_url('/mod/data/field.php', $params);
+    redirect($url);
+}
+
 $plugin = 'datafield_admin';
 $tool = substr(basename($SCRIPT), 0, -4);
 
@@ -308,6 +318,13 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         echo html_writer::end_tag('div').$newline;
         echo html_writer::end_tag('fieldset').$newline;
     }
+
+    // Add "cancel" button to return to the "Add new admin field" page.
+    $params = array('d' => $data->id,
+                    'mode' => 'new',
+                    'newtype' => 'admin');
+    $url = new moodle_url('/mod/data/field.php', $params);
+    echo $OUTPUT->single_button($url, get_string('cancel'), 'post');
 }
 
 echo $OUTPUT->footer();
