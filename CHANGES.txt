@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-18 (65)
+ - fix bug in JS file for tool to reorder fields that caused the description to be reset to the sort number of the field
+
 2020-08-16 (64)
  - use <DL> + bootstrap classes in mod.html templates
 

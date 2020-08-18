@@ -2,7 +2,7 @@
 .lang-ja .multilang:not([lang=ja]) {
     display:none;
 }
-/** get_string('labelsep', 'langconfig') **/
+
 .lang-en dt:not(:empty):after {
     content: ":";
 }

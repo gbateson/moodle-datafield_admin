@@ -119,6 +119,12 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         'unapprove'          => get_string('comment_unapprove', $plugin),
     );
 
+    // used at top of standard listtemplate:
+    //     ##delcheck##
+    // used at bottom of standard listtemplate:
+    //     ##edit##  ##more##  ##delete##
+    //     ##approve##  ##disapprove##  ##export##
+
     $templates = array('listtemplate' =>  '##more## ##edit## ##delete##',
                        'singletemplate' =>  '##edit## ##delete##',
                        'addtemplate' =>  '',

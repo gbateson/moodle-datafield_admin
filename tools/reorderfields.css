@@ -12,8 +12,13 @@
     border-bottom: 1px solid #999;
 }
 
-.row input[type=text] {
+.row input[type=text][name^=sort] {
     max-width: 2em;
+}
+
+.row input[type=text][name^=desc] {
+    padding: 4px 2px;
+    width: 100%;
 }
 
 .row select.admin {

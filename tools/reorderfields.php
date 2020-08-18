@@ -34,6 +34,7 @@ $id = required_param('id', PARAM_INT); // course module id
 $sort = optional_param_array('sort', null, PARAM_INT);
 $admin = optional_param_array('admin', null, PARAM_INT);
 $type = optional_param_array('type', null, PARAM_ALPHANUM);
+$desc = optional_param_array('desc', null, PARAM_RAW); // PARAM_HTML or PARAM_MULTILANG
 
 $url = new moodle_url($SCRIPT, array('id' => $id));
 $PAGE->set_url($url);
@@ -96,16 +97,23 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     if ($sort && confirm_sesskey()) {
         asort($sort); // should be sorted anyway ;-)
 
-        $update = false;
+        $updatefieldids = false;
         $newids = array_keys($fields);
         foreach ($sort as $oldid => $i) {
 
             // Get data_field record.
             $field = $fields[$oldid];
 
+            $updatefield = false;
+            $updatefieldid = false;
+
             // Set field id to acheieve required sort order.
             $newid = $newids[$i - 1];
-            $field->id = $newid;
+            if ($field->id != $newid) {
+                $field->id = $newid;
+                $updatefield = true;
+                $updatefieldid = true;
+            }
 
             // Get required field type.
             if (isset($type[$oldid]) && array_key_exists($type[$oldid], $typeoptions)) {
@@ -116,28 +124,47 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                 $fieldtype = $field->type;
             }
 
-            // Set required field type.
+            // Uupdate field type, if required.
             if (empty($admin[$oldid])) {
-                $field->type = $fieldtype;
+                if ($field->type != $fieldtype) {
+                    $field->type = $fieldtype;
+                    $updatefield = true;
+                }
             } else {
-                $field->type = 'admin';
-                $field->param10 = $fieldtype;
+                if ($field->type != 'admin') {
+                    $field->type = 'admin';
+                    $updatefield = true;
+                }
+                if ($field->param10 != $fieldtype) {
+                    $field->param10 = $fieldtype;
+                    $updatefield = true;
+                }
+            }
+
+            // Update description, if required.
+            if (isset($desc[$oldid])) {
+                if ($field->description != $desc[$oldid]) {
+                    $field->description = $desc[$oldid];
+                    $updatefield = true;
+                }
             }
 
             // Update data_field record.
-            $DB->update_record('data_fields', $field);
+            if ($updatefield) {
+                $DB->update_record('data_fields', $field);
+            }
 
             // Update data_content, if necessary.
-            if ($oldid != $newid) {
+            if ($updatefieldid) {
                 // In data_content records that refer to this field, we set the fieldid
                 // to the NEGATIVE value of the new fieldid. It will be set to positive later.
                 $DB->set_field('data_content', 'fieldid', -$newid, array('fieldid' => $oldid));
-                $update = true;
+                $updatefieldids = true;
             }
         }
 
         // Set all negative fieldid values to their positive equivalent i.e. the ABSolute value.
-        if ($update) {
+        if ($updatefieldids) {
             $DB->execute('UPDATE {data_content} SET fieldid = ABS(fieldid) WHERE fieldid < ?', array(0));
             $fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id');
         }
@@ -182,17 +209,13 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $typemenu .= html_writer::select($typeoptions, 'type['.$field->id.']', $fieldtype, null);
         $typemenu = html_writer::tag('small', $typemenu);
 
+
+        $params = array('name' => 'desc['.$field->id.']',
+                        'value' => $desctext,
+                        'type' => 'text');
+        $desctext = html_writer::empty_tag('input', $params);
+        
         if ($desctext) {
-            switch (true) {
-                case preg_match($multilanglowhigh, $desctext, $matches):
-                    $desctext = html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $lowlang)).
-                                html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $highlang));
-                    break;
-                case preg_match($multilanghighlow, $desctext, $matches):
-                    $desctext = html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $highlang)).
-                                html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $lowlang));
-                    break;
-            }
         } else {
             $desctext = $field->name;
         }

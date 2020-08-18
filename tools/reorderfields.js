@@ -234,7 +234,7 @@
                         "opacity" : 0.6,
                         "update"  : function(){
                             $(this).find("li").each(function(i){
-                                $(this).find("input[type=text]").attr("value", i + 1);
+                                $(this).find("input[type=text][name^=sort]").attr("value", i + 1);
                             });
                         }
                     });
