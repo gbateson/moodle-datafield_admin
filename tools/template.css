@@ -1,0 +1,44 @@
+.lang-en .multilang:not([lang=en]),
+.lang-ja .multilang:not([lang=ja]) {
+    display:none;
+}
+
+.lang-en dt:not(:empty):after {
+    content: ":";
+}
+.lang-ja dt:not(:empty):after {
+    content: "：";
+}
+
+.row.stripes dt:nth-of-type(odd),
+.row.stripes dd:nth-of-type(odd) {
+    background-color: #f0f0f0;
+}
+
+.row.stripes dt:nth-of-type(even),
+.row.stripes dd:nth-of-type(even) {
+    background-color: #f4f4f4;
+}
+
+.row.stripes dt {
+    border-top: 1px solid #999;
+}
+
+.row.stripes dd:last-of-type {
+    border-bottom: 1px solid #999;
+}
+
+.row .hover,
+.row .hover {
+    background-color: pink!important;
+}
+
+/** (sm) small screens and above **/
+@media print, screen and (min-width: 576px) {
+    .row.stripes dd {
+        border-top: 1px solid #999;
+    }
+    .row.stripes dt:last-of-type {
+        border-bottom: 1px solid #999;
+    }
+}

@@ -77,7 +77,8 @@ $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 data_print_header($course, $cm, $data, $tool);
 data_field_admin::display_tool_links($id, $tool);
 
-echo html_writer::tag('h3', get_string($tool, $plugin));
+$params = array('class' => 'rounded bg-primary text-light font-weight-bold mt-3 py-2 px-3');
+echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 
 if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
 

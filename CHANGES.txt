@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-20 (66)
+ - added templates for CSS and JS
+
 2020-08-18 (65)
  - fix bug in JS file for tool to reorder fields that caused the description to be reset to the sort number of the field
 

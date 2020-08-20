@@ -4,12 +4,16 @@
     TOOL.str = {};
     TOOL.plugin = "datafield_admin";
 
-    TOOL.commands = new Array("viewhtml", "copyhtml", "stripes");
+    TOOL.htmlcommands = new Array("viewhtml", "copyhtml", "stripes");
+    TOOL.textcommands = new Array("copytext");
+    TOOL.commands = TOOL.htmlcommands.concat(TOOL.textcommands);
+
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
     TOOL.img = {
         "viewhtml" : TOOL.wwwroot + "/pix/i/preview.svg",
         "copyhtml" : TOOL.wwwroot + "/pix/t/download.svg",
+        "copytext" : TOOL.wwwroot + "/pix/t/download.svg",
         "stripes"  : TOOL.wwwroot + "/pix/a/view_list_active.svg"
     };
 
@@ -32,20 +36,6 @@
         } else if (obj.attachEvent) {
             obj.attachEvent("on" + evt, fn);
         }
-    }
-
-    TOOL.get_related_element = function(elm, ancestor, target) {
-        var a = elm;
-        while (a = a.parentElement) {
-            if (a.matches(ancestor)) {
-                return a.querySelector(target);
-            }
-        }
-        return null;
-    };
-
-    TOOL.get_defaulttemplate = function(elm) {
-        return TOOL.get_related_element(elm, "fieldset", ".defaulttemplate");
     }
 
     TOOL.onclick_viewhtml = function() {
@@ -76,29 +66,18 @@
             } else if (elm.matches("pre")) {
                 html = TOOL.get_text_content(elm);
             }
+            TOOL.copy_to_clipboard(html, TOOL.str.copiedhtml);
+        }
+    };
 
-            var container = document.createElement("pre");
-            container.style.position = "fixed";
-            container.style.pointerEvents = "none"
-            container.style.opacity = 0;
-            container.appendChild(document.createTextNode(html));
-            document.body.appendChild(container)
-
-            if (window.getSelection) {
-                // All browsers, except IE before version 9
-                var selection = window.getSelection();
-                selection.selectAllChildren(container);
-            } else {
-                // Internet Explorer before version 9
-                var range = document.body.createTextRange();
-                range.moveToElementText(container);
-                range.select();
-            }
-
-            document.execCommand("Copy");
-            alert(TOOL.str.copiedhtml);
-
-            document.body.removeChild(container);
+    TOOL.onclick_copytext = function() {
+        var elm = TOOL.get_defaulttemplate(this);
+        elm = elm.querySelector("pre");
+        if (elm) {
+            TOOL.copy_to_clipboard(
+                TOOL.get_text_content(elm),
+                TOOL.str.copiedtext
+            );
         }
     };
 
@@ -112,12 +91,12 @@
                 }
             } else if (elm.matches("pre")) {
                 var txt = TOOL.get_text_content(elm);
-                var stripeson = '<dl class="row stripes">';
-                var stripesoff = '<dl class="row">';
-                if (txt.indexOf(stripesoff) >= 0) {
-                    txt = txt.replace(stripesoff, stripeson);
+                var stripeson = new RegExp('<dl class="row([^"]*) stripes([^"]*)">');
+                var stripesoff = new RegExp('<dl class="row([^"]*)">');
+                if (txt.match(stripeson)) {
+                    txt = txt.replace(stripeson, '<dl class="row$1$2">');
                 } else {
-                    txt = txt.replace(stripeson, stripesoff);
+                    txt = txt.replace(stripesoff, '<dl class="row stripes$1">');
                 }
                 while (elm.firstChild) {
                     elm.removeChild(elm.firstChild);
@@ -125,6 +104,46 @@
                 elm.appendChild(document.createTextNode(txt));
             }
         }
+    };
+
+    TOOL.get_defaulttemplate = function(elm) {
+        return TOOL.get_related_element(elm, "fieldset", ".defaulttemplate");
+    }
+
+    TOOL.get_related_element = function(elm, ancestor, target) {
+        var a = elm;
+        while (a = a.parentElement) {
+            if (a.matches(ancestor)) {
+                return a.querySelector(target);
+            }
+        }
+        return null;
+    };
+
+    TOOL.copy_to_clipboard = function(txt, msg) {
+
+        var container = document.createElement("pre");
+        container.style.position = "fixed";
+        container.style.pointerEvents = "none"
+        container.style.opacity = 0;
+        container.appendChild(document.createTextNode(txt));
+        document.body.appendChild(container)
+
+        if (window.getSelection) {
+            // All browsers, except IE before version 9
+            var selection = window.getSelection();
+            selection.selectAllChildren(container);
+        } else {
+            // Internet Explorer before version 9
+            var range = document.body.createTextRange();
+            range.moveToElementText(container);
+            range.select();
+        }
+
+        document.execCommand("Copy");
+        alert(msg);
+
+        document.body.removeChild(container);
     };
 
     TOOL.setup_strings = function() {
@@ -137,6 +156,7 @@
                         strings.push({"key": command, "component": TOOL.plugin});
                     });
                     strings.push({"key": "copiedhtml", "component": TOOL.plugin});
+                    strings.push({"key": "copiedtext", "component": TOOL.plugin});
 
                     STR.get_strings(strings).done(function(s) {
                         TOOL.commands.forEach(function(command, i){
@@ -144,6 +164,7 @@
                         });
                         var i = TOOL.commands.length;
                         TOOL.str.copiedhtml = s[i++];
+                        TOOL.str.copiedtext = s[i++];
                         resolve();
                     });
                 });
@@ -158,7 +179,7 @@
     };
 
     TOOL.setup_commands = function() {
-        document.querySelectorAll("fieldset.template:not(.csstemplate):not(.jstemplate) legend").forEach(function(legend){
+        document.querySelectorAll("fieldset.template legend").forEach(function(legend){
 
             var icons = document.createElement("div");
             icons.className = "icons "
@@ -168,7 +189,13 @@
             // The classes could be added individually
             // e.g. icons.classList.add("border");
 
-            TOOL.commands.forEach(function(command){
+            if (legend.parentElement.matches(".csstemplate, .jstemplate")) {
+                var commands = TOOL.textcommands;
+            } else {
+                var commands = TOOL.htmlcommands;
+            }
+
+            commands.forEach(function(command){
                 var title = TOOL.str[command];
                 var icon = document.createElement("img");
                 icon.src = TOOL.img[command];

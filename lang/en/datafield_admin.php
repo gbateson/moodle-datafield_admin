@@ -53,7 +53,9 @@ $string['comment_setdefaultvalues'] = ' The "setdefaultvalues" field is required
 $string['comment_unapprove'] = ' The "unapprove" field is required to override
  the automatic approval of teacher/admin entries.';
 $string['copiedhtml'] = "HTML was copied to clipboard";
+$string['copiedtext'] = "Text was copied to clipboard";
 $string['copyhtml'] = 'Copy HTML';
+$string['copytext'] = 'Copy text';
 $string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['emptyrecord'] = 'Row {$a->row} was empty so record {$a->recordid} will be deleted.';

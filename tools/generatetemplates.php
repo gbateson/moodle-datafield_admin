@@ -73,7 +73,8 @@ $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 data_print_header($course, $cm, $data, $tool);
 data_field_admin::display_tool_links($id, $tool);
 
-echo html_writer::tag('h3', get_string($tool, $plugin));
+$params = array('class' => 'rounded bg-primary text-light font-weight-bold mt-3 py-2 px-3');
+echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 
 // Responsive table suitable for Boost in Moodle >= 3.6
 if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
@@ -125,17 +126,16 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     //     ##edit##  ##more##  ##delete##
     //     ##approve##  ##disapprove##  ##export##
 
-    $templates = array('listtemplate' =>  '##more## ##edit## ##delete##',
-                       'singletemplate' =>  '##edit## ##delete##',
-                       'addtemplate' =>  '',
-                       'asearchtemplate' =>  '',
-                       'csstemplate' =>  '',
-                       'jstemplate' =>  '');
+    $templates = array('listtemplate', 'singletemplate',
+                       'addtemplate', 'asearchtemplate',
+                       'csstemplate', 'jstemplate');
 
-    foreach ($templates as $template  => $actions) {
+    foreach ($templates as $template) {
 
         $specialfields = array();
         $printfields = array();
+        $metafields = array();
+        $actions = '';
         $types = array('admin',  'checkbox',
                        'date',   'menu',
                        'number', 'radiobutton',
@@ -166,6 +166,15 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'certificate'    => '');
                 $types[] = 'constant';
                 $types[] = 'template';
+                $actions = '##more## ##edit## ##delete##';
+                break;
+
+            case 'singletemplate':
+                $metafields = array('user' => get_string('author', 'repository'), // 'search', 'hp5'
+                                    'timeadded' => get_string('timeadded', 'data'),
+                                    'timemodified' => get_string('timemodified', 'data'),
+                                    'tags' => get_string('tags'));
+                $actions = '##edit## ##delete##';
                 break;
         }
 
@@ -244,10 +253,32 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         $dl .= $indent2.html_writer::tag('dd', '[['.$field->name.']]', array('class' => $class)).$newline;
                     }
                 }
+                if ($metafields) {
+                    $dl .= $newline;
+                    foreach ($metafields as $field => $label) {
+                        $dl .= $indent2.html_writer::tag('dt', $label, array('class' => "$dt_class metafield $field")).$newline;
+                        $dl .= $indent2.html_writer::tag('dd', '##'.$field.'##', array('class' => "$dd_class metafield $field")).$newline;
+                    }
+                }
                 if ($actions) {
                     $dl .= $newline;
                     $dl .= $indent2.html_writer::tag('dt', $str->actions, array('class' => $dt_class.' actions')).$newline;
                     $dl .= $indent2.html_writer::tag('dd', $actions, array('class' => $dd_class.' actions')).$newline;
+                }
+                break;
+
+            case 'csstemplate':
+            case 'jstemplate':
+                $filepath = $CFG->dirroot.'/mod/data/field/admin/tools';
+                if ($template == 'csstemplate') {
+                    $filepath .= '/template.css';
+                } else {
+                    $filepath .= '/template.js';
+                }
+                if (file_exists($filepath)) {
+                    echo html_writer::start_tag('pre');
+                    echo htmlspecialchars(file_get_contents($filepath));
+                    echo html_writer::end_tag('pre');
                 }
                 break;
 
@@ -272,7 +303,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                 $specialfields[$name] = '';
             }
 
-            echo $indent1.html_writer::start_tag('dl', array('class' => 'row'));
+            echo $indent1.html_writer::start_tag('dl', array('class' => 'row px-3'));
             echo $dl;
             echo $indent1.html_writer::end_tag('dl').$newline;
 
