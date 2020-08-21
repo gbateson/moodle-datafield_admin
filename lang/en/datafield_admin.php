@@ -89,8 +89,16 @@ Then purge the Moodle caches:
 
 See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
+$string['hidetext'] = 'Hide text';
 $string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
 $string['moresettings'] = 'More settings will appear here after selecting "Field type" and clicking/tapping the "Add" button.';
 $string['reorderfields'] = 'Reorder fields';
+$string['saveall'] = 'Save all';
+$string['savedall'] = 'All templates were saved.';
+$string['savedhtml'] = 'HTML was saved to the {$a}.';
+$string['savedtext'] = 'Text was saved to the {$a}.';
+$string['savehtml'] = 'Save html';
+$string['savetext'] = 'Save text';
 $string['stripes'] = 'Stripes';
 $string['viewhtml'] = 'View HTML';
+$string['viewtext'] = 'View text';

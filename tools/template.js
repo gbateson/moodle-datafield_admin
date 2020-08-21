@@ -7,7 +7,7 @@
         } else if (obj.attachEvent) {
             obj.attachEvent("on" + evt, fn);
         }
-    }
+    };
 
     TMP.setup_row_hover = function(div) {
         if (div) {
@@ -52,7 +52,7 @@
                 }
             });
         });
-    }
+    };
 
     TMP.setup = function() {
         TMP.setup_row_hover();

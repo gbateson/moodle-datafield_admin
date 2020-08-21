@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-21 (67)
+ - add functionality to save templates directly from tool to 'Generate templates'
+
 2020-08-20 (66)
  - added templates for CSS and JS
 

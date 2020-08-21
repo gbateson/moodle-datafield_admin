@@ -4,17 +4,141 @@
     TOOL.str = {};
     TOOL.plugin = "datafield_admin";
 
-    TOOL.htmlcommands = new Array("viewhtml", "copyhtml", "stripes");
-    TOOL.textcommands = new Array("copytext");
-    TOOL.commands = TOOL.htmlcommands.concat(TOOL.textcommands);
+    TOOL.htmlcommands = new Array("viewhtml", "copyhtml", "stripes", "savehtml");
+    TOOL.textcommands = new Array("viewtext", "copytext", "savetext");
 
+    TOOL.stringnames = TOOL.htmlcommands.concat(TOOL.textcommands)
+                       .concat(new Array("copiedhtml", "savedhtml",
+                                         "copiedtext", "savedtext",
+                                         "saveall", "savedall",
+                                         "hidetext"));
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
     TOOL.img = {
         "viewhtml" : TOOL.wwwroot + "/pix/i/preview.svg",
         "copyhtml" : TOOL.wwwroot + "/pix/t/download.svg",
+        "savehtml" : TOOL.wwwroot + "/pix/e/save.svg",
+        "stripes"  : TOOL.wwwroot + "/pix/a/view_list_active.svg",
+        "viewtext" : TOOL.wwwroot + "/pix/i/preview.svg",
         "copytext" : TOOL.wwwroot + "/pix/t/download.svg",
-        "stripes"  : TOOL.wwwroot + "/pix/a/view_list_active.svg"
+        "savetext" : TOOL.wwwroot + "/pix/e/save.svg"
+    };
+    TOOL.toolurl = TOOL.wwwroot + "/mod/data/field/admin/tools/generatetemplates.php"
+
+    TOOL.matchtemplatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
+
+    // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
+    TOOL.ajax = {};
+
+    TOOL.ajax.x = function () {
+        if (window.XMLHttpRequest) {
+            return new XMLHttpRequest();
+        }
+        var versions = new Array("MSXML2.XmlHttp.6.0",
+                                 "MSXML2.XmlHttp.5.0",
+                                 "MSXML2.XmlHttp.4.0",
+                                 "MSXML2.XmlHttp.3.0",
+                                 "MSXML2.XmlHttp.2.0",
+                                 "Microsoft.XmlHttp");
+        var x;
+        for (var i = 0; i < versions.length; i++) {
+            try {
+                x = new ActiveXObject(versions[i]);
+                break;
+            } catch (e) {}
+        }
+        return x;
+    };
+
+    TOOL.ajax.send = function (url, data, callback, method) {
+        var x = TOOL.ajax.x();
+        if (x) {
+            x.open(method, url, true); // Always asynchronous ;-)
+            x.onreadystatechange = function () {
+                if (x.readyState == 4) {
+                    callback(x.responseText);
+                }
+            };
+            if (method == "POST") {
+                x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            }
+            x.send(data)
+        }
+    };
+
+    TOOL.ajax.get = function (url, data, callback) {
+        var q = [];
+        for (var key in data) {
+            q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+        }
+        TOOL.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET")
+    };
+
+    TOOL.ajax.post = function (url, data, callback) {
+        var q = [];
+        for (var key in data) {
+            q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+        }
+        TOOL.ajax.send(url, q.join('&'), callback, "POST")
+    };
+
+    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
+        if (obj.addEventListener) {
+            obj.addEventListener(evt, fn, (useCapture || false));
+        } else if (obj.attachEvent) {
+            obj.attachEvent("on" + evt, fn);
+        }
+    };
+
+    TOOL.get_fieldset = function(elm) {
+        return TOOL.get_related_element(elm, "fieldset.template");
+    };
+
+    TOOL.get_legend = function(elm) {
+        return TOOL.get_related_element(elm, "fieldset", "legend");
+    };
+
+    TOOL.get_defaulttemplate = function(elm) {
+        return TOOL.get_related_element(elm, "fieldset", ".defaulttemplate");
+    };
+
+    TOOL.get_related_element = function(elm, ancestor, target) {
+        var a = elm;
+        while (a = a.parentElement) {
+            if (a.matches(ancestor)) {
+                if (target) {
+                    return a.querySelector(target);
+                } else {
+                    return a;
+                }
+            }
+        }
+        return null;
+    };
+
+    TOOL.get_sesskey = function() {
+        var elm = document.querySelector("input[name=sesskey]");
+        if (elm) {
+            return elm.getAttribute("value");
+        }
+        return null; // shouldn't happen !!
+    };
+
+    TOOL.get_url_param = function(name) {
+        if (window.URLSearchParams) {
+            var s = new URLSearchParams(window.location.search);
+            if (s.has(name)) {
+                return s.get(name);
+            } else {
+                return "";
+            }
+        } else {
+            // https://davidwalsh.name/query-string-javascript
+            name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regexp = new RegExp("[\\?&]" + name + "=([^&#]*)");
+            var r = regexp.exec(window.location.search);
+            return (r === null ? "" : decodeURIComponent(r[1].replace(/\+/g, " ")));
+        }
     };
 
     TOOL.get_text_content = function(elm) {
@@ -29,14 +153,6 @@
         });
         return txt.join("\n");
     };
-
-    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
-        if (obj.addEventListener) {
-            obj.addEventListener(evt, fn, (useCapture || false));
-        } else if (obj.attachEvent) {
-            obj.attachEvent("on" + evt, fn);
-        }
-    }
 
     TOOL.onclick_viewhtml = function() {
         var elm = TOOL.get_defaulttemplate(this);
@@ -60,24 +176,13 @@
     TOOL.onclick_copyhtml = function() {
         var elm = TOOL.get_defaulttemplate(this);
         if (elm) {
-            var html = "";
+            var content = "";
             if (elm.matches("div")) {
-                html = elm.outerHTML;
+                content = elm.outerHTML;
             } else if (elm.matches("pre")) {
-                html = TOOL.get_text_content(elm);
+                content = TOOL.get_text_content(elm);
             }
-            TOOL.copy_to_clipboard(html, TOOL.str.copiedhtml);
-        }
-    };
-
-    TOOL.onclick_copytext = function() {
-        var elm = TOOL.get_defaulttemplate(this);
-        elm = elm.querySelector("pre");
-        if (elm) {
-            TOOL.copy_to_clipboard(
-                TOOL.get_text_content(elm),
-                TOOL.str.copiedtext
-            );
+            TOOL.copy_to_clipboard(content, TOOL.str.copiedhtml);
         }
     };
 
@@ -106,18 +211,89 @@
         }
     };
 
-    TOOL.get_defaulttemplate = function(elm) {
-        return TOOL.get_related_element(elm, "fieldset", ".defaulttemplate");
-    }
-
-    TOOL.get_related_element = function(elm, ancestor, target) {
-        var a = elm;
-        while (a = a.parentElement) {
-            if (a.matches(ancestor)) {
-                return a.querySelector(target);
+    TOOL.onclick_savehtml = function() {
+        var elm = TOOL.get_defaulttemplate(this);
+        if (elm) {
+            var content = "";
+            if (elm.matches("div")) {
+                content = elm.outerHTML;
+            } else if (elm.matches("pre")) {
+                content = TOOL.get_text_content(elm);
             }
+            TOOL.save_to_template(this, content, TOOL.str.savedhtml);
         }
-        return null;
+    };
+
+    TOOL.onclick_viewtext = function() {
+        var elm = TOOL.get_defaulttemplate(this);
+        elm = elm.querySelector("pre");
+        if (elm) {
+            this.childNodes.forEach(function(node){
+                if (node.nodeType == 3) {
+                    node.parentNode.removeChild(node);
+                }
+            });
+            if (elm.style.display == "none") {
+                elm.style.display = "";
+                this.appendChild(document.createTextNode(" " + TOOL.str.hidetext));
+            } else {
+                elm.style.display = "none";
+                this.appendChild(document.createTextNode(" " + TOOL.str.viewtext));
+            };
+        }
+    };
+
+    TOOL.onclick_copytext = function() {
+        var elm = TOOL.get_defaulttemplate(this);
+        elm = elm.querySelector("pre");
+        if (elm) {
+            var content = TOOL.get_text_content(elm);
+            TOOL.copy_to_clipboard(content, TOOL.str.copiedtext);
+        }
+    };
+
+    TOOL.onclick_savetext = function() {
+        var elm = TOOL.get_defaulttemplate(this);
+        elm = elm.querySelector("pre");
+        if (elm) {
+            var content = TOOL.get_text_content(elm);
+            TOOL.save_to_template(this, content, TOOL.str.savedtext);
+        }
+    };
+
+    TOOL.onclick_saveall = function() {
+
+        var data = {"id": TOOL.get_url_param("id"),
+                    "sesskey": TOOL.get_sesskey(),
+                    "action": "savetemplates"};
+
+        document.querySelectorAll("fieldset.template").forEach(function(fieldset){
+            fieldset.classList.forEach(function(name){
+                if (name.match(TOOL.matchtemplatenames)) {
+                    var content = "";
+                    var elm = fieldset.querySelector(".defaulttemplate");
+                    if (elm) {
+                        if (elm.matches("div")) {
+                            content = elm.outerHTML;
+                        } else if (elm.matches("pre")) {
+                            content = TOOL.get_text_content(elm);
+                        }
+                    }
+                    if (content) {
+                        data["templates[" + name + "]"] = content;
+                    }
+                }
+            });
+        });
+
+        TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
+            if (responsetext == 'OK') {
+                alert(TOOL.str.savedall);
+            } else {
+                // Probably an error :-(
+                alert(responsetext);
+            }
+        });
     };
 
     TOOL.copy_to_clipboard = function(txt, msg) {
@@ -146,36 +322,85 @@
         document.body.removeChild(container);
     };
 
+    TOOL.save_to_template = function(elm, content, str) {
+
+        var msg = TOOL.get_legend(elm).firstChild.nodeValue;
+        msg = str.replace('{$a}', msg);
+
+        var data = {"id": TOOL.get_url_param("id"),
+                    "sesskey": TOOL.get_sesskey(),
+                    "action": "savetemplates"};
+
+        TOOL.get_fieldset(elm).classList.forEach(function(name){
+            if (name.match(TOOL.matchtemplatenames)) {
+                var template = TOOL.get_defaulttemplate(elm);
+                if (template) {
+                    var content = "";
+                    if (template.matches("div")) {
+                        content = template.outerHTML;
+                    } else if (template.matches("pre")) {
+                        content = TOOL.get_text_content(template);
+                    }
+                    if (content) {
+                        data["templates[" + name + "]"] = content;
+                    }
+                }
+            }
+        });
+
+        TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
+            if (responsetext == 'OK') {
+                alert(msg);
+            } else {
+                // Probably an error :-(
+                alert(responsetext);
+            }
+        });
+    };
+
     TOOL.setup_strings = function() {
         return new Promise(function(resolve, reject){
             if (window.require) {
                 require(["core/str"], function(STR) {
-
                     var strings = new Array();
-                    TOOL.commands.forEach(function(command){
-                        strings.push({"key": command, "component": TOOL.plugin});
+                    TOOL.stringnames.forEach(function(name, i){
+                        strings.push({"key": name, "component": TOOL.plugin});
                     });
-                    strings.push({"key": "copiedhtml", "component": TOOL.plugin});
-                    strings.push({"key": "copiedtext", "component": TOOL.plugin});
-
                     STR.get_strings(strings).done(function(s) {
-                        TOOL.commands.forEach(function(command, i){
-                            TOOL.str[command] = s[i];
+                        TOOL.stringnames.forEach(function(name, i){
+                            TOOL.str[name] = s[i];
                         });
-                        var i = TOOL.commands.length;
-                        TOOL.str.copiedhtml = s[i++];
-                        TOOL.str.copiedtext = s[i++];
                         resolve();
                     });
                 });
             } else {
-                // use English defaults
-                TOOL.str.viewhtml = "View HTML";
-                TOOL.str.copyhtml = "Copy HTML";
-                TOOL.str.copiedhtml = "HTML was copied to clipboard";
+                // use English equivalents
+                var htmltext = new RegExp("(^.*)(html|text)$");
+                TOOL.stringnames.forEach(function(name, i){
+                    var s = name.charAt(0).toUpperCase()
+                          + name.substr(1).toLowerCase();
+                    TOOL.str[name] = s.replace(htmltext, "$1 $2");
+                });
                 resolve();
             }
         });
+    };
+
+    TOOL.setup_save_all = function() {
+
+        var btn = document.createElement("BUTTON");
+        btn.className = "btn btn-secondary bg-light rounded";
+        btn.setAttribute("type", "button");
+        btn.appendChild(document.createTextNode(TOOL.str.saveall));
+
+        var div = document.createElement("DIV");
+        div.className ="singlebutton ml-4";
+        div.appendChild(btn);
+
+        var h3 = document.querySelector("fieldset.template:first-of-type").previousElementSibling;
+        h3.appendChild(div);
+
+        TOOL.add_event_listener(btn, "click", TOOL.onclick_saveall);
     };
 
     TOOL.setup_commands = function() {
@@ -199,10 +424,10 @@
                 var title = TOOL.str[command];
                 var icon = document.createElement("img");
                 icon.src = TOOL.img[command];
+                icon.title = title;
 
                 var span = document.createElement("span");
-                span.title = title;
-                span.classList.add("mx-sm-2");
+                span.className = command + " mx-sm-2";
                 span.appendChild(icon);
                 span.appendChild(document.createTextNode(" " + title));
                 TOOL.add_event_listener(span, "click", TOOL["onclick_" + command]);
@@ -210,6 +435,11 @@
             });
 
             legend.appendChild(icons);
+
+            var span = icons.querySelector(".viewtext");
+            if (span) {
+                span.click();
+            }
         });
     };
 
@@ -252,6 +482,7 @@
 
     TOOL.setup = function() {
         var p = TOOL.setup_strings();
+        p.then(TOOL.setup_save_all);
         p.then(TOOL.setup_commands);
         p.then(TOOL.setup_row_hover);
         p.then(TOOL.setup_nav_links);

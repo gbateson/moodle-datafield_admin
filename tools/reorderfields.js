@@ -10,7 +10,7 @@
         } else if (obj.attachEvent) {
             obj.attachEvent("on" + evt, fn);
         }
-    }
+    };
 
     /**
      * Simulate a mouse event based on a corresponding touch event

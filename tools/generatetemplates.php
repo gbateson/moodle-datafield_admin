@@ -60,6 +60,67 @@ if (optional_param('cancel', false, PARAM_BOOL)) {
     redirect($url);
 }
 
+// Define allowable template names.
+$templatenames = array('listtemplate', 'singletemplate',
+                       'addtemplate', 'asearchtemplate',
+                       'csstemplate', 'jstemplate');
+
+// Update templates, if requested (via AJAX).
+if ($action = optional_param('action', '', PARAM_ALPHA)) {
+    if ($action == 'savetemplates' && confirm_sesskey()) {
+
+        // Number of templates that are updated.
+        $update = 0;
+
+        if ($templates = optional_param_array('templates', null, PARAM_RAW)) {
+            foreach ($templates as $templatename => $content) {
+                if (! in_array($templatename, $templatenames)) {
+                    continue; // Shouldn't happen !!
+                }
+                if ($templatename == 'listtemplate') {
+                    // Parse "header" and "footer" in listtemplate
+                    $search = '/^\s*(<div [^>]*defaulttemplate[^>]*>)\s*(.*?)\s*(<\/div>)\s*$/s';
+                    if (preg_match($search, $content, $matches)) {
+                        $header = $matches[1];
+                        $content = $matches[2];
+                        $footer = $matches[3];
+                    } else {
+                        $header = '';
+                        $footer = '';
+                    }
+                    $updatelisttemplate = false;
+                    if (strcmp($data->listtemplateheader, $header)) {
+                        $data->listtemplateheader = $header;
+                        $updatelisttemplate = true;
+                    }
+                    if (strcmp($data->listtemplate, $content)) {
+                        $data->listtemplate = $content;
+                        $updatelisttemplate = true;
+                    }
+                    if (strcmp($data->listtemplatefooter, $footer)) {
+                        $data->listtemplatefooter = $footer;
+                        $updatelisttemplate = true;
+                    }
+                    if ($updatelisttemplate) {
+                        $update++;
+                    }
+                } else {
+                    // single, add, css, js templates
+                    if (strcmp($data->$templatename, $content)) {
+                        $data->$templatename = $content;
+                        $update++;
+                    }
+                }
+            }
+            if ($update) {
+                $DB->update_record('data', $data);
+            }
+        }
+        die("OK");
+    }
+}
+
+
 $plugin = 'datafield_admin';
 $tool = substr(basename($SCRIPT), 0, -4);
 
@@ -126,11 +187,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     //     ##edit##  ##more##  ##delete##
     //     ##approve##  ##disapprove##  ##export##
 
-    $templates = array('listtemplate', 'singletemplate',
-                       'addtemplate', 'asearchtemplate',
-                       'csstemplate', 'jstemplate');
-
-    foreach ($templates as $template) {
+    foreach ($templatenames as $templatename) {
 
         $specialfields = array();
         $printfields = array();
@@ -141,7 +198,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                        'number', 'radiobutton',
                        'text',   'textarea');
 
-        switch ($template) {
+        switch ($templatename) {
             case 'addtemplate':
                 $specialfields = array('setdefaultvalues'   => '',
                                        'fixdisabledfields'  => '',
@@ -181,18 +238,18 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $dl = '';
 
         // start FIELDSET
-        $params = array('class' => "template $template border border-dark rounded mt-4 px-4 bg-light");
+        $params = array('class' => "template $templatename border border-dark rounded mt-4 px-4 bg-light");
         echo $newline.html_writer::start_tag('fieldset', $params).$newline;
 
         // LEGEND (acts as the title for the FIELDSET)
         $params = array('class' => 'border border-dark rounded ml-2 px-2 bg-info text-light');
-        echo html_writer::tag('legend', get_string($template, 'data'), $params).$newline;
+        echo html_writer::tag('legend', get_string($templatename, 'data'), $params).$newline;
 
         // start DIV
-        echo html_writer::start_tag('div', array('class' => "defaulttemplate $template")).$newline;
+        echo html_writer::start_tag('div', array('class' => "defaulttemplate $templatename")).$newline;
 
         // Generate responsive table/list of fields.
-        switch ($template) {
+        switch ($templatename) {
 
             case 'listtemplate':
             case 'singletemplate':
@@ -237,7 +294,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                             $term = $field->name;
                         }
 
-                        if ($template == 'addtemplate' | $template == 'asearchtemplate') {
+                        if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
                             $class = "$dt_class {$field->type} $fieldname";
                         } else {
                             $class = "$dt_class $fieldname";
@@ -245,7 +302,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         $dl .= $newline;
                         $dl .= $indent2.html_writer::tag('dt', $term, array('class' => $class)).$newline;
 
-                        if ($template == 'addtemplate' | $template == 'asearchtemplate') {
+                        if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
                             $class = "$dd_class {$field->type} $fieldname";
                         } else {
                             $class = "$dd_class $fieldname";
@@ -270,7 +327,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
             case 'csstemplate':
             case 'jstemplate':
                 $filepath = $CFG->dirroot.'/mod/data/field/admin/tools';
-                if ($template == 'csstemplate') {
+                if ($templatename == 'csstemplate') {
                     $filepath .= '/template.css';
                 } else {
                     $filepath .= '/template.js';
@@ -283,7 +340,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                 break;
 
             default:
-                $label = get_string($template, 'data');
+                $label = get_string($templatename, 'data');
                 echo $indent1.html_writer::tag('p', 'Sorry, the generator for "'.$label.'" is not ready yet.').$newline;
         }
 
