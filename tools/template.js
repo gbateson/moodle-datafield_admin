@@ -9,37 +9,31 @@
         }
     };
 
-    TMP.setup_row_hover = function(div) {
-        if (div) {
-            var elms = div.querySelectorAll("dt, dd");
-        } else {
-            var elms = document.querySelectorAll("div.defaulttemplate dt, " +
-                                                 "div.defaulttemplate dd");
-        }
+    TMP.setup_row_hover = function() {
+        var elms = document.querySelectorAll("div.defaulttemplate dt, " +
+                                             "div.defaulttemplate dd");
         elms.forEach(function(elm){
+            var sibling = "";
             if (elm.matches("dt")) {
-                TMP.add_event_listener(elm, "mouseover", function(){
-                    this.classList.add("hover");
-                    this.nextElementSibling.classList.add("hover");
-                });
-                TMP.add_event_listener(elm, "mouseout", function(){
-                    this.classList.remove("hover");
-                    this.nextElementSibling.classList.remove("hover");
-                });
+                sibling = "nextElementSibling";
             } else if (elm.matches("dd")) {
+                sibling = "previousElementSibling";
+            }
+            if (sibling) {
                 TMP.add_event_listener(elm, "mouseover", function(){
                     this.classList.add("hover");
-                    this.previousElementSibling.classList.add("hover");
+                    this[sibling].classList.add("hover");
                 });
                 TMP.add_event_listener(elm, "mouseout", function(){
                     this.classList.remove("hover");
-                    this.previousElementSibling.classList.remove("hover");
+                    this[sibling].classList.remove("hover");
                 });
             }
         });
     };
 
     TMP.hide_empty_rows = function() {
+        // Define selectors of rows that are to be removed if they are empty.
         var selectors = new Array(".metafield.tags");
         selectors.forEach(function(selector){
             document.querySelectorAll("dt" + selector).forEach(function(dt){

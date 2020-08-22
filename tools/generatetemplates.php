@@ -333,7 +333,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                     $filepath .= '/template.js';
                 }
                 if (file_exists($filepath)) {
-                    echo html_writer::start_tag('pre');
+                    echo html_writer::start_tag('pre', array('contenteditable' => 'true'));
                     echo htmlspecialchars(file_get_contents($filepath));
                     echo html_writer::end_tag('pre');
                 }

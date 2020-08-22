@@ -10,8 +10,8 @@
     TOOL.stringnames = TOOL.htmlcommands.concat(TOOL.textcommands)
                        .concat(new Array("copiedhtml", "savedhtml",
                                          "copiedtext", "savedtext",
-                                         "saveall", "savedall",
-                                         "hidetext"));
+                                         "saveall", "savedall", "hidetext",
+                                         "confirmaction", "confirmsaveall"));
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
     TOOL.img = {
@@ -25,7 +25,14 @@
     };
     TOOL.toolurl = TOOL.wwwroot + "/mod/data/field/admin/tools/generatetemplates.php"
 
-    TOOL.matchtemplatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
+    TOOL.match_valid_templatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
+    TOOL.match_stripe_templatenames = new RegExp("^(list|single|asearch|add)template$");
+
+    TOOL.match_stripeson = new RegExp('<dl class="row([^"]*) stripes([^"]*)">');
+    TOOL.match_stripesoff = new RegExp('<dl class="row([^"]*)">');
+
+    TOOL.replace_stripesoff = '<dl class="row$1$2">';
+    TOOL.replace_stripeson = '<dl class="row stripes$1">';
 
     // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
     TOOL.ajax = {};
@@ -159,8 +166,7 @@
         if (elm) {
             if (elm.matches("div")) {
                 var pre = document.createElement("pre");
-                pre.classList.add("defaulttemplate");
-                pre.classList.add("p-2");
+                pre.className = "defaulttemplate p-2";
                 pre.contentEditable = true;
                 pre.appendChild(document.createTextNode(elm.outerHTML));
                 elm.parentNode.replaceChild(pre, elm);
@@ -196,12 +202,10 @@
                 }
             } else if (elm.matches("pre")) {
                 var txt = TOOL.get_text_content(elm);
-                var stripeson = new RegExp('<dl class="row([^"]*) stripes([^"]*)">');
-                var stripesoff = new RegExp('<dl class="row([^"]*)">');
-                if (txt.match(stripeson)) {
-                    txt = txt.replace(stripeson, '<dl class="row$1$2">');
+                if (txt.match(TOOL.match_stripeson)) {
+                    txt = txt.replace(TOOL.match_stripeson, TOOL.replace_stripesoff);
                 } else {
-                    txt = txt.replace(stripesoff, '<dl class="row stripes$1">');
+                    txt = txt.replace(TOOL.match_stripesoff, TOOL.replace_stripeson);
                 }
                 while (elm.firstChild) {
                     elm.removeChild(elm.firstChild);
@@ -261,41 +265,6 @@
         }
     };
 
-    TOOL.onclick_saveall = function() {
-
-        var data = {"id": TOOL.get_url_param("id"),
-                    "sesskey": TOOL.get_sesskey(),
-                    "action": "savetemplates"};
-
-        document.querySelectorAll("fieldset.template").forEach(function(fieldset){
-            fieldset.classList.forEach(function(name){
-                if (name.match(TOOL.matchtemplatenames)) {
-                    var content = "";
-                    var elm = fieldset.querySelector(".defaulttemplate");
-                    if (elm) {
-                        if (elm.matches("div")) {
-                            content = elm.outerHTML;
-                        } else if (elm.matches("pre")) {
-                            content = TOOL.get_text_content(elm);
-                        }
-                    }
-                    if (content) {
-                        data["templates[" + name + "]"] = content;
-                    }
-                }
-            });
-        });
-
-        TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
-            if (responsetext == 'OK') {
-                alert(TOOL.str.savedall);
-            } else {
-                // Probably an error :-(
-                alert(responsetext);
-            }
-        });
-    };
-
     TOOL.copy_to_clipboard = function(txt, msg) {
 
         var container = document.createElement("pre");
@@ -332,19 +301,8 @@
                     "action": "savetemplates"};
 
         TOOL.get_fieldset(elm).classList.forEach(function(name){
-            if (name.match(TOOL.matchtemplatenames)) {
-                var template = TOOL.get_defaulttemplate(elm);
-                if (template) {
-                    var content = "";
-                    if (template.matches("div")) {
-                        content = template.outerHTML;
-                    } else if (template.matches("pre")) {
-                        content = TOOL.get_text_content(template);
-                    }
-                    if (content) {
-                        data["templates[" + name + "]"] = content;
-                    }
-                }
+            if (name.match(TOOL.match_valid_templatenames)) {
+                data["templates[" + name + "]"] = content;
             }
         });
 
@@ -355,6 +313,113 @@
                 // Probably an error :-(
                 alert(responsetext);
             }
+        });
+    };
+
+    TOOL.onclick_saveall = function() {
+
+        // Confirm that user really wants to overwrite ALL templates.
+        if (confirm(TOOL.str.confirmaction + "\n\n" + TOOL.str.confirmsaveall)) {
+
+            var data = {"id": TOOL.get_url_param("id"),
+                        "sesskey": TOOL.get_sesskey(),
+                        "action": "savetemplates"};
+
+            document.querySelectorAll("fieldset.template").forEach(function(fieldset){
+                fieldset.classList.forEach(function(name){
+                    if (name.match(TOOL.match_valid_templatenames)) {
+                        var content = "";
+                        var elm = fieldset.querySelector(".defaulttemplate");
+                        if (name == "csstemplate" || name == "jstemplate") {
+                            elm = elm.querySelector("pre");
+                        }
+                        if (elm) {
+                            if (elm.matches("div")) {
+                                content = elm.outerHTML;
+                            } else if (elm.matches("pre")) {
+                                content = TOOL.get_text_content(elm);
+                            }
+                        }
+                        if (content) {
+                            data["templates[" + name + "]"] = content;
+                        }
+                    }
+                });
+            });
+
+            TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
+                if (responsetext == 'OK') {
+                    alert(TOOL.str.savedall);
+                } else {
+                    // Probably an error :-(
+                    alert(responsetext);
+                }
+            });
+        }
+    };
+
+    TOOL.onclick_stripesall = function() {
+
+        var fieldsets = document.querySelectorAll("fieldset.template");
+
+        // Count the number of templates using stripes.
+        var count = 0;
+        fieldsets.forEach(function(fieldset){
+            fieldset.classList.forEach(function(name){
+                if (name.match(TOOL.match_stripe_templatenames)) {
+                    var elm = fieldset.querySelector(".defaulttemplate");
+                    if (elm.matches("div")) {
+                        if (elm.querySelector("dl.stripes")) {
+                            count++;
+                        } else {
+                            count--;
+                        }
+                    } else if (elm.matches("pre")) {
+                        var txt = TOOL.get_text_content(elm);
+                        if (txt.match(TOOL.match_stripeson)) {
+                            count++;
+                        } else {
+                            count--;
+                        }
+                    }
+                }
+            });
+        });
+
+        // Determine whether to add (true) or remove (false) stripes.
+        var stripes = (count < 0);
+
+        fieldsets.forEach(function(fieldset){
+            fieldset.classList.forEach(function(name){
+                if (name.match(TOOL.match_stripe_templatenames)) {
+                    var elm = fieldset.querySelector(".defaulttemplate");
+                    if (elm.matches("div")) {
+                        if (stripes) {
+                            elm.querySelector("dl").classList.add("stripes");
+                        } else {
+                            elm.querySelector("dl").classList.remove("stripes");
+                        }
+                    } else if (elm.matches("pre")) {
+                        var txt = TOOL.get_text_content(elm);
+                        var newtxt = "";
+                        if (txt.match(TOOL.match_stripeson)) {
+                            if (stripes == false) {
+                                newtxt = txt.replace(TOOL.match_stripeson, TOOL.replace_stripesoff);
+                            }
+                        } else {
+                            if (stripes) {
+                                newtxt = txt.replace(TOOL.match_stripesoff, TOOL.replace_stripeson);
+                            }
+                        }
+                        if (newtxt) {
+                            while (elm.firstChild) {
+                                elm.removeChild(elm.firstChild);
+                            }
+                            elm.appendChild(document.createTextNode(newtxt));
+                        }
+                    }
+                }
+            });
         });
     };
 
@@ -386,21 +451,28 @@
         });
     };
 
-    TOOL.setup_save_all = function() {
-
-        var btn = document.createElement("BUTTON");
-        btn.className = "btn btn-secondary bg-light rounded";
-        btn.setAttribute("type", "button");
-        btn.appendChild(document.createTextNode(TOOL.str.saveall));
-
-        var div = document.createElement("DIV");
-        div.className ="singlebutton ml-4";
-        div.appendChild(btn);
+    TOOL.setup_buttons = function() {
 
         var h3 = document.querySelector("fieldset.template:first-of-type").previousElementSibling;
-        h3.appendChild(div);
 
-        TOOL.add_event_listener(btn, "click", TOOL.onclick_saveall);
+        var buttontexts = {"stripesall": TOOL.str.stripes,
+                           "saveall": TOOL.str.saveall};
+
+        for (name in buttontexts) {
+            var btn = document.createElement("BUTTON");
+            btn.className = "btn btn-secondary bg-light rounded " + name;
+            btn.setAttribute("type", "button");
+            btn.setAttribute("name", name);
+            btn.appendChild(document.createTextNode(buttontexts[name]));
+
+            var div = document.createElement("DIV");
+            div.className ="singlebutton ml-4";
+            div.appendChild(btn);
+
+            h3.appendChild(div);
+
+            TOOL.add_event_listener(btn, "click", TOOL["onclick_" + name]);
+        };
     };
 
     TOOL.setup_commands = function() {
@@ -451,23 +523,20 @@
                                                  "div.defaulttemplate dd");
         }
         elms.forEach(function(elm){
+            var sibling = "";
             if (elm.matches("dt")) {
-                TOOL.add_event_listener(elm, "mouseover", function(){
-                    this.classList.add("hover");
-                    this.nextElementSibling.classList.add("hover");
-                });
-                TOOL.add_event_listener(elm, "mouseout", function(){
-                    this.classList.remove("hover");
-                    this.nextElementSibling.classList.remove("hover");
-                });
+                sibling = "nextElementSibling";
             } else if (elm.matches("dd")) {
+                sibling = "previousElementSibling";
+            }
+            if (sibling) {
                 TOOL.add_event_listener(elm, "mouseover", function(){
                     this.classList.add("hover");
-                    this.previousElementSibling.classList.add("hover");
+                    this[sibling].classList.add("hover");
                 });
                 TOOL.add_event_listener(elm, "mouseout", function(){
                     this.classList.remove("hover");
-                    this.previousElementSibling.classList.remove("hover");
+                    this[sibling].classList.remove("hover");
                 });
             }
         });
@@ -482,7 +551,7 @@
 
     TOOL.setup = function() {
         var p = TOOL.setup_strings();
-        p.then(TOOL.setup_save_all);
+        p.then(TOOL.setup_buttons);
         p.then(TOOL.setup_commands);
         p.then(TOOL.setup_row_hover);
         p.then(TOOL.setup_nav_links);
