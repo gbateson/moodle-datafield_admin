@@ -2101,4 +2101,12 @@ class data_field_admin extends data_field_base {
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, $component, $filearea, $itemid);
     }
+
+    /**
+     * delete files for the given $datafield
+     */
+    static public function require_js($filepath, $truefalse) {
+        global $PAGE;
+        $PAGE->requires->js($filepath);
+    }
 }
