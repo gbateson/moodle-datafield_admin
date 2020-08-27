@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-27 (71)
+ - improve template.js to include replacement of media links with players.
+
 2020-08-27 (70)
  - add new button to edit/view descriptions when reordering fields
 

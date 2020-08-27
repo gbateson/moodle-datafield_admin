@@ -53,7 +53,7 @@ $string['comment_setdefaultvalues'] = ' The "setdefaultvalues" field is required
 $string['comment_unapprove'] = ' The "unapprove" field is required to override
  the automatic approval of teacher/admin entries.';
 $string['confirmaction'] = 'Warning: this action cannot be undone.';
-$string['confirmsave'] = 'Are you sure you want to overwrite the {$a} with the one displayed on this page?';
+$string['confirmsave'] = 'Are you sure you want to overwrite the current {$a} with the one displayed on this page?';
 $string['confirmsaveall'] = 'Are you sure you want to overwrite *all* current templates with those displayed on this page?';
 $string['copiedhtml'] = "HTML was copied to clipboard";
 $string['copiedtext'] = "Text was copied to clipboard";
