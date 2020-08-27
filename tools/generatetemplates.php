@@ -295,7 +295,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         }
 
                         if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
-                            $class = "$dt_class {$field->type} $fieldname";
+                            if ($field->type == 'admin') {
+                                $class = "$dt_class {$field->type} $type $fieldname";
+                            } else {
+                                $class = "$dt_class $type $fieldname";
+                            }
                         } else {
                             $class = "$dt_class $fieldname";
                         }
@@ -303,7 +307,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         $dl .= $indent2.html_writer::tag('dt', $term, array('class' => $class)).$newline;
 
                         if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
-                            $class = "$dd_class {$field->type} $fieldname";
+                            if ($field->type == 'admin') {
+                                $class = "$dd_class {$field->type} $type $fieldname";
+                            } else {
+                                $class = "$dd_class $type $fieldname";
+                            }
                         } else {
                             $class = "$dd_class $fieldname";
                         }

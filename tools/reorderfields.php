@@ -231,7 +231,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     }
     if ($list) {
         echo html_writer::start_tag('form', array('action' => $url,
-                                                  'method' => 'post'));
+                                                  'method' => 'post',
+                                                  'class' => $tool));
         echo html_writer::empty_tag('input', array('type' => 'hidden',
                                                    'name' => 'sesskey',
                                                    'value' => sesskey()));

@@ -183,18 +183,75 @@
                     };
                 }
 
+                TOOL.onclick_viewdescriptions = function(){
+                    var counttext = 0;
+                    var counthidden = 0;
+                    var nonalphachars = new RegExp("[^a-z0-9]+", "g");
+                    document.querySelectorAll("input[name^=desc]").forEach(function(elm){
+                        var txt = "";
+                        var classname = elm.name.replace(nonalphachars, "_");
+                        if (elm.type == "text") {
+                            elm.type = "hidden";
+                            counthidden++;
+                            var span = document.createElement("SPAN");
+                            span.className = classname;
+                            span.innerHTML = elm.value;
+                            elm.parentNode.appendChild(span);
+                        } else if (elm.type == "hidden") {
+                            var span = elm.parentNode.querySelector("span." + classname);
+                            if (span) {
+                                span.parentNode.removeChild(span);
+                            }
+                            elm.type = "text";
+                            counttext++;
+                        }
+                    });
+                    if (counttext < counthidden) {
+                        this.innerText = TOOL.str.editdescriptions;
+                    } else {
+                        this.innerText = TOOL.str.viewdescriptions;
+                    }
+                };
 
                 TOOL.setup_strings = function() {
                     return new Promise(function(resolve, reject){
                         var strings = new Array(
-                            {"key": "copiedhtml", "component": TOOL.plugin}
+                            {"key": "editdescriptions", "component": TOOL.plugin},
+                            {"key": "viewdescriptions", "component": TOOL.plugin}
                         );
                         STR.get_strings(strings).done(function(s) {
                             var i = 0;
-                            TOOL.str.copiedhtml = s[i++];
+                            TOOL.str.editdescriptions = s[i++];
+                            TOOL.str.viewdescriptions = s[i++];
                             resolve();
                         });
                     });
+                };
+
+                TOOL.setup_buttons = function() {
+
+                    var h3 = document.querySelector("form.reorderfields");
+                    while (h3 && h3.matches("h3") == false) {
+                        h3 = h3.previousElementSibling;
+                    }
+
+                    if (h3) {
+                        var name = "viewdescriptions";
+                        var btn = document.createElement("BUTTON");
+                        btn.className = "btn btn-secondary bg-light rounded " + name;
+                        btn.setAttribute("type", "button");
+                        btn.setAttribute("name", name);
+                        btn.appendChild(document.createTextNode(TOOL.str[name]));
+
+                        var div = document.createElement("DIV");
+                        div.className ="singlebutton ml-4";
+                        div.appendChild(btn);
+
+                        h3.appendChild(div);
+
+                        TOOL.add_event_listener(btn, "click", TOOL["onclick_" + name]);
+                        btn.dispatchEvent(new Event("click"))
+                    }
                 };
 
                 TOOL.setup_nav_links = function(){
@@ -242,6 +299,7 @@
 
                 TOOL.setup = function() {
                     var p = TOOL.setup_strings();
+                    p.then(TOOL.setup_buttons);
                     p.then(TOOL.setup_nav_links);
                     p.then(TOOL.setup_admin_menus);
                     p.then(TOOL.setup_row_hover);

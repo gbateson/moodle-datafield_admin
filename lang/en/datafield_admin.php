@@ -53,6 +53,7 @@ $string['comment_setdefaultvalues'] = ' The "setdefaultvalues" field is required
 $string['comment_unapprove'] = ' The "unapprove" field is required to override
  the automatic approval of teacher/admin entries.';
 $string['confirmaction'] = 'Warning: this action cannot be undone.';
+$string['confirmsave'] = 'Are you sure you want to overwrite the {$a} with the one displayed on this page?';
 $string['confirmsaveall'] = 'Are you sure you want to overwrite *all* current templates with those displayed on this page?';
 $string['copiedhtml'] = "HTML was copied to clipboard";
 $string['copiedtext'] = "Text was copied to clipboard";
@@ -60,6 +61,7 @@ $string['copyhtml'] = 'Copy HTML';
 $string['copytext'] = 'Copy text';
 $string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
 $string['disabledif'] = 'Conditions for disabling this field';
+$string['editdescriptions'] = 'Edit descriptions';
 $string['emptyrecord'] = 'Row {$a->row} was empty so record {$a->recordid} will be deleted.';
 $string['fielddescription_help'] = 'The field description is a meaningful explaination of what this field contains. In standard Moodle, it is only used in the "Fields" tab, which shows a list of fields in this database.
 
@@ -102,5 +104,7 @@ $string['savedtext'] = 'Text was saved to the {$a}.';
 $string['savehtml'] = 'Save html';
 $string['savetext'] = 'Save text';
 $string['stripes'] = 'Stripes';
+$string['viewdescriptions'] = 'View descriptions';
 $string['viewhtml'] = 'View HTML';
 $string['viewtext'] = 'View text';
+

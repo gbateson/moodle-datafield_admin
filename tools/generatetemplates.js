@@ -11,7 +11,7 @@
                        .concat(new Array("copiedhtml", "savedhtml",
                                          "copiedtext", "savedtext",
                                          "saveall", "savedall", "hidetext",
-                                         "confirmaction", "confirmsaveall"));
+                                         "confirmaction", "confirmsave", "confirmsaveall"));
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
     TOOL.img = {
@@ -161,6 +161,37 @@
         return txt.join("\n");
     };
 
+    TOOL.get_string = function(strname, a) {
+        if (typeof(TOOL.str[strname]) == "undefined") {
+            return "Unknown string: " + strname;
+        }
+        var str = TOOL.str[strname];
+        if (typeof(a) == "object") {
+            a.forEach(function(value, key){
+                var r = new RegExp("\\{\\$a->" + key + "\\}", "g");
+                str = str.replace(r, value);
+            });
+        } else {
+            var r = new RegExp("\\{\\$a\\}", "g");
+            str = str.replace(r, a);
+        }
+        return str;
+    };
+
+    TOOL.get_template_description = function(elm) {
+        return TOOL.get_legend(elm).firstChild.nodeValue;
+    };
+
+    TOOL.confirm_action = function(elm, msg) {
+        if (elm) {
+            var a = TOOL.get_template_description(elm);
+            msg = TOOL.get_string(msg, a);
+        } else {
+            msg = TOOL.get_string(msg);
+        }
+        return confirm(TOOL.str.confirmaction + "\n\n" + msg);
+    };
+
     TOOL.onclick_viewhtml = function() {
         var elm = TOOL.get_defaulttemplate(this);
         if (elm) {
@@ -217,14 +248,14 @@
 
     TOOL.onclick_savehtml = function() {
         var elm = TOOL.get_defaulttemplate(this);
-        if (elm) {
+        if (elm && TOOL.confirm_action(this, "confirmsave")) {
             var content = "";
             if (elm.matches("div")) {
                 content = elm.outerHTML;
             } else if (elm.matches("pre")) {
                 content = TOOL.get_text_content(elm);
             }
-            TOOL.save_to_template(this, content, TOOL.str.savedhtml);
+            TOOL.save_to_template(this, "savedhtml", content);
         }
     };
 
@@ -259,9 +290,9 @@
     TOOL.onclick_savetext = function() {
         var elm = TOOL.get_defaulttemplate(this);
         elm = elm.querySelector("pre");
-        if (elm) {
+        if (elm && TOOL.confirm_action(this, "confirmsave")) {
             var content = TOOL.get_text_content(elm);
-            TOOL.save_to_template(this, content, TOOL.str.savedtext);
+            TOOL.save_to_template(this, "savedtext", content);
         }
     };
 
@@ -291,10 +322,7 @@
         document.body.removeChild(container);
     };
 
-    TOOL.save_to_template = function(elm, content, str) {
-
-        var msg = TOOL.get_legend(elm).firstChild.nodeValue;
-        msg = str.replace('{$a}', msg);
+    TOOL.save_to_template = function(elm, strname, content) {
 
         var data = {"id": TOOL.get_url_param("id"),
                     "sesskey": TOOL.get_sesskey(),
@@ -308,7 +336,8 @@
 
         TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
             if (responsetext == 'OK') {
-                alert(msg);
+                var a = TOOL.get_template_description(elm);
+                alert(TOOL.get_string(strname, a));
             } else {
                 // Probably an error :-(
                 alert(responsetext);
@@ -319,7 +348,7 @@
     TOOL.onclick_saveall = function() {
 
         // Confirm that user really wants to overwrite ALL templates.
-        if (confirm(TOOL.str.confirmaction + "\n\n" + TOOL.str.confirmsaveall)) {
+        if (TOOL.confirm_action(null, "confirmsaveall")) {
 
             var data = {"id": TOOL.get_url_param("id"),
                         "sesskey": TOOL.get_sesskey(),
