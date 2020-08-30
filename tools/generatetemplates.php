@@ -275,23 +275,23 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                             $fieldname = 'field_'.$field->id;
                         }
 
-                        if ($term = trim($field->description)) {
+                        if ($text = trim($field->description)) {
                             switch (true) {
-                                case preg_match($multilanglowhigh, $term, $matches):
-                                    $term = $newline.
+                                case preg_match($multilanglowhigh, $text, $matches):
+                                    $text = $newline.
                                             $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
                                             $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $highlang)).$newline.
                                             $indent2;
                                     break;
-                                case preg_match($multilanghighlow, $term, $matches):
-                                    $term = $newline.
+                                case preg_match($multilanghighlow, $text, $matches):
+                                    $text = $newline.
                                             $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $highlang)).$newline.
                                             $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
                                             $indent2;
                                     break;
                             }
                         } else {
-                            $term = $field->name;
+                            $text = $field->name;
                         }
 
                         if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
@@ -304,7 +304,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                             $class = "$dt_class $fieldname";
                         }
                         $dl .= $newline;
-                        $dl .= $indent2.html_writer::tag('dt', $term, array('class' => $class)).$newline;
+                        $dl .= $indent2.html_writer::tag('dt', $text, array('class' => $class)).$newline;
 
                         if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
                             if ($field->type == 'admin') {

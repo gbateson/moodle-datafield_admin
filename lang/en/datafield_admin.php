@@ -59,6 +59,7 @@ $string['copiedhtml'] = "HTML was copied to clipboard";
 $string['copiedtext'] = "Text was copied to clipboard";
 $string['copyhtml'] = 'Copy HTML';
 $string['copytext'] = 'Copy text';
+$string['currentvalues'] = 'Current values';
 $string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['editdescriptions'] = 'Edit descriptions';
@@ -81,7 +82,7 @@ $string['fieldname'] = 'Field name';
 $string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
-Please append language strings for the {$a->typemixedcase} field to the Database language file:
+Please append language strings for gthe {$a->typemixedcase} field to the Database language file:
 
 * EDIT: {$a->langfile}
 * ADD: $string[\'{$a->typelowercase}\'] = \'{$a->typemixedcase}\';
@@ -94,7 +95,10 @@ Then purge the Moodle caches:
 See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
 $string['hidetext'] = 'Hide text';
+$string['labelseparators'] = 'Label separators';
 $string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
+$string['missingvalues'] = 'Missing values';
+$string['modifyvalues'] = 'Modify values';
 $string['moresettings'] = 'More settings will appear here after selecting "Field type" and clicking/tapping the "Add" button.';
 $string['reorderfields'] = 'Reorder fields';
 $string['saveall'] = 'Save all';
@@ -107,4 +111,3 @@ $string['stripes'] = 'Stripes';
 $string['viewdescriptions'] = 'View descriptions';
 $string['viewhtml'] = 'View HTML';
 $string['viewtext'] = 'View text';
-

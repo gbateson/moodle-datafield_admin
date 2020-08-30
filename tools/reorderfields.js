@@ -4,11 +4,11 @@
     TOOL.str = {};
     TOOL.plugin = "datafield_admin";
 
-    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
-        if (obj.addEventListener) {
-            obj.addEventListener(evt, fn, (useCapture || false));
-        } else if (obj.attachEvent) {
-            obj.attachEvent("on" + evt, fn);
+    TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
+        if (elm.addEventListener) {
+            elm.addEventListener(evt, fn, (useCapture || false));
+        } else if (elm.attachEvent) {
+            elm.attachEvent("on" + evt, fn);
         }
     };
 

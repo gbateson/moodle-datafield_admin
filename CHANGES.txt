@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-08-31 (77)
+ - add new tool to modify values items in menu, checbox, and radiobutton fields
+
 2020-08-27 (71)
  - improve template.js to include replacement of media links with players.
 

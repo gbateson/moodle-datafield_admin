@@ -3,10 +3,10 @@
     display:none;
 }
 
-.lang-en dt:not(:empty):after {
+.lang-en .label-separators dt:not(:empty):after {
     content: ":";
 }
-.lang-ja dt:not(:empty):after {
+.lang-ja .label-separators dt:not(:empty):after {
     content: "：";
 }
 

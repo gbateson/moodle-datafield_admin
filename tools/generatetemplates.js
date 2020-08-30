@@ -9,8 +9,8 @@
 
     TOOL.stringnames = TOOL.htmlcommands.concat(TOOL.textcommands)
                        .concat(new Array("copiedhtml", "savedhtml",
-                                         "copiedtext", "savedtext",
-                                         "saveall", "savedall", "hidetext",
+                                         "copiedtext", "savedtext", "hidetext",
+                                         "saveall", "savedall", "labelseparators",
                                          "confirmaction", "confirmsave", "confirmsaveall"));
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
@@ -33,6 +33,12 @@
 
     TOOL.replace_stripesoff = '<dl class="row$1$2">';
     TOOL.replace_stripeson = '<dl class="row stripes$1">';
+
+    TOOL.match_labelson = new RegExp('<dl class="row([^"]*) label-separators([^"]*)">');
+    TOOL.match_labelsoff = new RegExp('<dl class="row([^"]*)">');
+
+    TOOL.replace_labelsoff = '<dl class="row$1$2">';
+    TOOL.replace_labelson = '<dl class="row label-separators$1">';
 
     // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
     TOOL.ajax = {};
@@ -89,11 +95,11 @@
         TOOL.ajax.send(url, q.join('&'), callback, "POST")
     };
 
-    TOOL.add_event_listener = function(obj, evt, fn, useCapture) {
-        if (obj.addEventListener) {
-            obj.addEventListener(evt, fn, (useCapture || false));
-        } else if (obj.attachEvent) {
-            obj.attachEvent("on" + evt, fn);
+    TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
+        if (elm.addEventListener) {
+            elm.addEventListener(evt, fn, (useCapture || false));
+        } else if (elm.attachEvent) {
+            elm.attachEvent("on" + evt, fn);
         }
     };
 
@@ -452,6 +458,38 @@
         });
     };
 
+    TOOL.onclick_labelseparators = function() {
+        document.querySelectorAll("fieldset.template").forEach(function(fieldset){
+            fieldset.classList.forEach(function(name){
+                if (name.match(TOOL.match_stripe_templatenames)) {
+                    var elm = fieldset.querySelector(".defaulttemplate");
+                    if (elm.matches("div")) {
+                        var dl = elm.querySelector("dl");
+                        if (dl.classList.contains("label-separators")) {
+                            dl.classList.remove("label-separators");
+                        } else {
+                            dl.classList.add("label-separators");
+                        }
+                    } else if (elm.matches("pre")) {
+                        var txt = TOOL.get_text_content(elm);
+                        var newtxt = "";
+                        if (txt.match(TOOL.match_labelson)) {
+                            newtxt = txt.replace(TOOL.match_labelson, TOOL.replace_labelsoff);
+                        } else {
+                            newtxt = txt.replace(TOOL.match_labelsoff, TOOL.replace_labelson);
+                        }
+                        if (newtxt) {
+                            while (elm.firstChild) {
+                                elm.removeChild(elm.firstChild);
+                            }
+                            elm.appendChild(document.createTextNode(newtxt));
+                        }
+                    }
+                }
+            });
+        });
+    };
+
     TOOL.setup_strings = function() {
         return new Promise(function(resolve, reject){
             if (window.require) {
@@ -485,7 +523,8 @@
         var h3 = document.querySelector("fieldset.template:first-of-type").previousElementSibling;
 
         var buttontexts = {"stripesall": TOOL.str.stripes,
-                           "saveall": TOOL.str.saveall};
+                           "saveall": TOOL.str.saveall,
+                           "labelseparators": TOOL.str.labelseparators};
 
         for (name in buttontexts) {
             var btn = document.createElement("BUTTON");
