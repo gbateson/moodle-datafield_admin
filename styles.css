@@ -41,11 +41,28 @@
 .path-mod-data-field .fieldname, .path-mod-data-field .widetext,
 .path-mod-data-field .fieldname, .path-mod-data-field .fieldname,
 .path-mod-data-field .fieldname, .path-mod-data-field .fielddescription {
-    max-width: 300px;
+    max-width: 480px; /* 300px */
     width: 100%;
 }
 
 .path-mod-data-field .fieldname, .path-mod-data-field .narrowtext {
-    max-width: 150px;
+    max-width: 240px; /* 150px */
+    width: 100%;
+}
+
+/* 
+ * We would really like to use #page-mod-data-field-{fieldtype}
+ * but those are not available in standard Moodle :-(
+ * We could use .path-mod-data-field #editfield,
+ * but that may affect other plugins unexpectedly, 
+ * so instead, we modify the body.id in field/admin/mod.html.js
+ */
+.path-mod-data-field #editfield,
+#page-mod-data-field-admin #editfield,
+#page-mod-data-field-action #editfield,
+#page-mod-data-field-constant #editfield,
+#page-mod-data-field-report #editfield,
+#page-mod-data-field-template #editfield {
+    max-width: 810px; /* 720px; */
     width: 100%;
 }

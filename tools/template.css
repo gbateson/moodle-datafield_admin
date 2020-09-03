@@ -1,8 +1,41 @@
+/**
+ * Override standard "display: inline-block" on <label> elements,
+ * because it causes unnecessary vertical padding
+ */
+label[for^=field] {
+    display: inline;
+}
+
+/**
+ * Restrict standard "width: auto" on <select> elements,
+ * because it can cause element to extend off small screens
+ * when <options> tags have wide content.
+ */
+.custom-select {
+    max-width: 100%;
+}
+
+/**
+ * Simulate multilang filter, by hiding content
+ * that is not in the current language.
+ */
 .lang-en .multilang:not([lang=en]),
 .lang-ja .multilang:not([lang=ja]) {
     display:none;
 }
 
+/*
+ * Limit the width of add/edit and view pages
+ */
+#page-mod-data-edit form,
+#page-mod-data-view form {
+    max-width: 1200px;
+}
+
+/**
+ * Append label separators that are appropriate
+ * for the current language.
+ */
 .lang-en .label-separators dt:not(:empty):after {
     content: ":";
 }

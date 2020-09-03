@@ -1735,6 +1735,8 @@ class data_field_admin extends data_field_base {
             echo html_writer::end_tag('tbody');
             echo html_writer::end_tag('table');
         }
+        // Javascript to fix the body id (and possibly  other stuff)
+        self::require_js("/mod/data/field/admin/mod.html.js", true);
     }
 
     /**
@@ -1751,6 +1753,18 @@ class data_field_admin extends data_field_base {
     }
 
     /**
+     * format a core field ("name" or "description") in mod.html
+     */
+    static public function format_required_field($field) {
+        global $OUTPUT;
+        $name = 'required';
+        $label = get_string('requiredfield', 'data');
+        $text = self::format_checkbox_field($name, $field->$name);
+        $help = $OUTPUT->help_icon($name, 'datafield_admin');
+        echo self::format_table_row($name, $label, $text, $help);
+    }
+
+    /**
      * format a table row in mod.html
      */
     static public function format_table_row($name, $label, $text, $help='') {
@@ -1759,8 +1773,8 @@ class data_field_admin extends data_field_base {
             $label .= " $help";
         }
         if (self::$bootstrap) {
-            $output = html_writer::tag('dt', $label, array('class' => 'col-sm-4 col-lg-3 col-xl-2 text-sm-right')).
-                      html_writer::tag('dd', $text, array('class' => 'col-sm-8 col-lg-9 col-xl-10'));
+            $output = html_writer::tag('dt', $label, array('class' => 'col-sm-4 text-sm-right')).
+                      html_writer::tag('dd', $text, array('class' => 'col-sm-8'));
         } else {
             $output = html_writer::tag('td', $label, array('class' => 'c0')).
                       html_writer::tag('td', $text, array('class' => 'c1'));
@@ -1833,7 +1847,7 @@ class data_field_admin extends data_field_base {
     /**
      * format a checkbox field in mod.html
      */
-    static public function format_checkbox_field($name, $value, $class, $checkedvalue=1) {
+    static public function format_checkbox_field($name, $value, $class='', $checkedvalue=1) {
         $params = array('type'  => 'checkbox',
                         'id'    => 'id_'.$name,
                         'name'  => $name,
