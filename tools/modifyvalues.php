@@ -161,7 +161,10 @@ list($select, $params) = $DB->get_in_or_equal($params);
 $select = "dataid = ? AND type $select";
 array_unshift($params, $data->id);
 
-if ($fields = $DB->get_records_select('data_fields', $select, $params, 'id')) {
+$fields = $DB->get_records_select('data_fields', $select, $params, 'id');
+if (empty($fields)) {
+    echo html_writer::tag('p', get_string('nomodifyfields', $plugin), array('class' => 'alert alert-primary'));
+} else {
 
     $listclass = 'row my-0';
     $nameclass = "col-sm-4 col-lg-3 my-0 py-1";

@@ -43,35 +43,23 @@ label[for^=field] {
     content: "：";
 }
 
-.row.stripes dt:nth-of-type(odd),
-.row.stripes dd:nth-of-type(odd) {
+.defaulttemplate .row:not(.h3):hover {
+    /* must be "important" in order to override :nth-of-type() */
+    background-color: #ffe6ea !important;
+}
+
+.defaulttemplate.stripes .row:nth-of-type(odd) {
     background-color: #f0f0f0;
 }
 
-.row.stripes dt:nth-of-type(even),
-.row.stripes dd:nth-of-type(even) {
+.defaulttemplate.stripes .row:nth-of-type(even) {
     background-color: #f4f4f4;
 }
 
-.row.stripes dt {
+.defaulttemplate.stripes .row {
     border-top: 1px solid #999;
 }
 
-.row.stripes dd:last-of-type {
+.defaulttemplate.stripes .row:last-of-type {
     border-bottom: 1px solid #999;
-}
-
-.row .hover,
-.row .hover {
-    background-color: pink!important;
-}
-
-/** (sm) small screens and above **/
-@media print, screen and (min-width: 576px) {
-    .row.stripes dd {
-        border-top: 1px solid #999;
-    }
-    .row.stripes dt:last-of-type {
-        border-bottom: 1px solid #999;
-    }
 }

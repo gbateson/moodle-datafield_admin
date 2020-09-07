@@ -10,7 +10,7 @@
     TOOL.stringnames = TOOL.htmlcommands.concat(TOOL.textcommands)
                        .concat(new Array("copiedhtml", "savedhtml",
                                          "copiedtext", "savedtext", "hidetext",
-                                         "saveall", "savedall", "labelseparators",
+                                         "stripesall", "saveall", "savedall", "labelseparators",
                                          "confirmaction", "confirmsave", "confirmsaveall"));
 
     TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
@@ -28,78 +28,78 @@
     TOOL.match_valid_templatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
     TOOL.match_stripe_templatenames = new RegExp("^(list|single|asearch|add)template$");
 
-    TOOL.match_stripeson = new RegExp('<dl class="row([^"]*) stripes([^"]*)">');
-    TOOL.match_stripesoff = new RegExp('<dl class="row([^"]*)">');
+    TOOL.match_stripeson = new RegExp('<div class="container([^"]*) stripes([^"]*)">');
+    TOOL.match_stripesoff = new RegExp('<div class="container([^"]*)">');
 
-    TOOL.replace_stripesoff = '<dl class="row$1$2">';
-    TOOL.replace_stripeson = '<dl class="row stripes$1">';
+    TOOL.replace_stripesoff = '<div class="container$1$2">';
+    TOOL.replace_stripeson = '<div class="container stripes$1">';
 
-    TOOL.match_labelson = new RegExp('<dl class="row([^"]*) label-separators([^"]*)">');
-    TOOL.match_labelsoff = new RegExp('<dl class="row([^"]*)">');
+    TOOL.match_labelson = new RegExp('<div class="container([^"]*) label-separators([^"]*)">');
+    TOOL.match_labelsoff = new RegExp('<div class="container([^"]*)">');
 
-    TOOL.replace_labelsoff = '<dl class="row$1$2">';
-    TOOL.replace_labelson = '<dl class="row label-separators$1">';
-
-    // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
-    TOOL.ajax = {};
-
-    TOOL.ajax.x = function () {
-        if (window.XMLHttpRequest) {
-            return new XMLHttpRequest();
-        }
-        var versions = new Array("MSXML2.XmlHttp.6.0",
-                                 "MSXML2.XmlHttp.5.0",
-                                 "MSXML2.XmlHttp.4.0",
-                                 "MSXML2.XmlHttp.3.0",
-                                 "MSXML2.XmlHttp.2.0",
-                                 "Microsoft.XmlHttp");
-        var x;
-        for (var i = 0; i < versions.length; i++) {
-            try {
-                x = new ActiveXObject(versions[i]);
-                break;
-            } catch (e) {}
-        }
-        return x;
-    };
-
-    TOOL.ajax.send = function (url, data, callback, method) {
-        var x = TOOL.ajax.x();
-        if (x) {
-            x.open(method, url, true); // Always asynchronous ;-)
-            x.onreadystatechange = function () {
-                if (x.readyState == 4) {
-                    callback(x.responseText);
-                }
-            };
-            if (method == "POST") {
-                x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            }
-            x.send(data)
-        }
-    };
-
-    TOOL.ajax.get = function (url, data, callback) {
-        var q = [];
-        for (var key in data) {
-            q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
-        }
-        TOOL.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET")
-    };
-
-    TOOL.ajax.post = function (url, data, callback) {
-        var q = [];
-        for (var key in data) {
-            q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
-        }
-        TOOL.ajax.send(url, q.join('&'), callback, "POST")
-    };
+    TOOL.replace_labelsoff = '<div class="container$1$2">';
+    TOOL.replace_labelson = '<div class="container label-separators$1">';
 
     TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
         if (elm.addEventListener) {
             elm.addEventListener(evt, fn, (useCapture || false));
         } else if (elm.attachEvent) {
             elm.attachEvent("on" + evt, fn);
+        }
+    };
+
+    // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
+    TOOL.ajax = {
+        "x": function () {
+            if (window.XMLHttpRequest) {
+                return new XMLHttpRequest();
+            }
+            var versions = new Array("MSXML2.XmlHttp.6.0",
+                                     "MSXML2.XmlHttp.5.0",
+                                     "MSXML2.XmlHttp.4.0",
+                                     "MSXML2.XmlHttp.3.0",
+                                     "MSXML2.XmlHttp.2.0",
+                                     "Microsoft.XmlHttp");
+            var x;
+            for (var i = 0; i < versions.length; i++) {
+                try {
+                    x = new ActiveXObject(versions[i]);
+                    break;
+                } catch (e) {}
+            }
+            return x;
+        },
+
+        "send": function (url, data, callback, method) {
+            var x = TOOL.ajax.x();
+            if (x) {
+                x.open(method, url, true); // Always asynchronous ;-)
+                x.onreadystatechange = function () {
+                    if (x.readyState == 4) {
+                        callback(x.responseText);
+                    }
+                };
+                if (method == "POST") {
+                    x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                }
+                x.send(data)
+            }
+        },
+
+        "get": function (url, data, callback) {
+            var q = [];
+            for (var key in data) {
+                q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+            }
+            TOOL.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET")
+        },
+
+        "post": function (url, data, callback) {
+            var q = [];
+            for (var key in data) {
+                q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+            }
+            TOOL.ajax.send(url, q.join('&'), callback, "POST")
         }
     };
 
@@ -209,9 +209,6 @@
                 elm.parentNode.replaceChild(pre, elm);
             } else if (elm.matches("pre")) {
                 elm.outerHTML = TOOL.get_text_content(elm);
-                if (elm = TOOL.get_defaulttemplate(this)) {
-                    TOOL.setup_row_hover(elm);
-                }
             }
         }
     };
@@ -233,10 +230,7 @@
         var elm = TOOL.get_defaulttemplate(this);
         if (elm) {
             if (elm.matches("div")) {
-                var dl = elm.querySelector("dl.row");
-                if (dl) {
-                    dl.classList.toggle("stripes");
-                }
+                elm.classList.toggle("stripes");
             } else if (elm.matches("pre")) {
                 var txt = TOOL.get_text_content(elm);
                 if (txt.match(TOOL.match_stripeson)) {
@@ -404,7 +398,7 @@
                 if (name.match(TOOL.match_stripe_templatenames)) {
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
-                        if (elm.querySelector("dl.stripes")) {
+                        if (elm.matches(".stripes")) {
                             count++;
                         } else {
                             count--;
@@ -430,9 +424,9 @@
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
                         if (stripes) {
-                            elm.querySelector("dl").classList.add("stripes");
+                            elm.classList.add("stripes");
                         } else {
-                            elm.querySelector("dl").classList.remove("stripes");
+                            elm.classList.remove("stripes");
                         }
                     } else if (elm.matches("pre")) {
                         var txt = TOOL.get_text_content(elm);
@@ -464,11 +458,10 @@
                 if (name.match(TOOL.match_stripe_templatenames)) {
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
-                        var dl = elm.querySelector("dl");
-                        if (dl.classList.contains("label-separators")) {
-                            dl.classList.remove("label-separators");
+                        if (elm.classList.contains("label-separators")) {
+                            elm.classList.remove("label-separators");
                         } else {
-                            dl.classList.add("label-separators");
+                            elm.classList.add("label-separators");
                         }
                     } else if (elm.matches("pre")) {
                         var txt = TOOL.get_text_content(elm);
@@ -522,16 +515,13 @@
 
         var h3 = document.querySelector("fieldset.template:first-of-type").previousElementSibling;
 
-        var buttontexts = {"stripesall": TOOL.str.stripes,
-                           "saveall": TOOL.str.saveall,
-                           "labelseparators": TOOL.str.labelseparators};
-
-        for (name in buttontexts) {
+        var names = new Array("labelseparators", "stripesall", "saveall");
+        names.forEach(function(name){
             var btn = document.createElement("BUTTON");
             btn.className = "btn btn-secondary bg-light rounded " + name;
             btn.setAttribute("type", "button");
             btn.setAttribute("name", name);
-            btn.appendChild(document.createTextNode(buttontexts[name]));
+            btn.appendChild(document.createTextNode(TOOL.str[name]));
 
             var div = document.createElement("DIV");
             div.className ="singlebutton ml-4";
@@ -540,7 +530,7 @@
             h3.appendChild(div);
 
             TOOL.add_event_listener(btn, "click", TOOL["onclick_" + name]);
-        };
+        });
     };
 
     TOOL.setup_commands = function() {
@@ -583,33 +573,6 @@
         });
     };
 
-    TOOL.setup_row_hover = function(div) {
-        if (div) {
-            var elms = div.querySelectorAll("dt, dd");
-        } else {
-            var elms = document.querySelectorAll("div.defaulttemplate dt, " +
-                                                 "div.defaulttemplate dd");
-        }
-        elms.forEach(function(elm){
-            var sibling = "";
-            if (elm.matches("dt")) {
-                sibling = "nextElementSibling";
-            } else if (elm.matches("dd")) {
-                sibling = "previousElementSibling";
-            }
-            if (sibling) {
-                TOOL.add_event_listener(elm, "mouseover", function(){
-                    this.classList.add("hover");
-                    this[sibling].classList.add("hover");
-                });
-                TOOL.add_event_listener(elm, "mouseout", function(){
-                    this.classList.remove("hover");
-                    this[sibling].classList.remove("hover");
-                });
-            }
-        });
-    };
-
     TOOL.setup_nav_links = function(){
         var elm = document.querySelector("a.nav-link[href*='/mod/data/field.php']");
         if (elm) {
@@ -621,7 +584,6 @@
         var p = TOOL.setup_strings();
         p.then(TOOL.setup_buttons);
         p.then(TOOL.setup_commands);
-        p.then(TOOL.setup_row_hover);
         p.then(TOOL.setup_nav_links);
     };
 

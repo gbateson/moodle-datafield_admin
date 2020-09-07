@@ -70,49 +70,33 @@ if ($action = optional_param('action', '', PARAM_ALPHA)) {
     if ($action == 'savetemplates' && confirm_sesskey()) {
 
         // Number of templates that are updated.
-        $update = 0;
+        $updates = 0;
 
         if ($templates = optional_param_array('templates', null, PARAM_RAW)) {
             foreach ($templates as $templatename => $content) {
                 if (! in_array($templatename, $templatenames)) {
                     continue; // Shouldn't happen !!
                 }
+                $update = true;
                 if ($templatename == 'listtemplate') {
-                    // Parse "header" and "footer" in listtemplate
-                    $search = '/^\s*(<div [^>]*defaulttemplate[^>]*>)\s*(.*?)\s*(<\/div>)\s*$/s';
-                    if (preg_match($search, $content, $matches)) {
-                        $header = $matches[1];
-                        $content = $matches[2];
-                        $footer = $matches[3];
-                    } else {
-                        $header = '';
-                        $footer = '';
+                    if ($data->listtemplateheader) {
+                        $data->listtemplateheader = '';
+                        $update = true;
                     }
-                    $updatelisttemplate = false;
-                    if (strcmp($data->listtemplateheader, $header)) {
-                        $data->listtemplateheader = $header;
-                        $updatelisttemplate = true;
-                    }
-                    if (strcmp($data->listtemplate, $content)) {
-                        $data->listtemplate = $content;
-                        $updatelisttemplate = true;
-                    }
-                    if (strcmp($data->listtemplatefooter, $footer)) {
-                        $data->listtemplatefooter = $footer;
-                        $updatelisttemplate = true;
-                    }
-                    if ($updatelisttemplate) {
-                        $update++;
-                    }
-                } else {
-                    // single, add, css, js templates
-                    if (strcmp($data->$templatename, $content)) {
-                        $data->$templatename = $content;
-                        $update++;
+                    if ($data->listtemplatefooter) {
+                        $data->listtemplatefooter = '';
+                        $update = true;
                     }
                 }
+                if (strcmp($data->$templatename, $content)) {
+                    $data->$templatename = $content;
+                    $update = true;
+                }
+                if ($update) {
+                    $updates++;
+                }
             }
-            if ($update) {
+            if ($updates) {
                 $DB->update_record('data', $data);
             }
         }
@@ -156,9 +140,10 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     $lowlang = 'en';
     $highlang = 'ja';
 
-    $dt_cols = 3;
+    $dt_cols = 3; // titlecols
     $dd_cols = (12 - $dt_cols);
 
+    $dl_class = 'row my-0 py-1 px-3';
     $dt_class = "col-sm-$dt_cols my-0 py-1";
     $dd_class = "col-sm-$dd_cols my-0 py-1";
 
@@ -246,7 +231,12 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         echo html_writer::tag('legend', get_string($templatename, 'data'), $params).$newline;
 
         // start DIV
-        echo html_writer::start_tag('div', array('class' => "defaulttemplate $templatename")).$newline;
+        $class = "container defaulttemplate $templatename";
+        if ($templatename == 'listtemplate') {
+            // add vertical spacing between items;
+            $class .= ' my-2';
+        }
+        echo html_writer::start_tag('div', array('class' => $class)).$newline;
 
         // Generate responsive table/list of fields.
         switch ($templatename) {
@@ -256,13 +246,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
             case 'addtemplate':
             case 'asearchtemplate':
 
+                $firstrow = true;
                 foreach ($fields as $field) {
-
-                    if ($field->type == 'admin') {
-                        $type = $field->param10;
-                    } else {
-                        $type = $field->type;
-                    }
 
                     if (array_key_exists($field->name, $specialfields)) {
                         $specialfields[$field->name] = '[['.$field->name.']]';
@@ -294,41 +279,40 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                             $text = $field->name;
                         }
 
-                        if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
-                            if ($field->type == 'admin') {
-                                $class = "$dt_class {$field->type} $type $fieldname";
-                            } else {
-                                $class = "$dt_class $type $fieldname";
-                            }
+                        if ($field->type == 'admin') {
+                            $class = "$dl_class {$field->type} {$field->param10} $fieldname";
                         } else {
-                            $class = "$dt_class $fieldname";
+                            $class = "$dl_class {$field->type} $fieldname";
                         }
-                        $dl .= $newline;
-                        $dl .= $indent2.html_writer::tag('dt', $text, array('class' => $class)).$newline;
 
-                        if ($templatename == 'addtemplate' | $templatename == 'asearchtemplate') {
-                            if ($field->type == 'admin') {
-                                $class = "$dd_class {$field->type} $type $fieldname";
-                            } else {
-                                $class = "$dd_class $type $fieldname";
+                        if ($firstrow) {
+                            if ($templatename == 'listtemplate' || $templatename == 'singletemplate') {
+                                $class .= ' rounded-top bg-primary h3 text-light font-weight-bold';
                             }
-                        } else {
-                            $class = "$dd_class $fieldname";
+                            $firstrow = false;
                         }
-                        $dl .= $indent2.html_writer::tag('dd', '[['.$field->name.']]', array('class' => $class)).$newline;
+
+                        $dl .= $indent1.html_writer::start_tag('dl', array('class' => $class)).$newline;
+                        $dl .= $indent2.html_writer::tag('dt', $text, array('class' => $dt_class)).$newline;
+                        $dl .= $indent2.html_writer::tag('dd', '[['.$field->name.']]', array('class' => $dd_class)).$newline;
+                        $dl .= $indent1.html_writer::end_tag('dl').$newline;
                     }
                 }
                 if ($metafields) {
                     $dl .= $newline;
                     foreach ($metafields as $field => $label) {
-                        $dl .= $indent2.html_writer::tag('dt', $label, array('class' => "$dt_class metafield $field")).$newline;
-                        $dl .= $indent2.html_writer::tag('dd', '##'.$field.'##', array('class' => "$dd_class metafield $field")).$newline;
+                        $dl .= $indent1.html_writer::start_tag('dl', array('class' => "$dl_class metafield $field")).$newline;
+                        $dl .= $indent2.html_writer::tag('dt', $label, array('class' => $dt_class)).$newline;
+                        $dl .= $indent2.html_writer::tag('dd', '##'.$field.'##', array('class' => $dd_class)).$newline;
+                        $dl .= $indent1.html_writer::end_tag('dl').$newline;
                     }
                 }
                 if ($actions) {
                     $dl .= $newline;
-                    $dl .= $indent2.html_writer::tag('dt', $str->actions, array('class' => $dt_class.' actions')).$newline;
-                    $dl .= $indent2.html_writer::tag('dd', $actions, array('class' => $dd_class.' actions')).$newline;
+                    $dl .= $indent1.html_writer::start_tag('dl', array('class' => "$dl_class actions")).$newline;
+                    $dl .= $indent2.html_writer::tag('dt', $str->actions, array('class' => $dt_class)).$newline;
+                    $dl .= $indent2.html_writer::tag('dd', $actions, array('class' => $dd_class)).$newline;
+                    $dl .= $indent1.html_writer::end_tag('dl').$newline;
                 }
                 break;
 
@@ -368,9 +352,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                 $specialfields[$name] = '';
             }
 
-            echo $indent1.html_writer::start_tag('dl', array('class' => 'row px-3'));
             echo $dl;
-            echo $indent1.html_writer::end_tag('dl').$newline;
 
             $printfields = array_values($printfields);
             $printfields = array_map('trim', $printfields);

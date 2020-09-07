@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-09-07 (79)
+ - in tool to generate templates, use separate <dl> for each 'row'
+
 2020-09-03 (78)
  - update code in template.js/css and add new method to generate HTML for required field on mod.html files
 
