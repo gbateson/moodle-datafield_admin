@@ -102,10 +102,14 @@
         }
     };
 
-    JS.remove_empty_rows = function(rows) {
-        document.querySelectorAll(rows).forEach(function(row){
-            if (row.querySelector("dd:not(:empty)") == null) {
-                row.parentNode.removeChild(row);
+    JS.remove_empty_rows = function(rowtag, rowclass, rowselector) {
+        document.querySelectorAll(rowselector).forEach(function(row){
+            if (rowtag == "" || row.matches(rowtag)) {
+                if (rowclass == "" || row.matches(rowclass)) {
+                    if (row.querySelector("dd:not(:empty)") == null) {
+                        row.parentNode.removeChild(row);
+                    }
+                }
             }
         });
     };
@@ -300,7 +304,7 @@
     };
 
     JS.setup = function() {
-        JS.remove_empty_rows(".metafield.tags");
+        JS.remove_empty_rows("dl", ".row", ".metafield.tags");
         //JS.setup_user();
         //JS.setup_media_links();
         //JS.setup_media_players();

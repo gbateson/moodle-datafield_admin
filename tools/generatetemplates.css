@@ -30,9 +30,9 @@ legend .icons {
     display: none;
 }
 
-.defaulttemplate .row:hover {
+.defaulttemplate .row:not(.h3):hover {
     /* must be "important" in order to override :nth-of-type() */
-    background-color: pink !important;
+    background-color: #ffe6ea !important;
 }
 
 .defaulttemplate.stripes .row:nth-of-type(odd) {

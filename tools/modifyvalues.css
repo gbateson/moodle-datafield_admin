@@ -10,28 +10,55 @@ dl.row:nth-of-type(odd) {
     background-color: #fcfcfc;
 }
 
-dl.row:hover {
-    background-color: pink;
+/* fallback values when JS is not available */
+.currentvalues input,
+.missingvalues .text {
+    max-width: calc(100% - 64px);
+    width: 100%;
 }
 
-.item .icons {
-    width: 48px;
+/*
+ * The following settings are used when JS
+ * is available to insert the ".icons" DIV
+ */
+
+.currentvalues .item .icons {
+    width: 80px;
 }
 .currentvalues .item .text,
 .currentvalues .item input {
-    margin-left: 50px;
-    max-width: calc(100% - 50px);
-}
-
-.missingvalues .item .icons {
-    width: 72px;
-}
-.missingvalues .item .text,
-.missingvalues .item input {
     margin-left: 80px;
     max-width: calc(100% - 80px);
 }
 
+.missingvalues .item .icons {
+    width: 106px;
+}
+.missingvalues .item .text,
+.missingvalues .item input {
+    margin-left: 106px;
+    max-width: calc(100% - 110px);
+}
+
+.item .text.duplicate:after {
+    color: red;
+    content:"\26A0"; /* alert triangle ⚠ */
+    font-size: 0.9em;
+    margin-left: 6px;
+    vertical-align: super;
+}
+
 .item del {
     color: red;
+}
+
+.lang-en .item .text:empty:after {
+    content: "(empty)";
+    font-size: 0.8em;
+    font-style: italic;
+}
+.lang-ja .item .text:empty:after {
+    content: "\FF08\7A7A\FF09"; /* （空） */
+    font-size: 0.8em;
+    font-style: italic;
 }

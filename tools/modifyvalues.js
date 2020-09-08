@@ -62,6 +62,7 @@
             ul.appendChild(li);
             this.parentNode.removeChild(this);
         }
+        TOOL.setup_duplicates();
     };
 
     TOOL.onclick_edit = function(){
@@ -78,10 +79,11 @@
                 txt.style.display = "none";
             } else {
                 input.type = "hidden";
-                txt.innerText = input.value;
+                txt.innerHTML = input.value;
                 txt.style.display = "block";
             }
         }
+        TOOL.setup_duplicates();
     };
 
     TOOL.onclick_delete = function(){
@@ -101,6 +103,7 @@
                 input.value = "";
             }
         }
+        TOOL.setup_duplicates();
     };
 
     TOOL.setup_nav_links = function(){
@@ -111,18 +114,32 @@
     };
 
     TOOL.setup_icons = function(){
-        document.querySelectorAll("input[type=text][name^=fields][name*=new]").forEach(function(elm){
+
+        var selector = "input[type=text][name^=fields][name*=new]";
+        document.querySelectorAll(selector).forEach(function(elm){
+
+            // Hide this element.
             elm.type = "hidden";
 
+            // Locate ".count" element
+            var count = elm;
+            while (count && count.matches(".count") == false) {
+                count = count.previousElementSibling;
+            }
+            
+            // Create ".icons" element
             var icons = document.createElement("DIV");
             icons.className = "icons position-absolute h-100";
 
+            // Determine the names of required icons.
             var names = new Array();
             if (elm.matches("[name*=current]")) {
                 names = new Array("edit", "delete");
             } else if (elm.matches("[name*=missing]")) {
                 names = new Array("add", "edit", "delete");
             }
+
+            // Add icons.
             names.forEach(function(name){
                 var icon = document.createElement("IMG");
                 icon.className = "icon " + name + " mr-2";
@@ -130,6 +147,14 @@
                 TOOL.add_event_listener(icon, "click", TOOL["onclick_" + name]);
                 icons.appendChild(icon);
             });
+
+            // Append count of occurences.
+            if (count) {
+                TOOL.add_event_listener(count, "click", function(){
+                    alert(this.title);
+                });
+                icons.appendChild(count);
+            }
 
             var text = document.createElement("DIV");
             text.className = "text";
@@ -147,9 +172,25 @@
         });
     };
 
+    TOOL.setup_duplicates = function(){
+        var selector = ".currentvalues, .missingvalues";
+        document.querySelectorAll(selector).forEach(function(li){
+            var values = new Array();
+            li.querySelectorAll("li .text").forEach(function(txt){
+                if (values.indexOf(txt.innerText) >= 0) {
+                    txt.classList.add("duplicate");
+                } else {
+                    txt.classList.remove("duplicate");
+                    values.push(txt.innerText);
+                }
+            });
+        });
+    };
+
     TOOL.setup = function() {
         TOOL.setup_nav_links();
         TOOL.setup_icons();
+        TOOL.setup_duplicates();
     };
 
     TOOL.add_event_listener(window, "load", TOOL.setup);

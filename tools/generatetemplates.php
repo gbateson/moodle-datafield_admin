@@ -118,7 +118,7 @@ $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 data_print_header($course, $cm, $data, $tool);
 data_field_admin::display_tool_links($id, $tool);
 
-$params = array('class' => 'rounded bg-primary text-light font-weight-bold mt-3 py-2 px-3');
+$params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
 echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 
 // Responsive table suitable for Boost in Moodle >= 3.6
@@ -287,7 +287,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
 
                         if ($firstrow) {
                             if ($templatename == 'listtemplate' || $templatename == 'singletemplate') {
-                                $class .= ' rounded-top bg-primary h3 text-light font-weight-bold';
+                                $class .= ' rounded-top bg-secondary h3 text-dark font-weight-bold';
                             }
                             $firstrow = false;
                         }

@@ -150,9 +150,12 @@ class data_field_admin extends data_field_base {
     var $sortorderparam = 'param6';
 
     /**
-     * should we use TABLE or DL + bootstrap classes 
+     * should we use TABLE or DL + bootstrap classes
+     * 0 : no boostrap <table>
+     * 3 : Bootstrap 3 <dl class="dl-horizontal">
+     * 4 : Bootstrap 4 <dl class="row">
      */
-    protected static $bootstrap = false;
+    protected static $bootstrap = 0;
 
     // implement validation on values
     //  - PARAM_xxx
@@ -949,7 +952,16 @@ class data_field_admin extends data_field_base {
             $text = get_string('moresettings', 'datafield_admin');
             $text = html_writer::tag('p', $text, array('style' => 'width: 90%;'));
             if (self::$bootstrap) {
-                echo html_writer::tag('dd', $text, array('class' => 'col'));
+                if (self::$bootstrap == 4) {
+                    $dl_class = 'row';
+                    $dd_class = 'col text-center';
+                } else {
+                    $dl_class = 'dl-horizontal';
+                    $dd_class = 'text-center';
+                }
+                echo html_writer::start_tag('dl', array('class' => $dl_class));
+                echo html_writer::tag('dd', $text, array('class' => $dd_class));
+                echo html_writer::end_tag('dl');
             } else {
                 echo html_writer::tag('tr', html_writer::tag('td', $text, array('colspan' => '2')));
             }
@@ -977,8 +989,17 @@ class data_field_admin extends data_field_base {
 
             // convert <td> tags to <dt> + <dd> pairs
             $search = '/\s*<td[^>]*>(.*?)<\/td[^>]*>\s*<td[^>]*>(.*?)<\/td[^>]*>/is';
-            $replace = '<dt class="col-sm-4 col-lg-3 col-xl-2 text-sm-right">$1</dt>'.
-                       '<dd class="col-sm-8 col-lg-9 col-xl-10">$2</dd>';
+            if (self::$bootstrap == 4) {
+                $replace = '<dl class="row">'.
+                           '<dt class="col-sm-4 col-lg-3 text-sm-right">$1</dt>'.
+                           '<dd class="col-sm-8 col-lg-9">$2</dd>'.
+                           '</dl>';
+            } else {
+                $replace = '<dl class="dl-horizontal">'.
+                           '<dt>$1</dt>'.
+                           '<dd>$2</dd>'.
+                           '</dl>';
+            }
             $output = preg_replace($search, $replace, $output);
         }
 
@@ -1705,18 +1726,24 @@ class data_field_admin extends data_field_base {
     /**
      * Set the $bootstrap variable.
      */
-    static public function set_bootstrap($truefalse) {
-        self::$bootstrap = $truefalse;
+    static public function set_bootstrap($enable) {
+        global $CFG;
+        if ($enable) {
+            if (file_exists($CFG->dirroot.'/theme/bootstrapbase')) {
+                self::$bootstrap = 3; // Moodle >= 2.5 (until 3.6)
+            } else if (file_exists($CFG->dirroot.'/theme/boost')) {
+                self::$bootstrap = 4; // Moodle >= 3.2
+            }
+        } else {
+            self::$bootstrap = 0;
+        }
     }
 
     /**
      * start the main TABLE in the mod.html files
      */
     static public function mod_html_start($field) {
-        if (self::$bootstrap) {
-            $params = array('class' => 'row datafield_'.$field->type);
-            echo html_writer::start_tag('dl', $params);
-        } else {
+        if (self::$bootstrap == 0) {
             $params = array('width' => '100%',
                             'cellpadding' => '5',
                             'class' => 'datafield_'.$field->type);
@@ -1729,9 +1756,7 @@ class data_field_admin extends data_field_base {
      * end the main TABLE in the mod.html files
      */
     static public function mod_html_end($bootstrap=true) {
-        if (self::$bootstrap) {
-            echo html_writer::end_tag('dl');
-        } else {
+        if (self::$bootstrap == 0) {
             echo html_writer::end_tag('tbody');
             echo html_writer::end_tag('table');
         }
@@ -1773,8 +1798,18 @@ class data_field_admin extends data_field_base {
             $label .= " $help";
         }
         if (self::$bootstrap) {
-            $output = html_writer::tag('dt', $label, array('class' => 'col-sm-4 text-sm-right')).
-                      html_writer::tag('dd', $text, array('class' => 'col-sm-8'));
+            if (self::$bootstrap == 4) {
+                $dl_class = "row $name";
+                $dt_class = 'col-sm-4 col-lg-3 text-sm-right';
+                $dd_class = 'col-sm-8 col-lg-9';
+            } else {
+                $dl_class = "dl-horizontal $name";
+                $dt_class = '';
+                $dd_class = '';
+            }
+            $output = html_writer::tag('dt', $label, array('class' => $dt_class)).
+                      html_writer::tag('dd', $text, array('class' => $dd_class));
+            $output = html_writer::tag('dl', $output, array('class' => $dl_class));
         } else {
             $output = html_writer::tag('td', $label, array('class' => 'c0')).
                       html_writer::tag('td', $text, array('class' => 'c1'));

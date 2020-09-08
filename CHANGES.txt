@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-09-08 (81)
+ - minor modifications to layout and wording in admin tools
+
 2020-09-07 (79)
  - in tool to generate templates, use separate <dl> for each 'row'
 

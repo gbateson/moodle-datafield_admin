@@ -152,7 +152,7 @@ $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 data_print_header($course, $cm, $data, $tool);
 data_field_admin::display_tool_links($id, $tool);
 
-$params = array('class' => 'rounded bg-primary text-light font-weight-bold mt-3 py-2 px-3');
+$params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
 echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 
 $params = array('menu', 'multimenu', 'checkbox', 'radiobutton');
@@ -166,18 +166,28 @@ if (empty($fields)) {
     echo html_writer::tag('p', get_string('nomodifyfields', $plugin), array('class' => 'alert alert-primary'));
 } else {
 
+    // Cache the formatted "notused" <span>
+    $title = get_string('notused', $plugin);
+    $params = array('class' => 'count', 'title' => $title);
+    $notused = html_writer::tag('span', '[0]', $params);
+
+    // Cache the CSS classes.
     $listclass = 'row my-0';
     $nameclass = "col-sm-4 col-lg-3 my-0 py-1";
     $typeclass = "col-sm-8 col-lg-1 my-0 py-1";
     $valuesclass = "col-sm-12 col-lg-4 my-0 py-1";
 
+    // Start the <form>.
     echo html_writer::start_tag('form', array('action' => $url,
                                               'method' => 'post',
                                               'class' => $tool));
+
+    // Add sesskey to the form.
     echo html_writer::empty_tag('input', array('type' => 'hidden',
                                                'name' => 'sesskey',
                                                'value' => sesskey()));
 
+    // Add titles.
     echo html_writer::start_tag('dl', array('class' => $listclass.' d-none d-lg-flex rounded-top columnheadings'));
     echo html_writer::tag('dt', get_string('fieldname', 'data'), array('class' => $nameclass.' fieldname'));
     echo html_writer::tag('dt', get_string('type', 'data'), array('class' => $typeclass.' fieldtype'));
@@ -185,7 +195,34 @@ if (empty($fields)) {
     echo html_writer::tag('dt', get_string('missingvalues', $plugin), array('class' => $valuesclass.' text-center missingvalues'));
     echo html_writer::end_tag('dl');
 
+    // Add fields (one row per field).
     foreach ($fields as $fid => $field) {
+
+        // Get number of occurences of each value (including missing values)
+        $select = 'content, COUNT(*) AS countrecords';
+        $from   = '{data_content}';
+        $where = 'fieldid = ? GROUP BY content ORDER BY countrecords DESC';
+        $params = array($fid);
+        if ($counts = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params)) {
+
+            foreach ($counts as $value => $count) {
+                switch ($count) {
+                    case 1:
+                        $title = get_string('usedonce', $plugin);
+                        break;
+                    case 2:
+                        $title = get_string('usedtwice', $plugin);
+                        break;
+                    default:
+                        $title = get_string('usedmanytimes', $plugin, $count);
+                }
+                $params = array('class' => 'count',
+                                'title' => $title);
+                $counts[$value] = html_writer::tag('span', "[$count]", $params);
+            }
+        } else {
+            $counts = array();
+        }
 
         // Field edit icon.
         $url = '/mod/data/field.php';
@@ -207,16 +244,21 @@ if (empty($fields)) {
         $values = preg_split($delimiters, $field->param1);
         $values = array_map('trim', $values);
         $values = array_filter($values);
+        $values = array_unique($values);
 
         $currentvalues = $values;
         $missingvalues = $values;
 
         if (count($values)) {
-
             // Current values.
             $i = 0;
             foreach ($values as $v => $value) {
                 $i++;
+                if (array_key_exists($value, $counts)) {
+                    $count = $counts[$value];
+                } else {
+                    $count = $notused;
+                }
 
                 $params = array('value' => $value,
                                 'type' => 'hidden',
@@ -225,11 +267,10 @@ if (empty($fields)) {
 
                 $params = array('value' => $value,
                                 'type' => 'text',
-                                'name' => "fields[{$fid}][current][new][{$i}]",
-                                'class' => 'w-100'); // width: 100%
+                                'name' => "fields[{$fid}][current][new][{$i}]");
                 $new = html_writer::empty_tag('input', $params);
 
-                $values[$v] = $old.$new;
+                $values[$v] = $count.$old.$new;
             }
             $currentvalues = html_writer::alist($values, array('class' => "currentvalues field_{$fid} list-unstyled"));
         } else {
@@ -261,7 +302,7 @@ if (empty($fields)) {
                                 'class' => 'w-100'); // width: 100%
                 $new = html_writer::empty_tag('input', $params);
 
-                $values[$value] = $old.$new; // ($count)
+                $values[$value] = $counts[$value].$old.$new;
             }
             $missingvalues = html_writer::alist($values, array('class' => "missingvalues field_{$fid} list-unstyled"));
         } else {

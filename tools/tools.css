@@ -3,14 +3,9 @@
     display:none;
 }
 
-.lang-en .label-separators dt:not(:empty):after {
+.lang-en .label-separators dt:not:empty:after {
     content: ":";
 }
-.lang-ja .label-separators dt:not(:empty):after {
+.lang-ja .label-separators dt:not:empty:after {
     content: "：";
-}
-
-.row .hover,
-.row .hover {
-    background-color: pink!important;
 }
