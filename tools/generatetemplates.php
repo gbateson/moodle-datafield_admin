@@ -143,7 +143,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     $dt_cols = 3; // titlecols
     $dd_cols = (12 - $dt_cols);
 
-    $dl_class = 'row my-0 py-1 px-3';
+    $dl_class = 'row my-0 py-1 px-sm-3';
     $dt_class = "col-sm-$dt_cols my-0 py-1";
     $dd_class = "col-sm-$dd_cols my-0 py-1";
 

@@ -102,8 +102,8 @@
         }
     };
 
-    JS.remove_empty_rows = function(rowtag, rowclass, rowselector) {
-        document.querySelectorAll(rowselector).forEach(function(row){
+    JS.remove_empty_rows = function(rowtag, rowclass, rowselectors) {
+        document.querySelectorAll(rowselectors).forEach(function(row){
             if (rowtag == "" || row.matches(rowtag)) {
                 if (rowclass == "" || row.matches(rowclass)) {
                     if (row.querySelector("dd:not(:empty)") == null) {
@@ -153,7 +153,7 @@
         });
     };
 
-    JS.setup_media_link = function(a, max_width, max_height) {
+    JS.setup_media_link = function(a) {
         var tag = "";
         switch (true) {
             case JS.videourl.test(a.href): tag = "VIDEO"; break;
@@ -169,16 +169,17 @@
             }
 
             var elm = document.createElement(tag);
-            elm.src = a.href;
-            elm.title = title;
+            elm.setAttribute("src", a.href);
+            elm.setAttribute("title", title);
             if (tag == "AUDIO" || tag == "VIDEO") {
-                elm.controls = true;
+                elm.setAttribute("controls", "");
             }
             if (tag == "VIDEO") {
-                elm.playsinline = true;
+                elm.setAttribute("playsinline", "");
+                elm.setAttribute("preload", "metadata");
             }
             a.parentNode.replaceChild(elm, a);
-            JS.setup_media_player(elm, max_width, max_height);
+            JS.setup_media_player(elm);
         }
     };
 
@@ -191,56 +192,66 @@
         });
     };
 
-    JS.setup_media_player = function(elm, max_width, max_height) {
+    JS.setup_media_player = function(elm) {
         var evt = "";
+        var max_width = "";
+        var max_height = "";
         var mediaready = false;
-        if (elm.dataset.setup !== "complete") {
-            elm.dataset.setup = "complete";
-            if (elm.tagName == "AUDIO" || elm.tagName == "VIDEO") {
-                evt = "canplay";
-                mediaready = (elm.readyState >= 4);
-            } else if (elm.tagName == "IMG") {
-                evt = "load";
-                mediaready = (elm.complete ? true : false)
-            }
-        }
-        if (mediaready) {
-            JS.check_media_height(elm, max_width, max_height);
-        } else if (evt) {
-            JS.add_event_listener(elm, evt, function(){
-                JS.check_media_height(this, max_width, max_height);
-            });
-        }
-    };
+        switch (true) {
+            case JS.videourl.test(elm.src):
+                evt = "loadedmetadata";
+                max_width = JS.video_max_width;
+                max_height = JS.video_max_height;
+                mediaready = (elm.readyState >= 1);
+                break;
 
-    JS.check_media_height = function(elm, max_width, max_height) {
-        if (typeof(max_width) == "undefined" ||
-            typeof(max_height) == "undefined") {
-            switch (true) {
-                case JS.videourl.test(elm.src):
-                    max_width = JS.video_max_width;
-                    max_height = JS.video_max_height;
-                    break;
-                case JS.audiourl.test(elm.src):
-                    max_width = JS.audio_max_width;
-                    max_height = JS.audio_max_height;
-                    break;
-                case JS.imageurl.test(elm.src):
-                    max_width = JS.image_max_width;
-                    max_height = JS.image_max_height;
-                    break;
-            }
+            case JS.audiourl.test(elm.src):
+                evt = "canplay";
+                max_width = JS.audio_max_width;
+                max_height = JS.audio_max_height;
+                mediaready = (elm.readyState >= 4);
+                break;
+
+            case JS.imageurl.test(elm.src):
+                evt = "load";
+                max_width = JS.image_max_width;
+                max_height = JS.image_max_height;
+                mediaready = (elm.complete ? true : false)
+                break;
         }
-        if (elm.offsetHeight > parseInt(max_height)) {
-            elm.style.width = "auto";
-            elm.style.height = "100%";
-            elm.style.maxWidth = "initial";
-            elm.style.maxHeight = max_height;
-        } else {
-            elm.style.width = "100%";
-            elm.style.height = "auto";
-            elm.style.maxWidth = max_width;
-            elm.style.maxHeight = "initial";
+        // https://stackoverflow.com/questions/1248081/how-to-get-the-browser-viewport-dimensions
+        //   clientWidth: CSS viewport width excluding scrollbars
+        //   innerWidth: CSS viewport width including scrollbars
+        max_width = Math.min(parseInt(max_width), Math.max(
+             document.documentElement.clientWidth || 0,
+             window.innerWidth || 0
+        ));
+        max_height = Math.min(parseInt(max_height), Math.max(
+             document.documentElement.clientHeight || 0,
+             window.innerHeight || 0
+        ));
+        if (max_width && max_height) {
+            if (mediaready == false) {
+                // Set provisional dimensions to reserve suitable space on page.
+                elm.style.width = "auto";
+                elm.style.height = "auto";
+                JS.add_event_listener(elm, evt, function(){
+                    JS.setup_media_player(this);
+                });
+            } else {
+                // Reset dimensions for responsive size.
+                if (elm.offsetWidth <= max_width && elm.offsetHeight > max_height) {
+                    elm.style.width = "auto";
+                    elm.style.height = "100%";
+                    elm.style.maxWidth = "initial";
+                    elm.style.maxHeight = max_height + "px";
+                } else {
+                    elm.style.width = "100%";
+                    elm.style.height = "auto";
+                    elm.style.maxWidth = max_width + "px";
+                    elm.style.maxHeight = "initial";
+                }
+            }
         }
     }
 
@@ -286,26 +297,8 @@
         }
     };
 
-    // Find any "##user##" text on the add/edit screen anduser
-    // replace it with the formatted name of the current user.
-    JS.setup_user = function() {
-        var user = document.querySelector(".user dd");
-        if (user && user.innerText == "##user##") {
-            var usertext = document.querySelector(".userbutton .usertext");
-            if (usertext) {
-                var viewingas = usertext.querySelector(".viewingas span");
-                if (viewingas) {
-                    user.innerText = viewingas.innerText
-                } else {
-                    user.innerText = usertext.innerText
-                }
-            }
-        }
-    };
-
     JS.setup = function() {
         JS.remove_empty_rows("dl", ".row", ".metafield.tags");
-        //JS.setup_user();
         //JS.setup_media_links();
         //JS.setup_media_players();
         JS.move_required_icons();
