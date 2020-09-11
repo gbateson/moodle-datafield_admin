@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-09-12 (83)
+ - refine calculation of element width in template.js
+
 2020-09-10 (82)
  - small improvements to template.js
 

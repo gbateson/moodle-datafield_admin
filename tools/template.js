@@ -9,14 +9,14 @@
     JS.videourl = new RegExp("\\w+\\.(mov|mp4|m4v|ogv|webm)\\b", "i");
     JS.htmlfragment = new RegExp("^<(\\w+)\\b[^>]*>.*</\\1>$");
 
-    JS.audio_max_width = "480px";
     JS.audio_max_height = "64px";
+    JS.audio_max_width = "480px";
 
-    JS.image_max_width = "640px";
     JS.image_max_height = "640px";
+    JS.image_max_width = "640px";
 
-    JS.video_max_width = "640px";
     JS.video_max_height = "360px";
+    JS.video_max_width = "640px";
 
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
@@ -168,6 +168,13 @@
                 img.parentNode.removeChild(img);
             }
 
+            // remove leading white space in <a>'s parent node
+            while (a.parentNode.firstChild && 
+                   a.parentNode.firstChild.nodeType == 3 && 
+                   a.parentNode.firstChild.nodeValue.trim() == "") {
+                a.parentNode.removeChild(a.parentNode.firstChild);
+            }
+
             var elm = document.createElement(tag);
             elm.setAttribute("src", a.href);
             elm.setAttribute("title", title);
@@ -193,78 +200,123 @@
     };
 
     JS.setup_media_player = function(elm) {
+
         var evt = "";
-        var max_width = "";
-        var max_height = "";
+        var elm_height = "0px";
+        var elm_width = "0px";
+        var max_height = "0px";
+        var max_width = "0px";
         var mediaready = false;
+
         switch (true) {
             case JS.videourl.test(elm.src):
                 evt = "loadedmetadata";
-                max_width = JS.video_max_width;
+                elm_height = (elm.videoHeight || 0);
+                elm_width = (elm.videoWidth || 0);
                 max_height = JS.video_max_height;
+                max_width = JS.video_max_width;
                 mediaready = (elm.readyState >= 1);
                 break;
 
             case JS.audiourl.test(elm.src):
                 evt = "canplay";
-                max_width = JS.audio_max_width;
+                elm_height = (elm.height || 0);
+                elm_width = (elm.width || 0);
                 max_height = JS.audio_max_height;
+                max_width = JS.audio_max_width;
                 mediaready = (elm.readyState >= 4);
                 break;
 
             case JS.imageurl.test(elm.src):
                 evt = "load";
-                max_width = JS.image_max_width;
+                elm_height = (elm.height || 0);
+                elm_width = (elm.width || 0);
                 max_height = JS.image_max_height;
+                max_width = JS.image_max_width;
                 mediaready = (elm.complete ? true : false)
                 break;
         }
-        // https://stackoverflow.com/questions/1248081/how-to-get-the-browser-viewport-dimensions
-        //   clientWidth: CSS viewport width excluding scrollbars
-        //   innerWidth: CSS viewport width including scrollbars
-        max_width = Math.min(parseInt(max_width), Math.max(
-             document.documentElement.clientWidth || 0,
-             window.innerWidth || 0
-        ));
-        max_height = Math.min(parseInt(max_height), Math.max(
-             document.documentElement.clientHeight || 0,
-             window.innerHeight || 0
-        ));
-        if (max_width && max_height) {
-            if (mediaready == false) {
-                // Set provisional dimensions to reserve suitable space on page.
-                elm.style.width = "auto";
+
+        elm_height = parseInt(elm_height);
+        elm_width = parseInt(elm_width);
+
+        max_height = parseInt(max_height);
+        max_width = parseInt(max_width);
+
+        var parent_height = elm.parentNode.offsetHeight;
+        var parent_width = elm.parentNode.offsetWidth;
+
+        var cs = window.getComputedStyle(elm.parentNode);
+        if (cs.getPropertyValue("box-sizing") == "content-box") {
+            // content-box:
+            //     width and height include the content, but 
+            //     does not include the padding, border, or margin
+            // border-box:
+            //     width and height include the content, padding, 
+            //     and border, but do not include the margin
+            parent_height = parent_height
+                            - parseInt(cs.getPropertyValue("padding-top"))
+                            - parseInt(cs.getPropertyValue("padding-bottom"))
+                            - parseInt(cs.getPropertyValue("border-top-width"))
+                            - parseInt(cs.getPropertyValue("border-bottom-width"));
+            parent_width = parent_width
+                           - parseInt(cs.getPropertyValue("padding-left"))
+                           - parseInt(cs.getPropertyValue("padding-right"))
+                           - parseInt(cs.getPropertyValue("border-left-width"))
+                           - parseInt(cs.getPropertyValue("border-right-width"));
+        }
+
+        // Ensure element's max dimensions do not exceed those of parent
+        if (max_width == 0 || max_width > parent_width) {
+            max_width = parent_width;
+        }
+        if (max_height == 0 || max_height > parent_height) {
+            max_height = parent_height;
+        }
+
+       
+        if (elm.dataset.setup == "complete") {
+            // do nothing
+        } else if (max_width && max_height) {
+
+           if (mediaready == false) {
                 elm.style.height = "auto";
-                JS.add_event_listener(elm, evt, function(){
+                elm.style.width = "auto";
+                elm.style.maxWidth = max_width + "px";
+                JS.add_event_listener(elm, evt, function(e){
                     JS.setup_media_player(this);
                 });
             } else {
-                // Reset dimensions for responsive size.
-                if (elm.offsetWidth <= max_width && elm.offsetHeight > max_height) {
-                    elm.style.width = "auto";
+                // Ensure we don't do this more than once
+                elm.dataset.setup = "complete";
+
+                if (elm_width <= max_width && elm_height > max_height) {
+                    // Portrait video (height > width)
                     elm.style.height = "100%";
-                    elm.style.maxWidth = "initial";
+                    elm.style.width = "auto";
                     elm.style.maxHeight = max_height + "px";
+                    elm.style.maxWidth = "unset";
                 } else {
-                    elm.style.width = "100%";
+                    // Landscape video (height < width)
                     elm.style.height = "auto";
+                    elm.style.width = "100%";
+                    elm.style.maxHeight = "unset";
                     elm.style.maxWidth = max_width + "px";
-                    elm.style.maxHeight = "initial";
                 }
             }
         }
     }
 
     JS.setup_dependant_field = function(selectfieldname,
-                                         displayfieldname,
-                                         displayparamname) {
+                                        displayfieldname,
+                                        displayparamname) {
 
         var selectselector = ".report." + selectfieldname + " dd select";
         var displayselector = ".report." + displayfieldname + " dd";
 
         var selectelement = document.querySelector(selectselector);
         if (selectelement) {
-            JS.add_event_listener(selectelement, "change", function(){
+            JS.add_event_listener(selectelement, "change", function(e){
                 var displayelement = document.querySelector(displayselector);
                 if (displayelement) {
                     // Remove previous contents
