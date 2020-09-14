@@ -231,11 +231,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         echo html_writer::tag('legend', get_string($templatename, 'data'), $params).$newline;
 
         // start DIV
-        $class = "container defaulttemplate $templatename";
-        if ($templatename == 'listtemplate') {
-            // add vertical spacing between items;
-            $class .= ' my-2';
-        }
+        $class = "container defaulttemplate $templatename my-2";
         echo html_writer::start_tag('div', array('class' => $class)).$newline;
 
         // Generate responsive table/list of fields.

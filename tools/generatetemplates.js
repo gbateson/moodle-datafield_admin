@@ -580,11 +580,61 @@
         }
     };
 
+    TOOL.setup_bootstrap_30 = function() {
+        var bootstrap_30 = false;
+        for (var s in document.styleSheets) {
+            for (var r in document.styleSheets[s].rules) {
+                var txt = document.styleSheets[s].rules[r].selectorText;
+                if (txt && txt.indexOf("dl-horizontal") >= 0) {
+                    bootstrap_30 = true;
+                    break;
+                }
+            }
+            if (bootstrap_30) {
+                break;
+            }
+        }
+        if (bootstrap_30) {
+            document.querySelectorAll(".singlebutton").forEach(function(elm){
+                elm.classList.add("d-inline");
+                elm.querySelectorAll("button").forEach(function(btn){
+                    btn.style.padding = "0.375em 0.75em";
+                    btn.style.fontSize = "0.6em";
+                });
+            });
+            document.querySelectorAll("fieldset.border").forEach(function(elm){
+                elm.classList.add("border-bottom");
+                elm.classList.add("border-left");
+                elm.classList.add("border-right");
+                elm.classList.add("border-top");
+            });
+            document.querySelectorAll("legend.text-light").forEach(function(elm){
+                elm.classList.add("text-white");
+            });
+            document.querySelectorAll(".icons.text-dark").forEach(function(elm){
+                elm.classList.add("text-info");
+            });
+            document.querySelectorAll(".container .my-2").forEach(function(elm){
+                elm.classList.add("m-b-1");
+            });
+            document.querySelectorAll(".icons .mx-sm-2").forEach(function(elm){
+                if (elm.matches(":not(:first-child)")) {
+                    elm.classList.add("m-l-1"); // 14px
+                }
+            });
+            document.querySelectorAll("dl.row").forEach(function(elm){
+                elm.classList.add("dl-horizontal");
+                elm.classList.add("m-0"); // override ".row" margins.
+            });
+        }
+    };
+
     TOOL.setup = function() {
         var p = TOOL.setup_strings();
         p.then(TOOL.setup_buttons);
         p.then(TOOL.setup_commands);
         p.then(TOOL.setup_nav_links);
+        p.then(TOOL.setup_bootstrap_30);
     };
 
     TOOL.add_event_listener(window, "load", TOOL.setup);
