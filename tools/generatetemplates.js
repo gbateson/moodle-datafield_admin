@@ -594,7 +594,9 @@
                 break;
             }
         }
-        if (bootstrap_30) {
+        if (bootstrap_v3) {
+            // Bootstrap version 3.x styles available in Moodle <= 3.6
+            // see "/theme/bootstrapbase/style/moodle.css"
             document.querySelectorAll(".singlebutton").forEach(function(elm){
                 elm.classList.add("d-inline");
                 elm.querySelectorAll("button").forEach(function(btn){
@@ -602,29 +604,53 @@
                     btn.style.fontSize = "0.6em";
                 });
             });
-            document.querySelectorAll("fieldset.border").forEach(function(elm){
+            document.querySelectorAll(".border").forEach(function(elm){
+                elm.classList.remove("border");
+                elm.classList.remove("border-dark");
+                elm.classList.remove("border-light");
                 elm.classList.add("border-bottom");
                 elm.classList.add("border-left");
                 elm.classList.add("border-right");
                 elm.classList.add("border-top");
             });
             document.querySelectorAll("legend.text-light").forEach(function(elm){
+                elm.classList.remove("text-light");
                 elm.classList.add("text-white");
             });
             document.querySelectorAll(".icons.text-dark").forEach(function(elm){
+                elm.classList.remove("text-dark");
                 elm.classList.add("text-info");
             });
             document.querySelectorAll(".container .my-2").forEach(function(elm){
+                elm.classList.remove("my-2");
                 elm.classList.add("m-b-1");
             });
             document.querySelectorAll(".icons .mx-sm-2").forEach(function(elm){
+                elm.classList.remove("mx-sm-2");
                 if (elm.matches(":not(:first-child)")) {
                     elm.classList.add("m-l-1"); // 14px
                 }
             });
             document.querySelectorAll("dl.row").forEach(function(elm){
-                elm.classList.add("dl-horizontal");
+                elm.className = "dl-horizontal " + elm.className;
                 elm.classList.add("m-0"); // override ".row" margins.
+            });
+            document.querySelectorAll("dl.h3").forEach(function(elm){
+                elm.classList.remove("h3");
+                elm.classList.remove("text-dark");
+                elm.classList.add("lead"); // increase font-size
+            });
+            var r = new RegExp("^[bmp][blrtxy]?(-(xs|sm|md|lg|xl))-[0-9]+$");
+            document.querySelectorAll("fieldset, legend, div.container, dl, dt, dd").forEach(function(elm){
+                var names = new Array();
+                elm.classList.forEach(function(name){
+                    if (name.substr(0,3) == "col" || name.substr(0, 8) == "rounded-" || r.test(name)) {
+                        names.push(name);
+                    }
+                });
+                names.forEach(function(name){
+                    elm.classList.remove(name);
+                });
             });
         }
     };
@@ -634,7 +660,7 @@
         p.then(TOOL.setup_buttons);
         p.then(TOOL.setup_commands);
         p.then(TOOL.setup_nav_links);
-        p.then(TOOL.setup_bootstrap_30);
+        p.then(TOOL.setup_bootstrap_v3);
     };
 
     TOOL.add_event_listener(window, "load", TOOL.setup);
