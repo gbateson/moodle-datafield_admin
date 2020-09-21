@@ -580,17 +580,17 @@
         }
     };
 
-    TOOL.setup_bootstrap_30 = function() {
-        var bootstrap_30 = false;
+    TOOL.setup_bootstrap_v3 = function() {
+        var bootstrap_v3 = false;
         for (var s in document.styleSheets) {
             for (var r in document.styleSheets[s].rules) {
                 var txt = document.styleSheets[s].rules[r].selectorText;
                 if (txt && txt.indexOf("dl-horizontal") >= 0) {
-                    bootstrap_30 = true;
+                    bootstrap_v3 = true;
                     break;
                 }
             }
-            if (bootstrap_30) {
+            if (bootstrap_v3) {
                 break;
             }
         }

@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-09-22 (86)
+ - fix typo in tools/generatetemplates.js: bootstrap_30 => bootstrap_v3
+
 2020-09-16 (85)
  - improve replacement styles for Bootstrap v3 in Moodle <= 3.6
 
