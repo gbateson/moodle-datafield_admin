@@ -1,46 +1,54 @@
 (function() {
-    var TOOL = {};
+    var JS = {};
 
-    TOOL.str = {};
-    TOOL.plugin = "datafield_admin";
+    JS.str = {};
+    JS.plugin = "datafield_admin";
 
-    TOOL.htmlcommands = new Array("viewhtml", "copyhtml", "stripes", "savehtml");
-    TOOL.textcommands = new Array("viewtext", "copytext", "savetext");
+    JS.htmlcommands = new Array("viewhtml", "copyhtml", "stripes", "loadhtml", "savehtml");
+    JS.textcommands = new Array("viewtext", "copytext", "loadtext", "savetext");
 
-    TOOL.stringnames = TOOL.htmlcommands.concat(TOOL.textcommands)
-                       .concat(new Array("copiedhtml", "savedhtml",
-                                         "copiedtext", "savedtext", "hidetext",
-                                         "stripesall", "saveall", "savedall", "labelseparators",
-                                         "confirmaction", "confirmsave", "confirmsaveall"));
+    JS.stringnames = JS.htmlcommands.concat(JS.textcommands)
+                     .concat(new Array("copiedhtml", "loadedhtml", "savedhtml",
+                                       "copiedtext", "loadedtext", "savedtext", "hidetext",
+                                       "labelseparators", "stripesall",
+                                       "loadall", "loadedall",
+                                       "saveall", "savedall",
+                                       "confirmaction",
+                                       "confirmsave", "confirmsaveall",
+                                       "confirmload", "confirmloadall"));
 
-    TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
-    TOOL.img = {
-        "viewhtml" : TOOL.wwwroot + "/pix/i/preview.svg",
-        "copyhtml" : TOOL.wwwroot + "/pix/t/download.svg",
-        "savehtml" : TOOL.wwwroot + "/pix/e/save.svg",
-        "stripes"  : TOOL.wwwroot + "/pix/a/view_list_active.svg",
-        "viewtext" : TOOL.wwwroot + "/pix/i/preview.svg",
-        "copytext" : TOOL.wwwroot + "/pix/t/download.svg",
-        "savetext" : TOOL.wwwroot + "/pix/e/save.svg"
+    JS.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
+    JS.img = {
+        "viewhtml" : JS.wwwroot + "/pix/i/preview.svg",
+        "copyhtml" : JS.wwwroot + "/pix/t/download.svg",
+        "loadhtml" : JS.wwwroot + "/pix/t/portfolioadd.svg",
+        "savehtml" : JS.wwwroot + "/pix/e/save.svg",
+        "stripes"  : JS.wwwroot + "/pix/a/view_list_active.svg",
+        "viewtext" : JS.wwwroot + "/pix/i/preview.svg",
+        "copytext" : JS.wwwroot + "/pix/t/download.svg",
+        "loadtext" : JS.wwwroot + "/pix/t/portfolioadd.svg",
+        "savetext" : JS.wwwroot + "/pix/e/save.svg"
     };
-    TOOL.toolurl = TOOL.wwwroot + "/mod/data/field/admin/tools/generatetemplates.php"
+    JS.toolurl = JS.wwwroot + "/mod/data/field/admin/tools/generatetemplates.php"
 
-    TOOL.match_valid_templatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
-    TOOL.match_stripe_templatenames = new RegExp("^(list|single|asearch|add)template$");
+    JS.match_valid_templatenames = new RegExp("^(list|single|asearch|add|css|js)template$");
+    JS.match_stripe_templatenames = new RegExp("^(list|single|asearch|add)template$");
 
-    TOOL.match_stripeson = new RegExp('<div class="container([^"]*) stripes([^"]*)">');
-    TOOL.match_stripesoff = new RegExp('<div class="container([^"]*)">');
+    JS.match_stripeson = new RegExp('<div class="container([^"]*) stripes([^"]*)">');
+    JS.match_stripesoff = new RegExp('<div class="container([^"]*)">');
 
-    TOOL.replace_stripesoff = '<div class="container$1$2">';
-    TOOL.replace_stripeson = '<div class="container stripes$1">';
+    JS.replace_stripesoff = '<div class="container$1$2">';
+    JS.replace_stripeson = '<div class="container stripes$1">';
 
-    TOOL.match_labelson = new RegExp('<div class="container([^"]*) label-separators([^"]*)">');
-    TOOL.match_labelsoff = new RegExp('<div class="container([^"]*)">');
+    JS.match_labelson = new RegExp('<div class="container([^"]*) label-separators([^"]*)">');
+    JS.match_labelsoff = new RegExp('<div class="container([^"]*)">');
 
-    TOOL.replace_labelsoff = '<div class="container$1$2">';
-    TOOL.replace_labelson = '<div class="container label-separators$1">';
+    JS.replace_labelsoff = '<div class="container$1$2">';
+    JS.replace_labelson = '<div class="container label-separators$1">';
 
-    TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
+    JS.match_html_error = new RegExp("^<br[^>]*>\\s*((.|\\s)*?)<br[^>]*>\\s*\\{");
+
+    JS.add_event_listener = function(elm, evt, fn, useCapture) {
         if (elm.addEventListener) {
             elm.addEventListener(evt, fn, (useCapture || false));
         } else if (elm.attachEvent) {
@@ -48,74 +56,78 @@
         }
     };
 
-    // https://stackoverflow.com/questions/8567114/how-to-make-an-TOOL.ajax-call-without-jquery
-    TOOL.ajax = {
+    // https://stackoverflow.com/questions/8567114/how-to-make-an-ajax-call-without-jquery
+    // based on above page (Thanks!). Reformatting and addition of "responseType" by GB.
+    JS.ajax = {
         "x": function () {
             if (window.XMLHttpRequest) {
                 return new XMLHttpRequest();
             }
-            var versions = new Array("MSXML2.XmlHttp.6.0",
-                                     "MSXML2.XmlHttp.5.0",
-                                     "MSXML2.XmlHttp.4.0",
-                                     "MSXML2.XmlHttp.3.0",
-                                     "MSXML2.XmlHttp.2.0",
-                                     "Microsoft.XmlHttp");
-            var x;
+            var versions = new Array(
+                "MSXML2.XmlHttp.6.0", "MSXML2.XmlHttp.5.0", "MSXML2.XmlHttp.4.0",
+                "MSXML2.XmlHttp.3.0", "MSXML2.XmlHttp.2.0", "Microsoft.XmlHttp");
             for (var i = 0; i < versions.length; i++) {
                 try {
-                    x = new ActiveXObject(versions[i]);
-                    break;
+                    var x = new ActiveXObject(versions[i]);
+                    return x;
                 } catch (e) {}
             }
-            return x;
+            return null;
         },
 
-        "send": function (url, data, callback, method) {
-            var x = TOOL.ajax.x();
+        "send": function (url, data, callback, method, type) {
+            var x = JS.ajax.x();
             if (x) {
-                x.open(method, url, true); // Always asynchronous ;-)
+                x.open(method, url, true); // Always asynchronous ;-);
+                if (type) {
+                    x.responseType = type; // e.g. "blob"
+                }
                 x.onreadystatechange = function () {
                     if (x.readyState == 4) {
-                        callback(x.responseText);
+                        if (x.responseType == "" || x.responseType == "text") {
+                            callback(x.responseText);
+                        } else {
+                            callback(x.response); // e.g. "blob"
+                        }
                     }
                 };
                 if (method == "POST") {
                     x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
                 }
-                x.send(data)
+                x.send(data);
             }
         },
 
-        "get": function (url, data, callback) {
+        "get": function (url, data, callback, type) {
             var q = [];
             for (var key in data) {
                 q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
             }
-            TOOL.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET")
+            JS.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET", type);
         },
 
-        "post": function (url, data, callback) {
+        "post": function (url, data, callback, type) {
             var q = [];
             for (var key in data) {
                 q.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
             }
-            TOOL.ajax.send(url, q.join('&'), callback, "POST")
+            JS.ajax.send(url, q.join('&'), callback, "POST", type);
         }
     };
 
-    TOOL.get_fieldset = function(elm) {
-        return TOOL.get_related_element(elm, "fieldset.template");
+    JS.get_fieldset = function(elm) {
+        return JS.get_related_element(elm, "fieldset.template");
     };
 
-    TOOL.get_legend = function(elm) {
-        return TOOL.get_related_element(elm, "fieldset", "legend");
+    JS.get_legend = function(elm) {
+        return JS.get_related_element(elm, "fieldset", "legend");
     };
 
-    TOOL.get_defaulttemplate = function(elm) {
-        return TOOL.get_related_element(elm, "fieldset", ".defaulttemplate");
+    JS.get_defaulttemplate = function(elm) {
+        return JS.get_related_element(elm, "fieldset", ".defaulttemplate");
     };
 
-    TOOL.get_related_element = function(elm, ancestor, target) {
+    JS.get_related_element = function(elm, ancestor, target) {
         var a = elm;
         while (a = a.parentElement) {
             if (a.matches(ancestor)) {
@@ -129,7 +141,7 @@
         return null;
     };
 
-    TOOL.get_sesskey = function() {
+    JS.get_sesskey = function() {
         var elm = document.querySelector("input[name=sesskey]");
         if (elm) {
             return elm.getAttribute("value");
@@ -137,7 +149,7 @@
         return null; // shouldn't happen !!
     };
 
-    TOOL.get_url_param = function(name) {
+    JS.get_url_param = function(name) {
         if (window.URLSearchParams) {
             var s = new URLSearchParams(window.location.search);
             if (s.has(name)) {
@@ -154,24 +166,24 @@
         }
     };
 
-    TOOL.get_text_content = function(elm) {
+    JS.get_text_content = function(elm) {
         var txt = new Array();
         elm.childNodes.forEach(function(node){
             if (node.nodeType == 3) { // Node.TEXT_NODE
                 txt.push(node.nodeValue);
             } else {
                 txt.push(node.textContent || node.innerText);
-                // txt.push(TOOL.get_text_content(node));
+                // txt.push(JS.get_text_content(node));
             }
         });
         return txt.join("\n");
     };
 
-    TOOL.get_string = function(strname, a) {
-        if (typeof(TOOL.str[strname]) == "undefined") {
+    JS.get_string = function(strname, a) {
+        if (typeof(JS.str[strname]) == "undefined") {
             return "Unknown string: " + strname;
         }
-        var str = TOOL.str[strname];
+        var str = JS.str[strname];
         if (typeof(a) == "object") {
             a.forEach(function(value, key){
                 var r = new RegExp("\\{\\$a->" + key + "\\}", "g");
@@ -184,22 +196,22 @@
         return str;
     };
 
-    TOOL.get_template_description = function(elm) {
-        return TOOL.get_legend(elm).firstChild.nodeValue;
+    JS.get_template_description = function(elm) {
+        return JS.get_legend(elm).firstChild.nodeValue;
     };
 
-    TOOL.confirm_action = function(elm, msg) {
+    JS.confirm_action = function(elm, msg) {
         if (elm) {
-            var a = TOOL.get_template_description(elm);
-            msg = TOOL.get_string(msg, a);
+            var a = JS.get_template_description(elm);
+            msg = JS.get_string(msg, a);
         } else {
-            msg = TOOL.get_string(msg);
+            msg = JS.get_string(msg);
         }
-        return confirm(TOOL.str.confirmaction + "\n\n" + msg);
+        return confirm(JS.str.confirmaction + "\n\n" + msg);
     };
 
-    TOOL.onclick_viewhtml = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_viewhtml = function() {
+        var elm = JS.get_defaulttemplate(this);
         if (elm) {
             if (elm.matches("div")) {
                 var pre = document.createElement("pre");
@@ -208,35 +220,35 @@
                 pre.appendChild(document.createTextNode(elm.outerHTML));
                 elm.parentNode.replaceChild(pre, elm);
             } else if (elm.matches("pre")) {
-                elm.outerHTML = TOOL.get_text_content(elm);
+                elm.outerHTML = JS.get_text_content(elm);
             }
         }
     };
 
-    TOOL.onclick_copyhtml = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_copyhtml = function() {
+        var elm = JS.get_defaulttemplate(this);
         if (elm) {
             var content = "";
             if (elm.matches("div")) {
                 content = elm.outerHTML;
             } else if (elm.matches("pre")) {
-                content = TOOL.get_text_content(elm);
+                content = JS.get_text_content(elm);
             }
-            TOOL.copy_to_clipboard(content, TOOL.str.copiedhtml);
+            JS.copy_to_clipboard(content, JS.str.copiedhtml);
         }
     };
 
-    TOOL.onclick_stripes = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_stripes = function() {
+        var elm = JS.get_defaulttemplate(this);
         if (elm) {
             if (elm.matches("div")) {
                 elm.classList.toggle("stripes");
             } else if (elm.matches("pre")) {
-                var txt = TOOL.get_text_content(elm);
-                if (txt.match(TOOL.match_stripeson)) {
-                    txt = txt.replace(TOOL.match_stripeson, TOOL.replace_stripesoff);
+                var txt = JS.get_text_content(elm);
+                if (txt.match(JS.match_stripeson)) {
+                    txt = txt.replace(JS.match_stripeson, JS.replace_stripesoff);
                 } else {
-                    txt = txt.replace(TOOL.match_stripesoff, TOOL.replace_stripeson);
+                    txt = txt.replace(JS.match_stripesoff, JS.replace_stripeson);
                 }
                 while (elm.firstChild) {
                     elm.removeChild(elm.firstChild);
@@ -246,21 +258,28 @@
         }
     };
 
-    TOOL.onclick_savehtml = function() {
-        var elm = TOOL.get_defaulttemplate(this);
-        if (elm && TOOL.confirm_action(this, "confirmsave")) {
+    JS.onclick_loadhtml = function() {
+        var elm = JS.get_defaulttemplate(this);
+        if (elm && JS.confirm_action(this, "confirmload")) {
+            JS.load_template(this, "loadedhtml");
+        }
+    };
+
+    JS.onclick_savehtml = function() {
+        var elm = JS.get_defaulttemplate(this);
+        if (elm && JS.confirm_action(this, "confirmsave")) {
             var content = "";
             if (elm.matches("div")) {
                 content = elm.outerHTML;
             } else if (elm.matches("pre")) {
-                content = TOOL.get_text_content(elm);
+                content = JS.get_text_content(elm);
             }
-            TOOL.save_to_template(this, "savedhtml", content);
+            JS.save_template(this, "savedhtml", content);
         }
     };
 
-    TOOL.onclick_viewtext = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_viewtext = function() {
+        var elm = JS.get_defaulttemplate(this);
         elm = elm.querySelector("pre");
         if (elm) {
             this.childNodes.forEach(function(node){
@@ -270,33 +289,41 @@
             });
             if (elm.style.display == "none") {
                 elm.style.display = "";
-                this.appendChild(document.createTextNode(" " + TOOL.str.hidetext));
+                this.appendChild(document.createTextNode(" " + JS.str.hidetext));
             } else {
                 elm.style.display = "none";
-                this.appendChild(document.createTextNode(" " + TOOL.str.viewtext));
+                this.appendChild(document.createTextNode(" " + JS.str.viewtext));
             };
         }
     };
 
-    TOOL.onclick_copytext = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_copytext = function() {
+        var elm = JS.get_defaulttemplate(this);
         elm = elm.querySelector("pre");
         if (elm) {
-            var content = TOOL.get_text_content(elm);
-            TOOL.copy_to_clipboard(content, TOOL.str.copiedtext);
+            var content = JS.get_text_content(elm);
+            JS.copy_to_clipboard(content, JS.str.copiedtext);
         }
     };
 
-    TOOL.onclick_savetext = function() {
-        var elm = TOOL.get_defaulttemplate(this);
+    JS.onclick_loadtext = function() {
+        var elm = JS.get_defaulttemplate(this);
         elm = elm.querySelector("pre");
-        if (elm && TOOL.confirm_action(this, "confirmsave")) {
-            var content = TOOL.get_text_content(elm);
-            TOOL.save_to_template(this, "savedtext", content);
+        if (elm && JS.confirm_action(this, "confirmload")) {
+            JS.load_template(this, "loadedtext");
         }
     };
 
-    TOOL.copy_to_clipboard = function(txt, msg) {
+    JS.onclick_savetext = function() {
+        var elm = JS.get_defaulttemplate(this);
+        elm = elm.querySelector("pre");
+        if (elm && JS.confirm_action(this, "confirmsave")) {
+            var content = JS.get_text_content(elm);
+            JS.save_template(this, "savedtext", content);
+        }
+    };
+
+    JS.copy_to_clipboard = function(txt, msg) {
 
         var container = document.createElement("pre");
         container.style.position = "fixed";
@@ -317,46 +344,159 @@
         }
 
         document.execCommand("Copy");
-        alert(msg);
+        JS.show_message(msg);
 
         document.body.removeChild(container);
     };
 
-    TOOL.save_to_template = function(elm, strname, content) {
+    JS.load_template = function(elm, strname, content) {
 
-        var data = {"id": TOOL.get_url_param("id"),
-                    "sesskey": TOOL.get_sesskey(),
-                    "action": "savetemplates"};
+        var data = {"id": JS.get_url_param("id"),
+                    "sesskey": JS.get_sesskey(),
+                    "action": "loadtemplates"};
 
-        TOOL.get_fieldset(elm).classList.forEach(function(name){
-            if (name.match(TOOL.match_valid_templatenames)) {
+        JS.get_fieldset(elm).classList.forEach(function(name){
+            if (name.match(JS.match_valid_templatenames)) {
                 data["templates[" + name + "]"] = content;
             }
         });
 
-        TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
-            if (responsetext == 'OK') {
-                var a = TOOL.get_template_description(elm);
-                alert(TOOL.get_string(strname, a));
+        var a = JS.get_template_description(elm);
+        var msg = JS.get_string(strname, a);
+
+        JS.load_templates(data, msg);
+    };
+
+    JS.load_templates = function(data, msg) {
+        JS.ajax.post(JS.toolurl, data, function(responsetext){
+            var m = responsetext.match(JS.match_html_error);
+            if (m && m[1]) {
+                JS.show_message(m[1], "alert");
+                responsetext = responsetext.substr(m[0].length - 1);
+            }
+            if (JS.is_json(responsetext)) {
+                var templates = JSON.parse(responsetext);
+                for (var name in templates) {
+                    if (name.match(JS.match_valid_templatenames)) {
+                        var selector = ".template." + name + " .defaulttemplate";
+                        var elm = document.querySelector(selector);
+                        if (name == "csstemplate" || name == "jstemplate") {
+                            elm = elm.querySelector("pre");
+                        }
+                        if (elm) {
+                            if (elm.matches("div")) {
+                                elm.outerHTML = templates[name];
+                            } else if (elm.matches("pre")) {
+                                elm.innerText = templates[name];
+                            }
+                        }
+                    }
+                }
+                JS.show_message(msg);
             } else {
-                // Probably an error :-(
-                alert(responsetext);
+                JS.show_message(responsetext, "error");
             }
         });
     };
 
-    TOOL.onclick_saveall = function() {
+    JS.is_json = function(str) {
+        if (typeof(str) == "string" && str.length > 0) {
+            return (str.charAt(0) == '{' && str.charAt(str.length - 1) == '}');
+        } else {
+            return false;
+        }
+    }
+
+    JS.show_message = function(msg, type) {
+        var elm = document.getElementById("user-notifications");
+        if (type == "alert") {
+            elm = null;
+        }
+        if (elm) {
+            if (elm.dataset.setup == null) {
+                elm.dataset.setup = 1;
+                elm.style.borderRadius = "6px";
+                elm.style.padding = "6px 12px";
+                JS.add_event_listener(elm, "click", JS.hide_message);
+            }
+            if (type == "error") {
+                elm.style.backgroundColor = "#fee"; // light red
+                elm.style.border = "2px solid #c99"; // dark red
+            } else {
+                elm.style.backgroundColor = "#efe"; // light green
+                elm.style.border = "2px solid #9c9"; // dark green
+            }
+            elm.innerHTML = msg;
+            elm.style.display = "block";
+        } else {
+            // "user-notifications" element was not found so ...
+            alert(msg.replace(new RegExp("<[^>]*>", "g"), ""));
+        }
+    }
+
+    JS.hide_message = function() {
+        var elm = document.getElementById("user-notifications");
+        if (elm) {
+            elm.innerHTML = "";
+            elm.style.display = "none";
+        }
+    }
+
+    JS.save_template = function(elm, strname, content) {
+
+        var data = {"id": JS.get_url_param("id"),
+                    "sesskey": JS.get_sesskey(),
+                    "action": "savetemplates"};
+
+        JS.get_fieldset(elm).classList.forEach(function(name){
+            if (name.match(JS.match_valid_templatenames)) {
+                data["templates[" + name + "]"] = content;
+            }
+        });
+
+        JS.ajax.post(JS.toolurl, data, function(responsetext){
+            if (responsetext == 'OK') {
+                var a = JS.get_template_description(elm);
+                JS.show_message(JS.get_string(strname, a));
+            } else {
+                // Probably an error :-(
+                JS.show_message(responsetext);
+            }
+        });
+    };
+
+    JS.onclick_loadall = function() {
+        // Confirm that user really wants to load ALL templates.
+        if (JS.confirm_action(null, "confirmloadall")) {
+
+            var data = {"id": JS.get_url_param("id"),
+                        "sesskey": JS.get_sesskey(),
+                        "action": "loadtemplates"};
+
+            document.querySelectorAll("fieldset.template").forEach(function(fieldset){
+                fieldset.classList.forEach(function(name){
+                    if (name.match(JS.match_valid_templatenames)) {
+                        data["templates[" + name + "]"] = true;
+                    }
+                });
+            });
+
+            JS.load_templates(data, JS.str.loadedall);
+        }
+    };
+
+    JS.onclick_saveall = function() {
 
         // Confirm that user really wants to overwrite ALL templates.
-        if (TOOL.confirm_action(null, "confirmsaveall")) {
+        if (JS.confirm_action(null, "confirmsaveall")) {
 
-            var data = {"id": TOOL.get_url_param("id"),
-                        "sesskey": TOOL.get_sesskey(),
+            var data = {"id": JS.get_url_param("id"),
+                        "sesskey": JS.get_sesskey(),
                         "action": "savetemplates"};
 
             document.querySelectorAll("fieldset.template").forEach(function(fieldset){
                 fieldset.classList.forEach(function(name){
-                    if (name.match(TOOL.match_valid_templatenames)) {
+                    if (name.match(JS.match_valid_templatenames)) {
                         var content = "";
                         var elm = fieldset.querySelector(".defaulttemplate");
                         if (name == "csstemplate" || name == "jstemplate") {
@@ -366,7 +506,7 @@
                             if (elm.matches("div")) {
                                 content = elm.outerHTML;
                             } else if (elm.matches("pre")) {
-                                content = TOOL.get_text_content(elm);
+                                content = JS.get_text_content(elm);
                             }
                         }
                         if (content) {
@@ -376,18 +516,18 @@
                 });
             });
 
-            TOOL.ajax.post(TOOL.toolurl, data, function(responsetext){
+            JS.ajax.post(JS.toolurl, data, function(responsetext){
                 if (responsetext == 'OK') {
-                    alert(TOOL.str.savedall);
+                    JS.show_message(JS.str.savedall);
                 } else {
                     // Probably an error :-(
-                    alert(responsetext);
+                    JS.show_message(responsetext);
                 }
             });
         }
     };
 
-    TOOL.onclick_stripesall = function() {
+    JS.onclick_stripesall = function() {
 
         var fieldsets = document.querySelectorAll("fieldset.template");
 
@@ -395,7 +535,7 @@
         var count = 0;
         fieldsets.forEach(function(fieldset){
             fieldset.classList.forEach(function(name){
-                if (name.match(TOOL.match_stripe_templatenames)) {
+                if (name.match(JS.match_stripe_templatenames)) {
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
                         if (elm.matches(".stripes")) {
@@ -404,8 +544,8 @@
                             count--;
                         }
                     } else if (elm.matches("pre")) {
-                        var txt = TOOL.get_text_content(elm);
-                        if (txt.match(TOOL.match_stripeson)) {
+                        var txt = JS.get_text_content(elm);
+                        if (txt.match(JS.match_stripeson)) {
                             count++;
                         } else {
                             count--;
@@ -420,7 +560,7 @@
 
         fieldsets.forEach(function(fieldset){
             fieldset.classList.forEach(function(name){
-                if (name.match(TOOL.match_stripe_templatenames)) {
+                if (name.match(JS.match_stripe_templatenames)) {
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
                         if (stripes) {
@@ -429,15 +569,15 @@
                             elm.classList.remove("stripes");
                         }
                     } else if (elm.matches("pre")) {
-                        var txt = TOOL.get_text_content(elm);
+                        var txt = JS.get_text_content(elm);
                         var newtxt = "";
-                        if (txt.match(TOOL.match_stripeson)) {
+                        if (txt.match(JS.match_stripeson)) {
                             if (stripes == false) {
-                                newtxt = txt.replace(TOOL.match_stripeson, TOOL.replace_stripesoff);
+                                newtxt = txt.replace(JS.match_stripeson, JS.replace_stripesoff);
                             }
                         } else {
                             if (stripes) {
-                                newtxt = txt.replace(TOOL.match_stripesoff, TOOL.replace_stripeson);
+                                newtxt = txt.replace(JS.match_stripesoff, JS.replace_stripeson);
                             }
                         }
                         if (newtxt) {
@@ -452,10 +592,10 @@
         });
     };
 
-    TOOL.onclick_labelseparators = function() {
+    JS.onclick_labelseparators = function() {
         document.querySelectorAll("fieldset.template").forEach(function(fieldset){
             fieldset.classList.forEach(function(name){
-                if (name.match(TOOL.match_stripe_templatenames)) {
+                if (name.match(JS.match_stripe_templatenames)) {
                     var elm = fieldset.querySelector(".defaulttemplate");
                     if (elm.matches("div")) {
                         if (elm.classList.contains("label-separators")) {
@@ -464,12 +604,12 @@
                             elm.classList.add("label-separators");
                         }
                     } else if (elm.matches("pre")) {
-                        var txt = TOOL.get_text_content(elm);
+                        var txt = JS.get_text_content(elm);
                         var newtxt = "";
-                        if (txt.match(TOOL.match_labelson)) {
-                            newtxt = txt.replace(TOOL.match_labelson, TOOL.replace_labelsoff);
+                        if (txt.match(JS.match_labelson)) {
+                            newtxt = txt.replace(JS.match_labelson, JS.replace_labelsoff);
                         } else {
-                            newtxt = txt.replace(TOOL.match_labelsoff, TOOL.replace_labelson);
+                            newtxt = txt.replace(JS.match_labelsoff, JS.replace_labelson);
                         }
                         if (newtxt) {
                             while (elm.firstChild) {
@@ -483,17 +623,17 @@
         });
     };
 
-    TOOL.setup_strings = function() {
+    JS.setup_strings = function() {
         return new Promise(function(resolve, reject){
             if (window.require) {
                 require(["core/str"], function(STR) {
                     var strings = new Array();
-                    TOOL.stringnames.forEach(function(name, i){
-                        strings.push({"key": name, "component": TOOL.plugin});
+                    JS.stringnames.forEach(function(name, i){
+                        strings.push({"key": name, "component": JS.plugin});
                     });
                     STR.get_strings(strings).done(function(s) {
-                        TOOL.stringnames.forEach(function(name, i){
-                            TOOL.str[name] = s[i];
+                        JS.stringnames.forEach(function(name, i){
+                            JS.str[name] = s[i];
                         });
                         resolve();
                     });
@@ -501,27 +641,27 @@
             } else {
                 // use English equivalents
                 var htmltext = new RegExp("(^.*)(html|text)$");
-                TOOL.stringnames.forEach(function(name, i){
+                JS.stringnames.forEach(function(name, i){
                     var s = name.charAt(0).toUpperCase()
                           + name.substr(1).toLowerCase();
-                    TOOL.str[name] = s.replace(htmltext, "$1 $2");
+                    JS.str[name] = s.replace(htmltext, "$1 $2");
                 });
                 resolve();
             }
         });
     };
 
-    TOOL.setup_buttons = function() {
+    JS.setup_buttons = function() {
 
         var h3 = document.querySelector("fieldset.template:first-of-type").previousElementSibling;
 
-        var names = new Array("labelseparators", "stripesall", "saveall");
+        var names = new Array("labelseparators", "stripesall", "loadall", "saveall");
         names.forEach(function(name){
             var btn = document.createElement("BUTTON");
             btn.className = "btn btn-secondary bg-light rounded " + name;
             btn.setAttribute("type", "button");
             btn.setAttribute("name", name);
-            btn.appendChild(document.createTextNode(TOOL.str[name]));
+            btn.appendChild(document.createTextNode(JS.str[name]));
 
             var div = document.createElement("DIV");
             div.className ="singlebutton ml-4";
@@ -529,11 +669,11 @@
 
             h3.appendChild(div);
 
-            TOOL.add_event_listener(btn, "click", TOOL["onclick_" + name]);
+            JS.add_event_listener(btn, "click", JS["onclick_" + name]);
         });
     };
 
-    TOOL.setup_commands = function() {
+    JS.setup_commands = function() {
         document.querySelectorAll("fieldset.template legend").forEach(function(legend){
 
             var icons = document.createElement("div");
@@ -545,22 +685,22 @@
             // e.g. icons.classList.add("border");
 
             if (legend.parentElement.matches(".csstemplate, .jstemplate")) {
-                var commands = TOOL.textcommands;
+                var commands = JS.textcommands;
             } else {
-                var commands = TOOL.htmlcommands;
+                var commands = JS.htmlcommands;
             }
 
             commands.forEach(function(command){
-                var title = TOOL.str[command];
+                var title = JS.str[command];
                 var icon = document.createElement("img");
-                icon.src = TOOL.img[command];
+                icon.src = JS.img[command];
                 icon.title = title;
 
                 var span = document.createElement("span");
                 span.className = command + " mx-sm-2";
                 span.appendChild(icon);
                 span.appendChild(document.createTextNode(" " + title));
-                TOOL.add_event_listener(span, "click", TOOL["onclick_" + command]);
+                JS.add_event_listener(span, "click", JS["onclick_" + command]);
                 icons.appendChild(span);
             });
 
@@ -573,14 +713,14 @@
         });
     };
 
-    TOOL.setup_nav_links = function(){
+    JS.setup_nav_links = function(){
         var elm = document.querySelector("a.nav-link[href*='/mod/data/field.php']");
         if (elm) {
             elm.classList.add("active");
         }
     };
 
-    TOOL.setup_bootstrap_v3 = function() {
+    JS.setup_bootstrap_v3 = function() {
         var bootstrap_v3 = false;
         for (var s in document.styleSheets) {
             for (var r in document.styleSheets[s].rules) {
@@ -655,13 +795,13 @@
         }
     };
 
-    TOOL.setup = function() {
-        var p = TOOL.setup_strings();
-        p.then(TOOL.setup_buttons);
-        p.then(TOOL.setup_commands);
-        p.then(TOOL.setup_nav_links);
-        p.then(TOOL.setup_bootstrap_v3);
+    JS.setup = function() {
+        var p = JS.setup_strings();
+        p.then(JS.setup_buttons);
+        p.then(JS.setup_commands);
+        p.then(JS.setup_nav_links);
+        p.then(JS.setup_bootstrap_v3);
     };
 
-    TOOL.add_event_listener(window, "load", TOOL.setup);
+    JS.add_event_listener(window, "load", JS.setup);
 }());

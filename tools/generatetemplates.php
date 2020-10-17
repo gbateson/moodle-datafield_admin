@@ -65,20 +65,38 @@ $templatenames = array('listtemplate', 'singletemplate',
                        'addtemplate', 'asearchtemplate',
                        'csstemplate', 'jstemplate');
 
-// Update templates, if requested (via AJAX).
+// Load/save templates, if requested (via AJAX).
 if ($action = optional_param('action', '', PARAM_ALPHA)) {
+
+    if ($action == 'loadtemplates' && confirm_sesskey()) {
+        $result = array();
+        if ($templates = optional_param_array('templates', null, PARAM_RAW)) {
+            foreach ($templates as $name => $content) {
+                if (! in_array($name, $templatenames)) {
+                    continue; // Shouldn't happen !!
+                }
+                $result[$name] = $data->$name;
+                if ($name == 'listtemplate') {
+                    $result[$name.'header'] = $data->{$name.'header'};
+                    $result[$name.'footer'] = $data->{$name.'footer'};
+                }
+            }
+        }
+        die(json_encode($result));
+    }
+
     if ($action == 'savetemplates' && confirm_sesskey()) {
 
         // Number of templates that are updated.
         $updates = 0;
 
         if ($templates = optional_param_array('templates', null, PARAM_RAW)) {
-            foreach ($templates as $templatename => $content) {
-                if (! in_array($templatename, $templatenames)) {
+            foreach ($templates as $name => $content) {
+                if (! in_array($name, $templatenames)) {
                     continue; // Shouldn't happen !!
                 }
                 $update = true;
-                if ($templatename == 'listtemplate') {
+                if ($name == 'listtemplate') {
                     if ($data->listtemplateheader) {
                         $data->listtemplateheader = '';
                         $update = true;
@@ -88,22 +106,26 @@ if ($action = optional_param('action', '', PARAM_ALPHA)) {
                         $update = true;
                     }
                 }
-                if (strcmp($data->$templatename, $content)) {
-                    $data->$templatename = $content;
+                if (strcmp($data->$name, $content)) {
+                    $data->$name = $content;
                     $update = true;
                 }
                 if ($update) {
                     $updates++;
                 }
             }
-            if ($updates) {
-                $DB->update_record('data', $data);
-            }
         }
-        die("OK");
-    }
-}
 
+        if ($updates) {
+            $DB->update_record('data', $data);
+        }
+        die('OK');
+    }
+
+    die(get_string('unknowaction', 'error').
+        get_string('labelsep', 'langconfig').
+        $action);
+}
 
 $plugin = 'datafield_admin';
 $tool = substr(basename($SCRIPT), 0, -4);
@@ -121,7 +143,7 @@ data_field_admin::display_tool_links($id, $tool);
 $params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
 echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 
-// Responsive table suitable for Boost in Moodle >= 3.6
+// Responsive list suitable for Boost in Moodle >= 3.6
 if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id')) {
 
     // Cache regular expressions to generate CSS classname from field name.
