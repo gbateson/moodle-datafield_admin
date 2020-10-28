@@ -297,11 +297,58 @@
                     });
                 };
 
+                TOOL.setup_bootstrap_v3 = function() {
+                    var bootstrap_v3 = false;
+                    for (var s in document.styleSheets) {
+                        for (var r in document.styleSheets[s].rules) {
+                            var txt = document.styleSheets[s].rules[r].selectorText;
+                            if (txt && txt.indexOf("dl-horizontal") >= 0) {
+                                bootstrap_v3 = true;
+                                break;
+                            }
+                        }
+                        if (bootstrap_v3) {
+                            break;
+                        }
+                    }
+                    if (bootstrap_v3) {
+                        // Bootstrap version 3.x styles available in Moodle <= 3.6
+                        // see "/theme/bootstrapbase/style/moodle.css"
+                        document.querySelectorAll(".singlebutton").forEach(function(elm){
+                            elm.classList.add("d-inline");
+                            elm.querySelectorAll("button").forEach(function(btn){
+                                btn.style.padding = "0.375em 0.75em";
+                                btn.style.fontSize = "0.6em";
+                            });
+                        });
+                        document.querySelectorAll("dl.row").forEach(function(elm){
+                            elm.className = "dl-horizontal " + elm.className;
+                            elm.classList.add("m-0"); // override ".row" margins.
+                            elm.querySelector("dt").style.textAlign = "left";
+                        });
+
+                        document.querySelectorAll("select, input[type=text]").forEach(function(elm){
+                            elm.style.marginBottom = "initial";
+                        });
+                        document.querySelectorAll(".py-1").forEach(function(elm){
+                            elm.classList.remove("py-1");
+                            elm.classList.add("pt-1");
+                            if (elm.matches("dd:last-child")) {
+                                elm.classList.add("pb-1");
+                            }
+                        });
+                        document.querySelectorAll("ol.fieldlist").forEach(function(elm){
+                            elm.classList.add("pb-2");
+                        });
+                    }
+                };
+
                 TOOL.setup = function() {
                     var p = TOOL.setup_strings();
                     p.then(TOOL.setup_buttons);
                     p.then(TOOL.setup_nav_links);
                     p.then(TOOL.setup_admin_menus);
+                    p.then(TOOL.setup_bootstrap_v3)
                     p.then(TOOL.setup_row_hover);
                     p.then(TOOL.setup_row_drag);
                 };

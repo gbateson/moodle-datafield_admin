@@ -82,6 +82,7 @@ $string['fieldname_help'] = 'The name of the field is a short, unique name that 
 * contains only lowercase letters and numbers';
 $string['fieldname'] = 'Field name';
 $string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}';
+$string['fixgroups'] = 'Fix groups';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
 Please append language strings for gthe {$a->typemixedcase} field to the Database language file:
@@ -109,6 +110,8 @@ $string['missingvalues'] = 'Missing values';
 $string['modifyvalues'] = 'Modify values';
 $string['moresettings'] = 'More settings will appear here after selecting "Field type" and clicking/tapping the "Add" button.';
 $string['nomodifyfields'] = 'There is nothing to show on this page, because there are no menu, checkbox or radiobutton fields in this database.';
+$string['norecords'] = 'No records found';
+$string['norecordsforgroup'] = 'No records found for group: {$a}';
 $string['notused'] = 'Not used';
 $string['reorderfields'] = 'Reorder fields';
 $string['required_help'] = 'If this box is checked, then every user must enter a value for this field when adding or editing a record.';

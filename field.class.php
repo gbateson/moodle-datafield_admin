@@ -1654,7 +1654,7 @@ class data_field_admin extends data_field_base {
      * @return void, but output is echo'd to browser
      */
     static function display_tool_links($cmid, $currenttool='') {
-        $tools = array('generatetemplates', 'reorderfields', 'modifyvalues');
+        $tools = array('generatetemplates', 'reorderfields', 'modifyvalues', 'fixgroups');
         foreach ($tools as $i => $tool) {
             $label = get_string($tool, 'datafield_admin');
             $url = new moodle_url("/mod/data/field/admin/tools/$tool.php", array('id' => $cmid));
