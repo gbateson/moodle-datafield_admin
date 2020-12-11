@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2020-12-11 (88)
+ - increase width of textarea in field settings forms
+
 2020-10-17 (87)
  - preliminary working version of tool to fix groupids in reecord whose group has been deleted
 

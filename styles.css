@@ -41,7 +41,7 @@
 .path-mod-data-field .fieldname, .path-mod-data-field .widetext,
 .path-mod-data-field .fieldname, .path-mod-data-field .fieldname,
 .path-mod-data-field .fieldname, .path-mod-data-field .fielddescription {
-    max-width: 480px; /* 300px */
+    max-width: 560px; /* 300px */
     width: 100%;
 }
 

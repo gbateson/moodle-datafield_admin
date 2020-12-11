@@ -228,8 +228,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'fee_receipt'    => '',
                                      'dinner_receipt' => '',
                                      'certificate'    => '');
-                $types[] = 'constant';
-                $types[] = 'template';
+                //$types[] = 'constant';
+                //$types[] = 'template';
                 $actions = '##more## ##edit## ##delete##';
                 break;
 
@@ -271,7 +271,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         $specialfields[$field->name] = '[['.$field->name.']]';
                     } else if (array_key_exists($field->name, $printfields)) {
                         $printfields[$field->name] = '[['.$field->name.']]';
-                    } else {
+                    } else if (in_array($field->type, $types)) {
                         $fieldname = preg_replace($illegalchars, '_', $field->name);
                         $fieldname = preg_replace($trimstartend, '', $fieldname);
                         if ($fieldname == '') {
