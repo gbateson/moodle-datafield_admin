@@ -209,10 +209,10 @@ class data_field_admin extends data_field_base {
         $displaytextparam = $this->displaytextparam;
         $sortorderparam   = $this->sortorderparam;
 
-        $this->is_special_field = ($this->field->name=='setdefaultvalues' ||
-                                   $this->field->name=='fixdisabledfields' ||
+        $this->is_special_field = ($this->field->name=='fixdisabledfields' ||
                                    $this->field->name=='fixmultilangvalues' ||
                                    $this->field->name=='fixuserid' ||
+                                   $this->field->name=='setdefaultvalues' ||
                                    $this->field->name=='unapprove');
 
         // cache view, edit and other permissions for this user
