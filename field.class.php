@@ -1233,7 +1233,7 @@ class data_field_admin extends data_field_base {
 
             // Cache the column labels for "safe-to-skip" fields.
             // Standard import ignores these fields, but we will try to import them.
-            if ($labels===null) {
+            if ($labels === null) {
                 $labels = (object)array(
                     'user' => array('username' => get_string('username'),
                                     'email'    => get_string('email')),
@@ -1353,18 +1353,33 @@ class data_field_admin extends data_field_base {
     protected function check_enrolment($userid) {
     	global $DB;
 
-		// The "student" role ID, enrol instance, and enrol object will be fetched only the first time
+		// The following static fields will be fetched only the first time they are needed.
         static $roleid   = null; // "id" of student role
         static $instance = null; // enrol instance
         static $enrol    = null; // enrol plugin object
+        static $ignore_enrolment = null; // can we ignore enrolment?
+
+        // If authenticated users can add database records, we can ignore enrolment.
+        if ($ignore_enrolment === null) {
+            $params = array('roleid' => $DB->get_field('role', 'id', array('shortname' => 'user')),
+                            'contextid' => $this->context->id,
+                            'capability' => 'mod/data:writeentry',
+                            'permission' => CAP_ALLOW); // =1
+            $ignore_enrolment = $DB->record_exists('role_capabilities', $params);
+        }
+        if ($ignore_enrolment) {
+            return true;
+        }
 
 		// Is the user is already assigned a role in this course?
-        if ($DB->record_exists('role_assignments', array('userid' => $userid, 'contextid' => $this->context->id))) {
+		$params = array('userid' => $userid,
+		                'contextid' => $this->context->id);
+        if ($DB->record_exists('role_assignments', $params)) {
         	return true;
         }
 
 		// Setup $roleid, $instance, and $enrol (first time only)
-		if ($roleid===null) {
+		if ($roleid === null) {
             if ($roleid = $DB->get_field('role', 'id', array('shortname' => 'student'))) {
 
                 // cache the course id and context
@@ -1392,7 +1407,7 @@ class data_field_admin extends data_field_base {
             }
 		}
 
-		if ($enrol===null) {
+		if ($enrol === null) {
 			return false; // Shouldn't happen!!
 		}
 
@@ -1400,7 +1415,9 @@ class data_field_admin extends data_field_base {
 		$enrol->enrol_user($instance, $userid, $roleid);
 
 		// If user was successfully enrolled, there should now be a record in the "user_enrolments" table.
-        return $DB->record_exists('user_enrolments', array('enrolid' => $instance->id, 'userid' => $userid));
+		$params = array('enrolid' => $instance->id,
+		                'userid' => $userid);
+        return $DB->record_exists('user_enrolments', $params);
     }
 
     /**
@@ -1441,7 +1458,7 @@ class data_field_admin extends data_field_base {
 		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
 
             // setup SQL to get contents for a given record id (first time only)
-            if ($contentsql===null) {
+            if ($contentsql === null) {
                 $params = array();
                 foreach ($rawfields as $field) {
                     $params[] = $field->id;
@@ -2112,12 +2129,12 @@ class data_field_admin extends data_field_base {
         $context = $datafield->context;
         $field   = $datafield->field;
 
-        if ($content===null) {
+        if ($content === null) {
             $content = $datafield->contentparam;
             $content = $field->$content;
         }
 
-        if ($format===null) {
+        if ($format === null) {
             $format = $datafield->formatparam;
             $format = $field->$format;
         }
