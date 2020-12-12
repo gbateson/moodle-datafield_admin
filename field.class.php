@@ -1772,7 +1772,7 @@ class data_field_admin extends data_field_base {
     /**
      * end the main TABLE in the mod.html files
      */
-    static public function mod_html_end($bootstrap=true) {
+    static public function mod_html_end() {
         if (self::$bootstrap == 0) {
             echo html_writer::end_tag('tbody');
             echo html_writer::end_tag('table');
