@@ -97,6 +97,8 @@ Then purge the Moodle caches:
 
 See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
+$string['groupid'] = 'Group ID';
+$string['groupname'] = 'Group name';
 $string['hidetext'] = 'Hide text';
 $string['labelseparators'] = 'Label separators';
 $string['loadall'] = 'Load (all)';
@@ -113,6 +115,8 @@ $string['nomodifyfields'] = 'There is nothing to show on this page, because ther
 $string['norecords'] = 'No records found';
 $string['norecordsforgroup'] = 'No records found for group: {$a}';
 $string['notused'] = 'Not used';
+$string['recorddetails'] = 'Record details';
+$string['recordid'] = 'Record ID';
 $string['reorderfields'] = 'Reorder fields';
 $string['required_help'] = 'If this box is checked, then every user must enter a value for this field when adding or editing a record.';
 $string['required'] = 'Required field';
@@ -127,6 +131,8 @@ $string['stripesall'] = 'Stripes (all)';
 $string['usedmanytimes'] = 'Used {$a} times';
 $string['usedonce'] = 'Used once';
 $string['usedtwice'] = 'Used twice';
+$string['userid'] = 'User ID';
+$string['username'] = 'Username';
 $string['viewdescriptions'] = 'View descriptions';
 $string['viewhtml'] = 'View HTML';
 $string['viewtext'] = 'View text';

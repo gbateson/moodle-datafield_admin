@@ -1,15 +1,3 @@
-.lang-en .multilang:not([lang=en]),
-.lang-ja .multilang:not([lang=ja]) {
-    display:none;
-}
-
-.lang-en .label-separators dt:not(:empty):after {
-    content: ":";
-}
-.lang-ja .label-separators dt:not(:empty):after {
-    content: "：";
-}
-
 fieldset.template {
     max-width: 840px;
 }
@@ -50,4 +38,3 @@ legend .icons {
 .defaulttemplate.stripes .row:last-of-type {
     border-bottom: 1px solid #999;
 }
-

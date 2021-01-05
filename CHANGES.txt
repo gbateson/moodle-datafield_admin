@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-01-05 (91)
+ - add headings to tool to fix groups
+
 2020-12-12 (89)
  - do not enrol user in course if permission override exists to allow authenticated users to add database records
 

@@ -60,11 +60,6 @@ if (optional_param('cancel', false, PARAM_BOOL)) {
     redirect($url);
 }
 
-// Define allowable template names.
-$templatenames = array('listtemplate', 'singletemplate',
-                       'addtemplate', 'asearchtemplate',
-                       'csstemplate', 'jstemplate');
-
 $plugin = 'datafield_admin';
 $tool = substr(basename($SCRIPT), 0, -4);
 
@@ -90,8 +85,15 @@ echo html_writer::empty_tag('input', array('type' => 'hidden',
 
 // cache some strings
 $str = (object)array(
+    'groupid' => get_string('groupid', $plugin),
+    'groupname' => get_string('groupname', $plugin),
     'labelsep' => get_string('labelsep', 'langconfig'),
     'listsep' => get_string('listsep', 'langconfig'),
+    'recorddetails' => get_string('recorddetails', $plugin),
+    'recordid' => get_string('recordid', $plugin),
+    'select' => get_string('select'),
+    'userid' => get_string('userid', $plugin),
+    'username' => get_string('username', $plugin)
 );
 
 // print group menu
@@ -160,10 +162,22 @@ if ($groupid) {
 if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
 
     $dl_class = 'row my-0 py-1 px-sm-3';
-    $dt_class = "col-sm-1 my-0 py-1"; // checkbox
-    $dd_class_num = "col-sm-1 num my-0 py-1"; // groupid, userid, recordid
-    $dd_class_name = "col-sm-2 name my-0 py-1"; // groupname, user_fullname
-    $dd_class_text = "col-sm-4 text my-0 py-1"; // record_details
+    $dt_class = 'col-3 d-sm-none my-0 py-1'; // only visible on very small screens
+    $dd_checkbox = "col-9 col-sm-1 checkbox my-0 py-1"; // checkbox
+    $dd_class_num = "col-9 col-sm-1 num my-0 py-1 text-sm-center"; // groupid, userid, recordid
+    $dd_class_name = "col-9 col-sm-2 name my-0 py-1"; // groupname, user_fullname
+    $dd_class_text = "col col-sm-4 text my-0 py-1 text-truncate"; // record_details
+
+    // Print headings
+    echo html_writer::start_tag('dl', array('class' => "$dl_class mt-2 d-none d-sm-flex rounded-top bg-info h5 text-light font-weight-bold"));
+    echo html_writer::tag('dt', html_writer::checkbox('recordids[0]', 1, 0), array('class' => $dd_checkbox));
+    echo html_writer::tag('dd', $str->groupid, array('class' => $dd_class_num));
+    echo html_writer::tag('dd', $str->groupname, array('class' => $dd_class_name));
+    echo html_writer::tag('dd', $str->userid, array('class' => $dd_class_num));
+    echo html_writer::tag('dd', $str->username, array('class' => $dd_class_name));
+    echo html_writer::tag('dd', $str->recordid, array('class' => $dd_class_num));
+    echo html_writer::tag('dd', $str->recorddetails, array('class' => $dd_class_text));
+    echo html_writer::end_tag('dl');
 
     $usernames = array();
     $groupnames = array();
@@ -207,14 +221,31 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         }
         $checkbox = html_writer::checkbox('recordids['.$rid.']', 1, array_key_exists($rid, $recordids));
 
+        echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
+
         echo html_writer::start_tag('dl', array('class' => $dl_class));
-        echo html_writer::tag('dt', $checkbox, array('class' => $dt_class));
+
+        echo html_writer::tag('dt', $str->select, array('class' => $dt_class));
+        echo html_writer::tag('dd', $checkbox, array('class' => $dd_checkbox));
+
+        echo html_writer::tag('dt', $str->groupid, array('class' => $dt_class));
         echo html_writer::tag('dd', $record->groupid, array('class' => $dd_class_num));
+
+        echo html_writer::tag('dt', $str->groupname, array('class' => $dt_class));
         echo html_writer::tag('dd', $groupnames[$gid], array('class' => $dd_class_name));
+
+        echo html_writer::tag('dt', $str->userid, array('class' => $dt_class));
         echo html_writer::tag('dd', $record->userid, array('class' => $dd_class_num));
+
+        echo html_writer::tag('dt', $str->username, array('class' => $dt_class));
         echo html_writer::tag('dd', $usernames[$uid], array('class' => $dd_class_name));
+
+        echo html_writer::tag('dt', $str->recordid, array('class' => $dt_class));
         echo html_writer::tag('dd', $record->id, array('class' => $dd_class_num));
+
+        //echo html_writer::tag('dt', $str->recorddetails, array('class' => $dt_class));
         echo html_writer::tag('dd', $recorddetails, array('class' => $dd_class_text));
+
         echo html_writer::end_tag('dl');
     }
 
