@@ -221,8 +221,6 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         }
         $checkbox = html_writer::checkbox('recordids['.$rid.']', 1, array_key_exists($rid, $recordids));
 
-        echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
-
         echo html_writer::start_tag('dl', array('class' => $dl_class));
 
         echo html_writer::tag('dt', $str->select, array('class' => $dt_class));
@@ -247,6 +245,7 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         echo html_writer::tag('dd', $recorddetails, array('class' => $dd_class_text));
 
         echo html_writer::end_tag('dl');
+        echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
     }
 
 } else {

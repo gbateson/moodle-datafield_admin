@@ -49,10 +49,12 @@
     JS.match_html_error = new RegExp("^<br[^>]*>\\s*((.|\\s)*?)<br[^>]*>\\s*\\{");
 
     JS.add_event_listener = function(elm, evt, fn, useCapture) {
-        if (elm.addEventListener) {
-            elm.addEventListener(evt, fn, (useCapture || false));
-        } else if (elm.attachEvent) {
-            elm.attachEvent("on" + evt, fn);
+        if (elm) {
+            if (elm.addEventListener) {
+                elm.addEventListener(evt, fn, (useCapture || false));
+            } else if (elm.attachEvent) {
+                elm.attachEvent("on" + evt, fn);
+            }
         }
     };
 
@@ -789,10 +791,23 @@
         }
     };
 
+    JS.setup_checkboxes = function() {
+        var elm = document.querySelector("input[type=checkbox][name='recordids[0]']");
+        JS.add_event_listener(elm, "change", function(evt){
+            var checked = this.checked;
+            document.querySelectorAll("input[type=checkbox][name^=recordids]").forEach(function(elm){
+                if (elm !== this) {
+                    elm.checked = checked;
+                }
+            });
+        });
+    };
+
     JS.setup = function() {
         var p = JS.setup_strings();
         //p.then(JS.setup_buttons);
         p.then(JS.setup_nav_links);
+        p.then(JS.setup_checkboxes);
         p.then(JS.setup_bootstrap_v3);
     };
 
