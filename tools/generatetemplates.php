@@ -201,7 +201,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $metafields = array();
         $actions = '';
         $types = array('admin',  'checkbox',
-                       'date',   'menu',
+                       'date',   'file',
+                       'menu',   'url',
                        'number', 'radiobutton',
                        'text',   'textarea');
 
