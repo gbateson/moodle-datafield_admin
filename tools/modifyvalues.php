@@ -205,8 +205,8 @@ if (empty($fields)) {
         // Get number of occurences of each value (including missing values)
         $select = 'content, COUNT(*) AS countrecords';
         $from   = '{data_content}';
-        $where = 'fieldid = ? GROUP BY content ORDER BY countrecords DESC';
-        $params = array($fid);
+        $where = 'fieldid = ? AND content <> ? GROUP BY content ORDER BY countrecords DESC';
+        $params = array($fid, '');
         if ($counts = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params)) {
 
             foreach ($counts as $value => $count) {
@@ -286,10 +286,10 @@ if (empty($fields)) {
 
         $select = 'content, COUNT(*) AS countrecords';
         $from   = '{data_content}';
-        $where = "fieldid = ? AND content $where ".
+        $where = "fieldid = ? AND content <> ? AND content $where ".
                  'GROUP BY content '.
                  'ORDER BY countrecords';
-        array_unshift($params, $fid);
+        array_unshift($params, $fid, '');
         if ($values = $DB->get_records_sql_menu("SELECT $select FROM $from WHERE $where", $params)) {
             $i = 0;
             foreach ($values as $value => $count) {
