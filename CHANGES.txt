@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-02-12 (94)
+ - allow fixvalues tool to access admin fields
+
 2021-02-10 (93)
  - include file and url fields in tool to generate templates
 

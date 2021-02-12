@@ -158,8 +158,12 @@ echo html_writer::tag('h3', get_string($tool, $plugin), $params);
 $params = array('menu', 'multimenu', 'checkbox', 'radiobutton');
 list($select, $params) = $DB->get_in_or_equal($params);
 
-$select = "dataid = ? AND type $select";
-array_unshift($params, $data->id);
+$select = "dataid = ? AND (type $select OR (type = ? AND param10 $select AND name NOT IN (?, ?, ?, ?, ?)))";
+$params = array_merge(array($data->id), $params, array('admin'), $params, array('fixdisabledfields',
+                                                                                'fixmultilangvalues',
+                                                                                'fixuserid',
+                                                                                'setdefaultvalues',
+                                                                                'unapprove'));
 
 $fields = $DB->get_records_select('data_fields', $select, $params, 'id');
 if (empty($fields)) {
