@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-04-22 (97)
+ - fix functionality of fixuserid field during import on Moodle >= 3.8
+
 2021-02-12 (95)
  - ignore empty values in tool to fix menu values
 

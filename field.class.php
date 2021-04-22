@@ -31,6 +31,26 @@
 // prevent direct access to this script
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * The following hack is required to keep "fixuserid" working
+ * during import into Moodle >= 3.8.
+ *
+ * It gives the "update_content_import()" method access to the
+ * variables used when importing records from a CSV file.
+ *
+ * Note that $rawfields, $fields and $fieldnames already hold data,
+ * so we assign them by reference in order to maintain their values.
+ *
+ * $recordsadded and $record have not been used yet,
+ * so they can be initialised as global variables
+ */
+if ($GLOBALS['SCRIPT'] == '/mod/data/import.php' && function_exists('data_import_csv')) {
+    $GLOBALS['fieldnames'] =& $fieldnames;
+    $GLOBALS['rawfields'] =& $rawfields;
+    $GLOBALS['fields'] =& $fields;
+    global $recordsadded, $record;
+}
+
 class data_field_admin extends data_field_base {
 
     /**
@@ -616,7 +636,20 @@ class data_field_admin extends data_field_base {
 
                 foreach ($fieldnames as $id => $fieldname) {
                     $userfield = $fieldmap[$fieldname];
-                    if (empty($USER->$userfield)) {
+                    if ($userfield == 'description') {
+                        // Unfortunately, $USER->description is unset during setup.php.
+                        // in Moodle >= 2.6, it is unset by the "set_user()" method
+                        // see "lib/classes/session/manager.php" [around line 930]
+                        // In Moodle <= 2.5, it is unset by the "session_set_user()" function
+                        // see "lib/sessionlib.php" [around line 1120]
+                        $value = $DB->get_field('user', $userfield, array('id' => $USER->id));
+                        $value = trim(strip_tags($value));
+                    } else if (isset($USER->$userfield)) {
+                        $value = $USER->$userfield;
+                    } else {
+                        $value = '';
+                    }
+                    if ($value == '') {
                         if (array_key_exists($id, $values)) {
                             $value = $values[$id];
                             if ($fieldname=='country') {
@@ -755,7 +788,15 @@ class data_field_admin extends data_field_base {
             // transfer default values, if any
             foreach ($fieldnames as $id => $fieldname) {
                 $userfield = $fieldmap[$fieldname];
-                if ($value = $USER->$userfield) {
+                if ($userfield == 'description') {
+                    $value = $DB->get_field('user', $userfield, array('id' => $USER->id));
+                    $value = trim(strip_tags($value));
+                } else if (isset($USER->$userfield)) {
+                    $value = $USER->$userfield;
+                } else {
+                    $value = '';
+                }
+                if ($value) {
                     if ($userfield=='country' && $strman->string_exists($value, 'countries')) {
                         $value = $strman->get_string($value, 'countries', null, 'en');
                     }
@@ -1025,6 +1066,7 @@ class data_field_admin extends data_field_base {
         $fields = array('firstname', 'lastname',
                         'middlename', 'alternatename',
                         'lastnamephonetic', 'firstnamephonetic',
+                        'description', // use as biography
                         'institution', 'department',
                         'address', 'city', 'country',
                         'email', 'phone1', 'phone2', 'url',
@@ -1212,8 +1254,12 @@ class data_field_admin extends data_field_base {
     /**
      * determine the id of the form element for the given $field
      *
-     * @uses $fieldnames (setup in mod/data/import.php)
+     * The following variables are setup by mod_data
+     *   [Moodle >= 3.8] /mod/data/lib.php 
+     *   [Moodle <= 3.7] /mod/data/import.php
+     * @uses $fieldnames
      * @uses $record array of values from the CSV file
+     * @uses $recordsadded integer count of records added so far
      *
      * @param integer $recordid of newly added data record
      * @param string $value of this field for current record in CSV file
@@ -1239,7 +1285,7 @@ class data_field_admin extends data_field_base {
                                     'email'    => get_string('email')),
                     'record' => array('approved' => get_string('approved', 'data'),
                                     'timecreated' => get_string('timeadded', 'data'), // ouch !!
-                                    'timemodified' => get_string('timemodified', 'data')),
+                                    'timemodified' => get_string('timemodified', 'data'))
                 );
             }
 
@@ -1249,6 +1295,7 @@ class data_field_admin extends data_field_base {
             } else {
                 $value = self::FIXUSERID_NONE;
             }
+
             $userid = 0;
             if ($value==self::FIXUSERID_ADD || $value==self::FIXUSERID_DELETE || $value==self::FIXUSERID_MERGE) {
                 foreach ($labels->user as $fieldname => $label) {
@@ -1270,10 +1317,50 @@ class data_field_admin extends data_field_base {
                     }
                 }
             }
+
+            $groupname = '';
+            $groupid = 0;
+            $memberid = 0;
+            $fullname = '';
+
             if ($userid) {
             	// cache full name of target user
             	$fullname = fullname($DB->get_record('user', array('id' => $userid)));
+            }
 
+            if ($userid && array_key_exists('groupname', $fieldnames)) {
+                if ($groupname = $record[$fieldnames['groupname']]) {
+                    $params = array('courseid' => $this->data->course, 'name' => $groupname);
+                    if (! $groupid = $DB->get_field('groups', 'id', $params)) {
+                        if ($groupid = $DB->insert_record('groups', $params)) {
+                            $a = (object)array(
+                                'groupid' => $groupid,
+                                'groupname' => $groupname,
+                                'courseid' => $this->data->course
+                            );
+                            $this->report_string('groupadded', $a);
+                        }
+                    }
+                }
+                if ($groupid) {
+                    $params = array('groupid' => $groupid, 'userid' => $userid);
+                    if (! $memberid = $DB->get_field('groups_members', 'id', $params)) {
+                        if ($memberid = $DB->insert_record('groups_members', $params)) {
+                            $a = (object)array('userid' => $userid,
+                                               'fullname' => $fullname,
+                                               'groupid' => $groupid,
+                                               'groupname' => $groupname);
+                            $this->report_string('memberadded', $a);
+                        }
+                    }
+                }
+                if ($memberid) {
+                    $params = array('id' => $recordid);
+                    $DB->set_field('data_records', 'groupid', $groupid, $params);
+                }
+            }
+
+            if ($userid) {
 				if ($value==self::FIXUSERID_DELETE) {
 					$this->delete_old_data_records($recordid, $userid, $fullname);
 				}
@@ -1445,6 +1532,7 @@ class data_field_admin extends data_field_base {
      *
      * @uses $rawfields array of all fields names in the current data activity
      * @uses $fields array of data_field_xxx objects, one for each column in the import file
+     *
      * @param integer $recordid id of the "new" record
      * @param integer $userid id of target user
      * @param string $fullname of target user
@@ -1453,15 +1541,18 @@ class data_field_admin extends data_field_base {
 	protected function merge_old_data_records($recordid, $userid, $fullname) {
 		global $DB, $rawfields, $fields;
 		static $contentsql = null,
-		       $contentparams = null;
+		       $contentparams = null,
+		       $fieldnameindex = array();
 
 		if ($oldrecords = $this->get_old_data_records($userid, $recordid)) {
 
             // setup SQL to get contents for a given record id (first time only)
+            // Also, we setup the $fieldnameindex array (first time only).
             if ($contentsql === null) {
                 $params = array();
-                foreach ($rawfields as $field) {
-                    $params[] = $field->id;
+                foreach ($rawfields as $id => $field) {
+                    $params[] = $id;
+                    $fieldnameindex[$field->name] =& $rawfields[$id];
                 }
                 if (count($params)) {
                     list($contentsql, $contentparams) = $DB->get_in_or_equal($params);
@@ -1480,6 +1571,18 @@ class data_field_admin extends data_field_base {
 			$params = array_merge($contentparams, array($recordid));
 			$newcontents = $DB->get_records_sql_menu($contentsql, $params);
 
+            // initialize the $newcontents array - unusual !!
+			if (empty($newcontents)) {
+			    $newcontents = array();
+			}
+
+            // check that all fields exist in $newcontents
+			foreach ($rawfields as $field) {
+			    if (empty($newcontents[$field->name])) {
+                    $newcontents[$field->name] = '';
+			    }
+			}
+
 			// merge "old" contents into "new" contents
 			while (count($oldrecords) >= $this->data->maxentries) {
 
@@ -1491,8 +1594,8 @@ class data_field_admin extends data_field_base {
                 $merged = false;
 				foreach ($newcontents as $name => $value) {
 
-				    // cache the $field object
-                    $field = $fields[$name]->field;
+				    // find and cache this $field 
+                    $field = $fieldnameindex[$name];
 
                     // ensure $oldcontent for this field $name is set
 					if (empty($oldcontents[$name]) || $oldcontents[$name]=='0') {
@@ -1535,7 +1638,7 @@ class data_field_admin extends data_field_base {
                                 $params = array('recordid' => $recordid,
                                                 'fieldid' => $field->id,
                                                 'content' => $value);
-                                $DB->add_record('data_content', $params);
+                                $DB->insert_record('data_content', $params);
                             }
                         }
 						if ($merge) {

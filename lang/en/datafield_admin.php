@@ -62,7 +62,7 @@ $string['copiedtext'] = "Text was copied to clipboard";
 $string['copyhtml'] = 'Copy HTML';
 $string['copytext'] = 'Copy text';
 $string['currentvalues'] = 'Current values';
-$string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}';
+$string['deletedrecord'] = 'Record {$a->recordid} was deleted from user {$a->userid}: {$a->fullname}.';
 $string['disabledif'] = 'Conditions for disabling this field';
 $string['editdescriptions'] = 'Edit descriptions';
 $string['emptyrecord'] = 'Row {$a->row} was empty so record {$a->recordid} will be deleted.';
@@ -81,7 +81,7 @@ $string['fieldname_help'] = 'The name of the field is a short, unique name that 
 * contains no spaces
 * contains only lowercase letters and numbers';
 $string['fieldname'] = 'Field name';
-$string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}';
+$string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}.';
 $string['fixgroups'] = 'Fix groups';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
 
@@ -97,17 +97,19 @@ Then purge the Moodle caches:
 
 See {$a->readfile} for more details.';
 $string['generatetemplates'] = 'Generate templates';
+$string['groupadded'] = 'Group {$a->groupid}: {$a->groupname} was added to course {$a->courseid}.';
 $string['groupid'] = 'Group ID';
 $string['groupname'] = 'Group name';
 $string['hidetext'] = 'Hide text';
 $string['labelseparators'] = 'Label separators';
 $string['loadall'] = 'Load (all)';
+$string['loadedall'] = 'All templates were loaded.';
 $string['loadedhtml'] = 'HTML was loaded from the {$a}.';
 $string['loadedtext'] = 'Text was loaded from the {$a}.';
-$string['loadedall'] = 'All templates were loaded.';
 $string['loadhtml'] = 'Load html';
 $string['loadtext'] = 'Load text';
-$string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}';
+$string['memberadded'] = 'User {$a->userid}: {$a->fullname} was added to group {$a->groupid}: {$a->groupname}.';
+$string['mergedrecord'] = 'Record {$a->oldrecordid} was merged into record {$a->newrecordid}.';
 $string['missingvalues'] = 'Missing values';
 $string['modifyvalues'] = 'Modify values';
 $string['moresettings'] = 'More settings will appear here after selecting "Field type" and clicking/tapping the "Add" button.';

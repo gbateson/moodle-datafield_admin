@@ -97,10 +97,11 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     // If necessary, sort the fields.
     if ($sort && confirm_sesskey()) {
         asort($sort); // should be sorted anyway ;-)
+        $sort = array_keys($sort);
 
         $updatefieldids = false;
         $newids = array_keys($fields);
-        foreach ($sort as $oldid => $i) {
+        foreach ($sort as $i => $oldid) {
 
             // Get data_field record.
             $field = $fields[$oldid];
@@ -108,8 +109,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
             $updatefield = false;
             $updatefieldid = false;
 
-            // Set field id to acheieve required sort order.
-            $newid = $newids[$i - 1];
+            // Set field id to achieve required sort order.
+            $newid = $newids[$i];
             if ($field->id != $newid) {
                 $field->id = $newid;
                 $updatefield = true;
@@ -125,7 +126,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                 $fieldtype = $field->type;
             }
 
-            // Uupdate field type, if required.
+            // Update field type, if required.
             if (empty($admin[$oldid])) {
                 if ($field->type != $fieldtype) {
                     $field->type = $fieldtype;
