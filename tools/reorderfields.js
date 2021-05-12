@@ -1,10 +1,10 @@
 (function() {
-    var TOOL = {};
+    var JS = {};
 
-    TOOL.str = {};
-    TOOL.plugin = "datafield_admin";
+    JS.str = {};
+    JS.plugin = "datafield_admin";
 
-    TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
+    JS.add_event_listener = function(elm, evt, fn, useCapture) {
         if (elm.addEventListener) {
             elm.addEventListener(evt, fn, (useCapture || false));
         } else if (elm.attachEvent) {
@@ -17,7 +17,7 @@
      * @param {Object} event A touch event
      * @param {String} simulatedType The corresponding mouse event
      */
-    TOOL.simulateMouseEvent = function(event, simulatedType){
+    JS.simulateMouseEvent = function(event, simulatedType){
 
         // Ignore multi-touch events
         if (event.originalEvent.touches.length > 1) {
@@ -56,38 +56,38 @@
      * Handle the jQuery UI widget's touchstart events
      * @param {Object} event The widget element's touchstart event
      */
-    TOOL.touchstart = function (event) {
+    JS.touchstart = function (event) {
         var self = this;
 
         // Ignore the event if another widget is already being handled
-        if (TOOL.touchHandled || !self._mouseCapture(event.originalEvent.changedTouches[0])) {
+        if (JS.touchHandled || !self._mouseCapture(event.originalEvent.changedTouches[0])) {
             return;
         }
 
         // Set the flag to prevent other widgets from inheriting the touch event
-        TOOL.touchHandled = true;
+        JS.touchHandled = true;
 
         // Track movement to determine if interaction was a click
         self._touchMoved = false;
 
         // Simulate the mouseover event
-        TOOL.simulateMouseEvent(event, 'mouseover');
+        JS.simulateMouseEvent(event, 'mouseover');
 
         // Simulate the mousemove event
-        TOOL.simulateMouseEvent(event, 'mousemove');
+        JS.simulateMouseEvent(event, 'mousemove');
 
         // Simulate the mousedown event
-        TOOL.simulateMouseEvent(event, 'mousedown');
+        JS.simulateMouseEvent(event, 'mousedown');
     };
 
     /**
      * Handle the jQuery UI widget's touchmove events
      * @param {Object} event The document's touchmove event
      */
-    TOOL.touchMove = function (event) {
+    JS.touchMove = function (event) {
 
         // Ignore event if not handled
-        if (!TOOL.touchHandled) {
+        if (!JS.touchHandled) {
             return;
         }
 
@@ -95,38 +95,38 @@
         this._touchMoved = true;
 
         // Simulate the mousemove event
-        TOOL.simulateMouseEvent(event, 'mousemove');
+        JS.simulateMouseEvent(event, 'mousemove');
     };
 
     /**
      * Handle the jQuery UI widget's touchend events
      * @param {Object} event The document's touchend event
      */
-    TOOL.touchEnd = function (event) {
+    JS.touchEnd = function (event) {
 
         // Ignore event if not handled
-        if (!TOOL.touchHandled) {
+        if (!JS.touchHandled) {
             return;
         }
 
         // Simulate the mouseup event
-        TOOL.simulateMouseEvent(event, 'mouseup');
+        JS.simulateMouseEvent(event, 'mouseup');
 
         // Simulate the mouseout event
-        TOOL.simulateMouseEvent(event, 'mouseout');
+        JS.simulateMouseEvent(event, 'mouseout');
 
         // If the touch interaction did not move, it should trigger a click
         if (!this._touchMoved) {
 
             // Simulate the click event
-            TOOL.simulateMouseEvent(event, 'click');
+            JS.simulateMouseEvent(event, 'click');
         }
 
         // Unset the flag to allow other widgets to inherit the touch event
-        TOOL.touchHandled = false;
+        JS.touchHandled = false;
     };
 
-    TOOL.touchHandled = null;;
+    JS.touchHandled = null;;
 
     var fn = function(){
         if (window.require) {
@@ -139,9 +139,9 @@
                     var _mouseInit = mouseProto._mouseInit;
                     var _mouseDestroy = mouseProto._mouseDestroy;
 
-                    mouseProto._touchStart = TOOL.touchstart;
-                    mouseProto._touchMove = TOOL.touchMove;
-                    mouseProto._touchEnd = TOOL.touchEnd;
+                    mouseProto._touchStart = JS.touchstart;
+                    mouseProto._touchMove = JS.touchMove;
+                    mouseProto._touchEnd = JS.touchEnd;
 
                     /**
                      * Overload the $.ui.mouse _mouseInit method to support touch events.
@@ -183,7 +183,7 @@
                     };
                 }
 
-                TOOL.onclick_viewdescriptions = function(){
+                JS.onclick_viewdescriptions = function(){
                     var counttext = 0;
                     var counthidden = 0;
                     var nonalphachars = new RegExp("[^a-z0-9]+", "g");
@@ -207,28 +207,28 @@
                         }
                     });
                     if (counttext < counthidden) {
-                        this.innerText = TOOL.str.editdescriptions;
+                        this.innerText = JS.str.editdescriptions;
                     } else {
-                        this.innerText = TOOL.str.viewdescriptions;
+                        this.innerText = JS.str.viewdescriptions;
                     }
                 };
 
-                TOOL.setup_strings = function() {
+                JS.setup_strings = function() {
                     return new Promise(function(resolve, reject){
                         var strings = new Array(
-                            {"key": "editdescriptions", "component": TOOL.plugin},
-                            {"key": "viewdescriptions", "component": TOOL.plugin}
+                            {"key": "editdescriptions", "component": JS.plugin},
+                            {"key": "viewdescriptions", "component": JS.plugin}
                         );
                         STR.get_strings(strings).done(function(s) {
                             var i = 0;
-                            TOOL.str.editdescriptions = s[i++];
-                            TOOL.str.viewdescriptions = s[i++];
+                            JS.str.editdescriptions = s[i++];
+                            JS.str.viewdescriptions = s[i++];
                             resolve();
                         });
                     });
                 };
 
-                TOOL.setup_buttons = function() {
+                JS.setup_buttons = function() {
 
                     var h3 = document.querySelector("form.reorderfields");
                     while (h3 && h3.matches("h3") == false) {
@@ -241,7 +241,7 @@
                         btn.className = "btn btn-secondary bg-light rounded " + name;
                         btn.setAttribute("type", "button");
                         btn.setAttribute("name", name);
-                        btn.appendChild(document.createTextNode(TOOL.str[name]));
+                        btn.appendChild(document.createTextNode(JS.str[name]));
 
                         var div = document.createElement("DIV");
                         div.className ="singlebutton ml-4";
@@ -249,20 +249,20 @@
 
                         h3.appendChild(div);
 
-                        TOOL.add_event_listener(btn, "click", TOOL["onclick_" + name]);
+                        JS.add_event_listener(btn, "click", JS["onclick_" + name]);
                         btn.dispatchEvent(new Event("click"))
                     }
                 };
 
-                TOOL.setup_nav_links = function(){
+                JS.setup_nav_links = function(){
                     document.querySelectorAll("a.nav-link[href*='/mod/data/field.php']").forEach(function(elm){
                         elm.classList.add("active");
                     });
                 };
 
-                TOOL.setup_admin_menus = function(){
+                JS.setup_admin_menus = function(){
                     document.querySelectorAll("select[name^='admin']").forEach(function(elm){
-                         TOOL.add_event_listener(elm, "change", function(){
+                         JS.add_event_listener(elm, "change", function(){
                             if (this.options[this.selectedIndex].value == "1") {
                                 this.classList.add("admin");
                             } else {
@@ -273,18 +273,18 @@
                     });
                 };
 
-                TOOL.setup_row_hover = function(){
+                JS.setup_row_hover = function(){
                     document.querySelectorAll(".fieldlist li").forEach(function(elm){
-                        TOOL.add_event_listener(elm, "mouseover", function(){
+                        JS.add_event_listener(elm, "mouseover", function(){
                             this.classList.add("hover");
                         });
-                        TOOL.add_event_listener(elm, "mouseout", function(){
+                        JS.add_event_listener(elm, "mouseout", function(){
                             this.classList.remove("hover");
                         });
                     });
                 };
 
-                TOOL.setup_row_drag = function(){
+                JS.setup_row_drag = function(){
                     $(".fieldlist").sortable({
                         "axis": "y",
                         "containment": $(".fieldlist"),
@@ -297,7 +297,7 @@
                     });
                 };
 
-                TOOL.setup_bootstrap_v3 = function() {
+                JS.setup_bootstrap_v3 = function() {
                     var bootstrap_v3 = false;
                     for (var s in document.styleSheets) {
                         for (var r in document.styleSheets[s].rules) {
@@ -343,20 +343,20 @@
                     }
                 };
 
-                TOOL.setup = function() {
-                    var p = TOOL.setup_strings();
-                    p.then(TOOL.setup_buttons);
-                    p.then(TOOL.setup_nav_links);
-                    p.then(TOOL.setup_admin_menus);
-                    p.then(TOOL.setup_bootstrap_v3)
-                    p.then(TOOL.setup_row_hover);
-                    p.then(TOOL.setup_row_drag);
+                JS.setup = function() {
+                    var p = JS.setup_strings();
+                    p.then(JS.setup_buttons);
+                    p.then(JS.setup_nav_links);
+                    p.then(JS.setup_admin_menus);
+                    p.then(JS.setup_bootstrap_v3)
+                    p.then(JS.setup_row_hover);
+                    p.then(JS.setup_row_drag);
                 };
 
-                TOOL.setup();
+                JS.setup();
             });
         }
     };
 
-    TOOL.add_event_listener(window, "load", fn, false);
+    JS.add_event_listener(window, "load", fn, false);
 }());

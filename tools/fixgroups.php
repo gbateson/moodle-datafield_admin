@@ -30,9 +30,17 @@ require_once('../../../../../config.php');
 require_once($CFG->dirroot.'/mod/data/lib.php');
 require_once($CFG->dirroot.'/mod/data/field/admin/field.class.php');
 
-$id = required_param('id', PARAM_INT); // course module id
-$url = new moodle_url($SCRIPT, array('id' => $id));
+// get course module id of this data activity
+$id = required_param('id', PARAM_INT);
 
+// "groupid" is used to filter records
+$groupid = optional_param('groupid', 0, PARAM_INT);
+
+// "newgroupid" is used to modify groupid for selected $recordids
+$newgroupid = optional_param('newgroupid', $groupid, PARAM_INT);
+$recordids = optional_param_array('recordids', array(), PARAM_INT);
+
+$url = new moodle_url($SCRIPT, array('id' => $id));
 $PAGE->set_url($url);
 
 if (! $cm = get_coursemodule_from_id('data', $id)) {
@@ -70,18 +78,10 @@ $PAGE->requires->js("/mod/data/field/admin/tools/$tool.js", true);
 $PAGE->requires->css("/mod/data/field/admin/tools/tools.css");
 $PAGE->requires->css("/mod/data/field/admin/tools/$tool.css");
 
+$strman = get_string_manager();
+
 data_print_header($course, $cm, $data, $tool);
 data_field_admin::display_tool_links($id, $tool);
-
-$params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
-echo html_writer::tag('h3', get_string($tool, $plugin), $params);
-
-echo html_writer::start_tag('form', array('action' => $url,
-                                          'method' => 'post',
-                                          'class' => $tool));
-echo html_writer::empty_tag('input', array('type' => 'hidden',
-                                           'name' => 'sesskey',
-                                           'value' => sesskey()));
 
 // cache some strings
 $str = (object)array(
@@ -93,10 +93,76 @@ $str = (object)array(
     'recordid' => get_string('recordid', $plugin),
     'select' => get_string('select'),
     'userid' => get_string('userid', $plugin),
-    'username' => get_string('username', $plugin)
+    'username' => get_string('username', $plugin),
+    'fullname' => get_string('fullname'),
+    'firstname' => get_string('firstname'),
+    'lastname' => get_string('lastname'),
+    'ASC' => get_string('ascending', 'mod_data'),
+    'DESC' => get_string('descending', 'mod_data'),
+    'nogroup' => get_string('nogroup', 'group'),
+    'choose' => get_string('choose').' ...'
 );
 
-// print group menu
+if ($strman->string_exists('anygroup', 'availability_group')) {
+    $str->anygroup = get_string('anygroup', 'availability_group');
+} else {
+    $str->anygroup = get_string('any'); // allparticipants
+}
+
+if (optional_param('autoassign', 0, PARAM_INT)) {
+
+    // unset the groupid for all records
+    $DB->set_field('data_records', 'groupid', 0, array('dataid' => $data->id));
+
+    $msg = array();
+    $totalrecords = 0; // The total number of records updated.
+    $totalgroups = 0; // the total number of groups
+    $countgroups = 0; // the number of groups updated
+
+    // set groupid for user who we know about
+    $groups = groups_get_all_groups($course->id);
+    foreach ($groups as $groupid => $group) {
+
+        $countrecords = 0; // The number of records updated for this group.
+
+        // get list of userids for members of this group
+        if ($members = $DB->get_records_menu('groups_members', array('groupid' => $groupid), 'id', 'id,userid')) {
+            list($select, $params) = $DB->get_in_or_equal($members);
+            $select = "dataid = ? AND userid $select";
+            $params = array_merge(array($data->id), $params);
+            if ($countrecords = $DB->count_records_select('data_records', $select, $params)) {
+                $DB->set_field_select('data_records', 'groupid', $groupid, $select, $params);
+                $countgroups ++;
+            } else {
+                $countrecords = 0;
+            }
+        }
+
+        $totalrecords += $countrecords;
+        $totalgroups ++;
+
+        $a = (object)array(
+            'groupname' => $group->name,
+            'groupid' => $groupid,
+            'count' => $countrecords
+        );
+        $msg[] = get_string('updatedgroupidscount', $plugin, $a);
+    }
+
+    if ($totalrecords == 0) {
+        $msg[] = get_string('updatedgroupidsnone', $plugin);
+    }  else if ($countgroups > 1) {
+        $msg[] = get_string('updatedgroupidstotal', $plugin, $total);
+    }
+    if (count($msg) == 1) {
+        $msg = reset($msg);
+    } else {
+        $msg = html_writer::alist($msg);
+    }
+    echo $OUTPUT->notification($msg, 'notifysuccess');
+}
+
+// fetch group mode and groups available to the current user
 $groupmode = $course->groupmode;
 $aag = has_capability('moodle/site:accessallgroups', $context);
 
@@ -108,58 +174,315 @@ if ($groupmode == VISIBLEGROUPS || $aag) {
     $usergroups = array();
 }
 
-$groupid = groups_get_course_group($course, true, $groups);
-
-$groupmenu = array();
-if (empty($groups) || $groupmode == VISIBLEGROUPS || $aag) {
-    $groupmenu[0] = get_string('allparticipants');
-}
-$groupmenu += groups_sort_menu_options($groups, $usergroups);
-
-switch (true) {
-    case empty($groupmode):
-        echo get_string('groupsnone', 'group');
+// set group label
+switch ($groupmode) {
+    case SEPARATEGROUPS:
+        $grouplabel = get_string('groupsseparate');
         break;
-    case ($groupmode == VISIBLEGROUPS): 
-        echo get_string('groupsvisible');
+    case VISIBLEGROUPS:
+        $grouplabel = get_string('groupsvisible');
         break;
     default:
-        echo get_string('groupsseparate');
+        $grouplabel = get_string('groupsnone', 'group');
 }
 
-echo $str->labelsep;
+// get optional array of recordids, and update, if necessary
+if ($newgroupid && count($recordids) && confirm_sesskey()) {
+    list($select, $params) = $DB->get_in_or_equal(array_keys($recordids));
+    if ($countrecords = $DB->count_records_select('data_records', "id $select", $params)) {
+        // TODO: make sure the corresponding users are actually members of that group
+        $DB->set_field_select('data_records', 'groupid', max(0, $newgroupid), "id $select", $params);
+    } else {
+        $countrecords = 0;
+    }
+    $a = (object)array(
+        'groupname' => $groups[$newgroupid]->name,
+        'groupid' => $newgroupid,
+        'count' => $countrecords
+    );
+    $msg = get_string('updatedgroupidscount', $plugin, $a);
+    echo $OUTPUT->notification($msg, 'notifysuccess');
+}
+
+// get/set the display group id, if any
+if (empty($course->groupmode)) {
+    $groupid = optional_param('group', 0, PARAM_INT);
+} else {
+    $groupid = groups_get_course_group($course, true, $groups);
+}
+
+$sortfield = optional_param('sortfield', 'recordid', PARAM_ALPHANUM);
+$sortdirection = optional_param('sortdirection', 'ASC', PARAM_ALPHA);
+
+$perpage = optional_param('perpage', 20, PARAM_INT);
+if (empty($perpage) || $perpage < 0) {
+    $perpage = 20;
+}
+
+$pagenumber = optional_param('pagenumber', 0, PARAM_INT);
+if (empty($pagenumber) || $pagenumber <= 0) {
+    $pagenumber = 1;
+}
+
+// Button to auto-assign data groups
+// (done after setting $groupid, $sortfield/direction, $perpage)
+$url->remove_all_params();
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   'sortfield' => $sortfield,
+                   'sortdirection' => $sortdirection,
+                   'perpage' => $perpage,
+                   'pagenumber' => 1,
+                   'autoassign' => '1'));
+
+$button = get_string('autoassigndatagroups', $plugin);
+$button = html_writer::tag('button', $button, array('type' => 'button', 'class' => 'btn btn-primary ml-3'));
+$button = $OUTPUT->action_link($url, $button);
+
+// get all records in the current group
+$select = 'dr.*, u.username, g.name AS groupname';
+$from   = '{data_records} dr '.
+          'JOIN {user} u ON dr.userid = u.id '.
+          'LEFT JOIN {groups} g ON dr.groupid = g.id';
+$where  = 'dr.dataid = ?';
+if ($sortdirection == 'DESC') {
+    $order = 'DESC';
+} else {
+    $order = 'ASC';
+}
+$fullname = "u.lastname $order, u.firstname $order";
+switch ($sortfield) {
+    case 'recordid':
+        $order = "dr.id $order";
+        break;
+    case 'userid':
+        $order = "u.id $order, dr.id";
+        break;
+    case 'username':
+        $order = "u.username $order, dr.id";
+        break;
+    case 'firstname':
+        $order = "u.firstname $order, u.lastname $order, dr.userid, dr.id";
+        break;
+    case 'lastname':
+        $order = "u.lastname $order, u.firstname $order, dr.userid, dr.id";
+        break;
+    case 'fullname':
+        $order = "$fullname, dr.userid, dr.id";
+        break;
+    case 'groupid':
+        $order = "dr.groupid $order, $fullname, dr.userid, dr.id";
+        break;
+    case 'groupname':
+        $order = "g.name $order, $fullname, dr.userid, dr.id";
+        break;
+    default:
+        $order = "$sortfield $order,dr.userid,dr.id";
+}
+$params = array($data->id);
+
+if ($groupid) {
+    $where .= 'AND dr.groupid = ?';
+    $params[] = max(0, $groupid);
+}
+
+$countrecords = "SELECT count(*) FROM $from WHERE $where";
+$countrecords = $DB->get_field_sql($countrecords, $params);
+
+$limitfrom = $perpage * max(0, $pagenumber - 1);
+$records = "SELECT $select FROM $from WHERE $where ORDER BY $order";
+$records = $DB->get_records_sql($records, $params, $limitfrom, $perpage);
+
+// set group label / menu
+$grouplabel = get_string('groupname', $plugin).$str->labelsep;
+$groupmenu = groups_sort_menu_options($groups, $usergroups);
+if ($groupmode == VISIBLEGROUPS || $aag) {
+    $groupmenu = array(-1 => $str->nogroup) + $groupmenu;
+    $groupmenu = array(0 => $str->anygroup) + $groupmenu;
+}
+
+// set new group label / menu
+$newgrouplabel = get_string('newgroup', $plugin).$str->labelsep;
+$newgroupmenu = groups_sort_menu_options($groups, $usergroups);
+$newgroupmenu = array(-1 => $str->nogroup) + $groupmenu;
+$newgroupmenu = array(0 => $str->choose) + $groupmenu;
+$newgroupmenu = html_writer::select($newgroupmenu, 'newgroupid', $newgroupid, null);
 
 switch (count($groupmenu)) {
     case 0:
-        echo get_string('nogroups', 'group');
+        $groupmenu = get_string('nogroups', 'group');
         break;
     case 1:
-        echo reset($groupmenu);
+        $groupmenu = reset($groupmenu);
         break;
     default:
-        echo html_writer::select($groupmenu, 'group', $groupid, null);
+        $url->remove_all_params();
+        $url->params(array('id' => $cm->id,
+                           'sesskey' => sesskey(),
+                           // skip group => groupid
+                           'sortfield' => $sortfield,
+                           'sortdirection' => $sortdirection,
+                           'perpage' => $perpage,
+                           'pagenumber' => 1));
+        $groupmenu = $OUTPUT->single_select($url, 'group', $groupmenu, $groupid, null);
 }
 
+// Sort label and menus
+$sortlabel = get_string('sortby').$str->labelsep;
 
-// cache field selection conditions
-$fieldparams = array('checkbox', 'file', 'menu', 'multimenu', 'number',
-                     'picture', 'radiobutton', 'text', 'textarea', 'url');
-list($fieldwhere, $fieldparams) = $DB->get_in_or_equal($fieldparams);
+$sortfieldmenu = array(
+    'recordid'  => $str->recordid,
+    'userid'    => $str->userid,
+    'username'  => $str->username,
+    'fullname'  => $str->fullname,
+    'firstname' => $str->firstname,
+    'lastname'  => $str->lastname,
+    'groupid'   => $str->groupid,
+    'groupname' => $str->groupname
+);
 
-// get optional array of recordids
-$recordids = optional_param_array('recordids', array(), PARAM_INT);
-if (count($recordids) && confirm_sesskey()) {
-    list($select, $params) = $DB->get_in_or_equal(array_keys($recordids));
-    $DB->set_field_select('data_records', 'groupid', $groupid, "id $select", $params);
-    // TODO: make sure the corresponding users are actually members of that group
+$url->remove_all_params();
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   // skip sortfield
+                   'sortdirection' => $sortdirection,
+                   'perpage' => $perpage,
+                   'pagenumber' => 1));
+$sortfieldmenu = $OUTPUT->single_select($url, 'sortfield', $sortfieldmenu, $sortfield, null);
+
+$sortdirectionmenu = array(
+    'ASC' => $str->ASC,
+    'DESC' => $str->DESC
+);
+
+$url->remove_all_params();
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   'sortfield' => $sortfield,
+                   // skip sortdirection
+                   'perpage' => $perpage,
+                   'pagenumber' => 1));
+$sortdirectionmenu = $OUTPUT->single_select($url, 'sortdirection', $sortdirectionmenu, $sortdirection, null);
+
+// set number of records-per-page label and menu
+if ($strman->string_exists('itemsperpage', 'gradereport_singleview')) {
+    // Moodle >= 2.8
+    $perpagelabel = get_string('itemsperpage', 'gradereport_singleview');
+} else {
+    // Moodle <= 2.7
+    $perpagelabel = get_string('perpage'); // 'show' is also available
 }
+$perpagelabel .= $str->labelsep;
+
+$perpagemenu = array_flip(array(0, 5, 10, 15, 20, 30, 50, 100));
+foreach (array_keys($perpagemenu) as $value) {
+    if ($value == 0) {
+        $perpagemenu[$value] = get_string('all');
+    } else {
+        $perpagemenu[$value] = get_string('pagedcontentpagingbaritemsperpage', 'moodle', $value);
+    }
+}
+
+$url->remove_all_params();
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   'sortfield' => $sortfield,
+                   'sortdirection' => $sortdirection,
+                   // skip perpage and reset pagenumber
+                   'pagenumber' => 1));
+$perpagemenu = $OUTPUT->single_select($url, 'perpage', $perpagemenu, $perpage, null);
+
+$pagenumberlabel = get_string('page').$str->labelsep;
+if (empty($perpage)) {
+    $maxpagenumber = 1;
+    $pagenumbermenu = array(1 => 1);
+} else {
+    $maxpagenumber = ceil($countrecords / $perpage);
+    $pagenumbermenu = range(1, $maxpagenumber);
+    $pagenumbermenu = array_combine($pagenumbermenu, $pagenumbermenu);
+}
+
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   'sortfield' => $sortfield,
+                   'sortdirection' => $sortdirection,
+                   'perpage' => $perpage)); // skip pagenumber
+$pagenumbermenu = $OUTPUT->single_select($url, 'pagenumber', $pagenumbermenu, $pagenumber, null);
+
+$url->remove_all_params();
+$url->params(array('id' => $cm->id,
+                   'sesskey' => sesskey(),
+                   'group' => $groupid,
+                   'sortfield' => $sortfield,
+                   'sortdirection' => $sortdirection,
+                   'perpage' => $perpage,
+                   'pagenumber' => $pagenumber));
+
+if ($maxpagenumber > 1 && $pagenumber > 1) {
+    $url->params(array('pagenumber' => ($pagenumber - 1)));
+    $icon = $OUTPUT->action_link($url, '&lt;');
+    $pagenumbermenu = $icon.' '.$pagenumbermenu;
+}
+if ($maxpagenumber > 2 && $pagenumber > 2) {
+    $url->params(array('pagenumber' => 1));
+    $icon = $OUTPUT->action_link($url, '&mid;&lt;&lt;');
+    $pagenumbermenu = $icon.' &nbsp; '.$pagenumbermenu;
+}
+if ($maxpagenumber > 1  && $pagenumber < $maxpagenumber) {
+    $url->params(array('pagenumber' => ($pagenumber + 1)));
+    $icon = $OUTPUT->action_link($url, '&gt;');
+    $pagenumbermenu = $pagenumbermenu.' '.$icon;
+}
+if ($maxpagenumber > 2 && $pagenumber < ($maxpagenumber - 1)) {
+    $url->params(array('pagenumber' => $maxpagenumber));
+    $icon = $OUTPUT->action_link($url, '&gt;&gt;&mid;');
+    $pagenumbermenu = $pagenumbermenu.' &nbsp; '.$icon;
+}
+
+$dl_class = 'row my-0 py-1 px-sm-3';
+$dt_class = 'col-sm-3 col-lg-2 my-0 pt-3 pb-0 text-nowrap';
+$dd_class = "col-sm-9 col-lg-10 my-0 py-0";
+
+$params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
+echo html_writer::tag('h3', get_string($tool, $plugin).' '.$button, $params);
+echo html_writer::start_tag('div', array('class' => 'container ml-0'));
+
+echo html_writer::start_tag('dl', array('class' => $dl_class));
+echo html_writer::tag('dt', $grouplabel, array('class' => $dt_class));
+echo html_writer::tag('dd', $groupmenu, array('class' => $dd_class));
+echo html_writer::end_tag('dl');
+
+echo html_writer::start_tag('dl', array('class' => $dl_class.' bg-light'));
+echo html_writer::tag('dt', $sortlabel, array('class' => $dt_class));
+echo html_writer::tag('dd', $sortfieldmenu.' '.$sortdirectionmenu, array('class' => $dd_class));
+echo html_writer::end_tag('dl');
+
+echo html_writer::start_tag('dl', array('class' => $dl_class));
+echo html_writer::tag('dt', $perpagelabel, array('class' => $dt_class));
+echo html_writer::tag('dd', $perpagemenu, array('class' => $dd_class));
+echo html_writer::end_tag('dl');
+
+echo html_writer::start_tag('dl', array('class' => $dl_class.' bg-light'));
+echo html_writer::tag('dt', $pagenumberlabel, array('class' => $dt_class));
+echo html_writer::tag('dd', $pagenumbermenu, array('class' => $dd_class));
+echo html_writer::end_tag('dl');
+
+echo html_writer::end_tag('div');
+
+echo html_writer::start_tag('form', array('action' => $url,
+                                          'method' => 'post',
+                                          'class' => $tool.' container ml-0'));
+echo html_writer::empty_tag('input', array('type' => 'hidden',
+                                           'name' => 'sesskey',
+                                           'value' => sesskey()));
 
 // Responsive list suitable for Boost in Moodle >= 3.6
-$params = array('dataid' => $data->id);
-if ($groupid) {
-    $params['groupid'] = $groupid;
-}
-if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
+if ($records) {
 
     $dl_class = 'row my-0 py-1 px-sm-3';
     $dt_class = 'col-3 d-sm-none my-0 py-1'; // only visible on very small screens
@@ -179,8 +502,18 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
     echo html_writer::tag('dd', $str->recorddetails, array('class' => $dd_class_text));
     echo html_writer::end_tag('dl');
 
+    // cache field selection conditions
+    $fieldparams = array('checkbox', 'file', 'menu', 'multimenu', 'number',
+                         'picture', 'radiobutton', 'text', 'textarea', 'url');
+    list($fieldwhere, $fieldparams) = $DB->get_in_or_equal($fieldparams);
+
+    // cache lists of user names/lnks
     $usernames = array();
+    $userlinks = array();
+
+    // cache lists of user names/lnks
     $groupnames = array();
+    $grouplinks = array();
 
     foreach ($records as $rid => $record) {
 
@@ -188,10 +521,14 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         if (empty($usernames[$uid])) {
             if ($user = $DB->get_record('user', array('id' => $uid))) {
                 $usernames[$uid] = fullname($user);
+                $userlinks[$uid] = new moodle_url('/user/view.php', array('id' => $uid, 'course' => $course->id));
+                $userlinks[$uid] = html_writer::link($userlinks[$uid], $uid, array('target' => $plugin));
             } else if ($uid) {
                 $usernames[$uid] = get_string('unknownuser');
+                $userlinks[$uid] = $uid;
             } else {
                 $usernames[$uid] = get_string('nouser');
+                $userlinks[$uid] = '';
             }
         }
 
@@ -199,12 +536,22 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         if (empty($groupnames[$gid])) {
             if ($group = $DB->get_record('groups', array('id' => $gid))) {
                 $groupnames[$gid] = format_text($group->name);
+                $grouplinks[$gid] = new moodle_url('/group/members.php', array('group' => $gid));
+                $grouplinks[$gid] = html_writer::link($grouplinks[$gid], $gid, array('target' => $plugin));
             } else if ($gid) {
                 $groupnames[$gid] = get_string('unknowngroup', 'error', $gid);
+                $grouplinks[$gid] = $gid;
             } else {
                 $groupnames[$gid] = get_string('nogroup', 'group');
+                $grouplinks[$gid] = '';
             }
         }
+
+        $params = array('d' => $data->id,
+                        'rid' => $rid,
+                        'mode' => 'single');
+        $recordlink = new moodle_url('/mod/data/view.php', $params);
+        $recordlink = html_writer::link($recordlink, $rid, array('target' => $plugin));
 
         $recorddetails = '';
 
@@ -227,19 +574,19 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         echo html_writer::tag('dd', $checkbox, array('class' => $dd_checkbox));
 
         echo html_writer::tag('dt', $str->groupid, array('class' => $dt_class));
-        echo html_writer::tag('dd', $record->groupid, array('class' => $dd_class_num));
+        echo html_writer::tag('dd', $grouplinks[$gid], array('class' => $dd_class_num));
 
         echo html_writer::tag('dt', $str->groupname, array('class' => $dt_class));
         echo html_writer::tag('dd', $groupnames[$gid], array('class' => $dd_class_name));
 
         echo html_writer::tag('dt', $str->userid, array('class' => $dt_class));
-        echo html_writer::tag('dd', $record->userid, array('class' => $dd_class_num));
+        echo html_writer::tag('dd', $userlinks[$uid], array('class' => $dd_class_num));
 
         echo html_writer::tag('dt', $str->username, array('class' => $dt_class));
         echo html_writer::tag('dd', $usernames[$uid], array('class' => $dd_class_name));
 
         echo html_writer::tag('dt', $str->recordid, array('class' => $dt_class));
-        echo html_writer::tag('dd', $record->id, array('class' => $dd_class_num));
+        echo html_writer::tag('dd', $recordlink, array('class' => $dd_class_num));
 
         //echo html_writer::tag('dt', $str->recorddetails, array('class' => $dt_class));
         echo html_writer::tag('dd', $recorddetails, array('class' => $dd_class_text));
@@ -256,6 +603,11 @@ if ($records = $DB->get_records('data_records', $params, 'groupid,userid,id')) {
         echo html_writer::tag('p', get_string('norecords', $plugin));
     }
 }
+
+echo html_writer::start_tag('p', array('class' => 'mr-2 my-2 px-2'));
+echo html_writer::tag('b', $newgrouplabel).' ';
+echo html_writer::tag('span', $newgroupmenu);
+echo html_writer::end_tag('p');
 
 echo html_writer::start_tag('div', array('class' => 'buttons my-2'));
 echo html_writer::empty_tag('input', array('type' => 'submit',

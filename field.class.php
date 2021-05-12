@@ -51,6 +51,86 @@ if ($GLOBALS['SCRIPT'] == '/mod/data/import.php' && function_exists('data_import
     global $recordsadded, $record;
 }
 
+/**
+ * The following hack is required to fix newlines in "menu" fields
+ * during the import of a preset.xml file.
+ *
+ * Without encoding, the naked newlines are squashed by the xmlize function,
+ * (see "/lib/xmlize.php") and all options become merged onto a single line.
+ */
+if ($GLOBALS['SCRIPT'] == '/mod/data/preset.php') {
+
+    // we use an Anonymous function to prevent cluttering the workspace
+    $importfilefixed = function() {
+        global $CFG;
+        $fixed = false;
+
+        $filepath = '';
+        if (optional_param('fixedimport', 0, PARAM_INT) == 0) {
+            if (optional_param('action', '', PARAM_ALPHANUM) == 'finishimport') {
+                if (! $filepath = optional_param('fullname', '', PARAM_PATH)) {
+                    if ($filepath = optional_param('directory', '', PARAM_FILE)) {
+                        $filepath = $CFG->tempdir."/forms/$filepath";
+                        $filepath = rtrim($filepath, '/').'/preset.xml';
+                    }
+                }
+            }
+        }
+        if ($filepath && file_exists($filepath)) {
+            $contents = file_get_contents($filepath);
+
+            // locate the "param1" values for all "menu" fields
+            $search = '|<field>\s*<type>menu</type>.*?<param1>(.*?)</param1>.*?</field>|us';
+            if (preg_match_all($search, $contents, $matches, PREG_OFFSET_CAPTURE)) {
+
+                // cache the search and replace strings
+                $search = array("\r\n", "\n", "\r");
+                $replace = '<![CDATA[&#10;]]>';
+
+                // loop through the "param1" fields
+                // encoding any newlines as an html entity within a CDATA block
+                for ($i = count($matches[0]); $i>0; $i--) {
+                    $match = $matches[1][$i-1][0];
+                    $start = $matches[1][$i-1][1];
+                    $length = strlen($match);
+                    $count = 0;
+                    $match = str_replace($search, $replace, $match, $count);
+                    if ($count) {
+                        $contents = substr_replace($contents, $match, $start, $length);
+                        $fixed = true;
+                    }
+                }
+            }
+            if ($fixed) {
+                file_put_contents($filepath, $contents);
+            }
+        }
+        return $fixed;
+    };
+
+    if ($importfilefixed()) {
+        $url = new moodle_url($GLOBALS['SCRIPT']);
+        $url->params($_POST);
+        $url->param('fixedimport', 1);
+
+        $msg = get_string('importfilefixed', 'datafield_admin');
+        if (defined('\core\output\notification::NOTIFY_WARNING')) {
+            // Moodle >= 31
+            $type = \core\output\notification::NOTIFY_WARNING;
+        } else {
+            // Moodle <= 30
+            $type = 'notifyproblem';
+        }
+
+        global $OUTPUT;
+        echo $OUTPUT->notification($msg, $type);
+        echo $OUTPUT->render(new single_button($url, get_string('continue')));
+        echo $OUTPUT->footer();
+        die;
+    }
+    unset($importfilefixed);
+}
+
 class data_field_admin extends data_field_base {
 
     /**
@@ -1255,7 +1335,7 @@ class data_field_admin extends data_field_base {
      * determine the id of the form element for the given $field
      *
      * The following variables are setup by mod_data
-     *   [Moodle >= 3.8] /mod/data/lib.php 
+     *   [Moodle >= 3.8] /mod/data/lib.php
      *   [Moodle <= 3.7] /mod/data/import.php
      * @uses $fieldnames
      * @uses $record array of values from the CSV file
@@ -1594,7 +1674,7 @@ class data_field_admin extends data_field_base {
                 $merged = false;
 				foreach ($newcontents as $name => $value) {
 
-				    // find and cache this $field 
+				    // find and cache this $field
                     $field = $fieldnameindex[$name];
 
                     // ensure $oldcontent for this field $name is set

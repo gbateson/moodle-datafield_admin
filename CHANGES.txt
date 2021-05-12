@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-05-12 (00)
+ - fix newlines in param1 field of menu fields during import of new preset
+
 2021-04-22 (97)
  - fix functionality of fixuserid field during import on Moodle >= 3.8
 

@@ -1,17 +1,17 @@
 (function() {
-    var TOOL = {};
+    var JS = {};
 
-    TOOL.str = {};
-    TOOL.plugin = "datafield_admin";
+    JS.str = {};
+    JS.plugin = "datafield_admin";
 
-    TOOL.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
-    TOOL.img = {
-        "add" : TOOL.wwwroot + "/pix/t/add.svg",
-        "edit" : TOOL.wwwroot + "/pix/t/edit.svg",
-        "delete" : TOOL.wwwroot + "/pix/t/delete.svg"
+    JS.wwwroot =  document.location.href.replace(new RegExp("/mod/.*$"), "");
+    JS.img = {
+        "add" : JS.wwwroot + "/pix/t/add.svg",
+        "edit" : JS.wwwroot + "/pix/t/edit.svg",
+        "delete" : JS.wwwroot + "/pix/t/delete.svg"
     };
 
-    TOOL.add_event_listener = function(elm, evt, fn, useCapture) {
+    JS.add_event_listener = function(elm, evt, fn, useCapture) {
         if (elm.addEventListener) {
             elm.addEventListener(evt, fn, (useCapture || false));
         } else if (elm.attachEvent) {
@@ -19,7 +19,7 @@
         }
     };
 
-    TOOL.get_sesskey = function() {
+    JS.get_sesskey = function() {
         var elm = document.querySelector("input[name=sesskey]");
         if (elm) {
             return elm.getAttribute("value");
@@ -27,7 +27,7 @@
         return null; // shouldn't happen !!
     };
 
-    TOOL.get_url_param = function(name) {
+    JS.get_url_param = function(name) {
         if (window.URLSearchParams) {
             var s = new URLSearchParams(window.location.search);
             if (s.has(name)) {
@@ -44,7 +44,7 @@
         }
     };
 
-    TOOL.onclick_add = function(){
+    JS.onclick_add = function(){
         var li = this;
         while (li && li.matches("li") == false) {
             li = li.parentElement;
@@ -62,10 +62,10 @@
             ul.appendChild(li);
             this.parentNode.removeChild(this);
         }
-        TOOL.setup_duplicates();
+        JS.setup_duplicates();
     };
 
-    TOOL.onclick_edit = function(){
+    JS.onclick_edit = function(){
         var parent = null; // parentNode
         var input = null; // INPUT
         var txt = null; // .text
@@ -83,10 +83,10 @@
                 txt.style.display = "block";
             }
         }
-        TOOL.setup_duplicates();
+        JS.setup_duplicates();
     };
 
-    TOOL.onclick_delete = function(){
+    JS.onclick_delete = function(){
         var parent = null; // parentNode
         var input = null; // INPUT
         var txt = null; // .text
@@ -103,17 +103,17 @@
                 input.value = "";
             }
         }
-        TOOL.setup_duplicates();
+        JS.setup_duplicates();
     };
 
-    TOOL.setup_nav_links = function(){
+    JS.setup_nav_links = function(){
         var elm = document.querySelector("a.nav-link[href*='/mod/data/field.php']");
         if (elm) {
             elm.classList.add("active");
         }
     };
 
-    TOOL.setup_icons = function(){
+    JS.setup_icons = function(){
 
         var selector = "input[type=text][name^=fields][name*=new]";
         document.querySelectorAll(selector).forEach(function(elm){
@@ -143,14 +143,14 @@
             names.forEach(function(name){
                 var icon = document.createElement("IMG");
                 icon.className = "icon " + name + " mr-2";
-                icon.src = TOOL.img[name];
-                TOOL.add_event_listener(icon, "click", TOOL["onclick_" + name]);
+                icon.src = JS.img[name];
+                JS.add_event_listener(icon, "click", JS["onclick_" + name]);
                 icons.appendChild(icon);
             });
 
             // Append count of occurences.
             if (count) {
-                TOOL.add_event_listener(count, "click", function(){
+                JS.add_event_listener(count, "click", function(){
                     alert(this.title);
                 });
                 icons.appendChild(count);
@@ -172,7 +172,7 @@
         });
     };
 
-    TOOL.setup_duplicates = function(){
+    JS.setup_duplicates = function(){
         var selector = ".currentvalues, .missingvalues";
         document.querySelectorAll(selector).forEach(function(li){
             var values = new Array();
@@ -187,11 +187,11 @@
         });
     };
 
-    TOOL.setup = function() {
-        TOOL.setup_nav_links();
-        TOOL.setup_icons();
-        TOOL.setup_duplicates();
+    JS.setup = function() {
+        JS.setup_nav_links();
+        JS.setup_icons();
+        JS.setup_duplicates();
     };
 
-    TOOL.add_event_listener(window, "load", TOOL.setup);
+    JS.add_event_listener(window, "load", JS.setup);
 }());
