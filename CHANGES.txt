@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-05-14 (02)
+ - add event handler for mod_data/event/field_created and field_updated events as a mechanism to fix newlines in checkbox, menu and radio fields when importing a preset
+
 2021-05-12 (00)
  - fix newlines in param1 field of menu fields during import of new preset
 

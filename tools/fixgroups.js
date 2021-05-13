@@ -718,9 +718,23 @@
                 var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
 
                 dl.querySelectorAll("dt").forEach(function(dt){
-                    dt.classList.remove("col-sm-1");
-                    dt.style.textAlign = "center";
-                    dt.style.width = "40px";
+                    if (dt.classList.contains("d-sm-none") && (vw >= 576)) {
+                        dt.classList.remove("d-sm-none");
+                        dt.style.display = "none";
+                    }
+                    if (dt.classList.contains("col-sm-1")) {
+                        dt.classList.remove("col-sm-1");
+                        dt.style.width = "40px";
+                    }
+                    if (dt.classList.contains("col-sm-2")) {
+                        dt.classList.remove("col-sm-2");
+                        dt.style.width = "80px";
+                    }
+                    if (dt.classList.contains("col-sm-3")) {
+                        dt.classList.remove("col-sm-3");
+                        dt.style.width = "120px";
+                    }
+                    dt.style.textAlign = "left";
                 });
 
                 dl.querySelectorAll("dd").forEach(function(dd){

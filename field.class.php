@@ -79,19 +79,23 @@ if ($GLOBALS['SCRIPT'] == '/mod/data/preset.php') {
         if ($filepath && file_exists($filepath)) {
             $contents = file_get_contents($filepath);
 
-            // locate the "param1" values for all "menu" fields
-            $search = '|<field>\s*<type>menu</type>.*?<param1>(.*?)</param1>.*?</field>|us';
+            // Locate the param values for all fields.
+            // We are particularly interested in "param1" values
+            // in "admin", "checkbox", "menu" and "radio" fields.
+            $search = '|<param(\d+)>(.*?)</param\1>|us';
             if (preg_match_all($search, $contents, $matches, PREG_OFFSET_CAPTURE)) {
 
                 // cache the search and replace strings
+                // $search includes newlines for Windows, Linux/Mac(new) and Mac(old)
+                // $replace can be either "&amp;#10;" or "<![CDATA[&#10;]]>"
                 $search = array("\r\n", "\n", "\r");
                 $replace = '<![CDATA[&#10;]]>';
 
-                // loop through the "param1" fields
-                // encoding any newlines as an html entity within a CDATA block
+                // loop through each of the "param" fields
+                // replacing each newline with an encoded html entity
                 for ($i = count($matches[0]); $i>0; $i--) {
-                    $match = $matches[1][$i-1][0];
-                    $start = $matches[1][$i-1][1];
+                    $match = $matches[2][$i-1][0];
+                    $start = $matches[2][$i-1][1];
                     $length = strlen($match);
                     $count = 0;
                     $match = str_replace($search, $replace, $match, $count);
