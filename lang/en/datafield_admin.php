@@ -82,6 +82,8 @@ $string['fieldname_help'] = 'The name of the field is a short, unique name that 
 * contains no spaces
 * contains only lowercase letters and numbers';
 $string['fieldname'] = 'Field name';
+$string['fixedimportfile'] = 'New users were created for usernames in the import file. Click "Continue" to proceed with the import of entries into this database.';
+$string['fixedpresetfile'] = 'The encoding of newline characters in the menu and checkbox fields within the preset XML file was fixed. Click "Continue" to proceed with the import of this preset.';
 $string['fixeduserid']= 'Record {$a->recordid} was assigned to user {$a->userid}: {$a->fullname}.';
 $string['fixgroups'] = 'Fix groups';
 $string['fixlangpack'] = '**The {$a->typemixedcase} field is not yet properly installed**
@@ -102,7 +104,6 @@ $string['groupadded'] = 'Group {$a->groupid}: {$a->groupname} was added to cours
 $string['groupid'] = 'Group ID';
 $string['groupname'] = 'Group name';
 $string['hidetext'] = 'Hide text';
-$string['importfilefixed'] = 'The encoding of newline characters in the menu fields within the preset XML file was fixed. Click "Continue" to proceed with the import.';
 $string['labelseparators'] = 'Label separators';
 $string['loadall'] = 'Load (all)';
 $string['loadedall'] = 'All templates were loaded.';

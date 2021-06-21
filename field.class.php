@@ -31,110 +31,6 @@
 // prevent direct access to this script
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * The following hack is required to keep "fixuserid" working
- * during import into Moodle >= 3.8.
- *
- * It gives the "update_content_import()" method access to the
- * variables used when importing records from a CSV file.
- *
- * Note that $rawfields, $fields and $fieldnames already hold data,
- * so we assign them by reference in order to maintain their values.
- *
- * $recordsadded and $record have not been used yet,
- * so they can be initialised as global variables
- */
-if ($GLOBALS['SCRIPT'] == '/mod/data/import.php' && function_exists('data_import_csv')) {
-    $GLOBALS['fieldnames'] =& $fieldnames;
-    $GLOBALS['rawfields'] =& $rawfields;
-    $GLOBALS['fields'] =& $fields;
-    global $recordsadded, $record;
-}
-
-/**
- * The following hack is required to fix newlines in "menu" fields
- * during the import of a preset.xml file.
- *
- * Without encoding, the naked newlines are squashed by the xmlize function,
- * (see "/lib/xmlize.php") and all options become merged onto a single line.
- */
-if ($GLOBALS['SCRIPT'] == '/mod/data/preset.php') {
-
-    // we use an Anonymous function to prevent cluttering the workspace
-    $importfilefixed = function() {
-        global $CFG;
-        $fixed = false;
-
-        $filepath = '';
-        if (optional_param('fixedimport', 0, PARAM_INT) == 0) {
-            if (optional_param('action', '', PARAM_ALPHANUM) == 'finishimport') {
-                if (! $filepath = optional_param('fullname', '', PARAM_PATH)) {
-                    if ($filepath = optional_param('directory', '', PARAM_FILE)) {
-                        $filepath = $CFG->tempdir."/forms/$filepath";
-                        $filepath = rtrim($filepath, '/').'/preset.xml';
-                    }
-                }
-            }
-        }
-        if ($filepath && file_exists($filepath)) {
-            $contents = file_get_contents($filepath);
-
-            // Locate the param values for all fields.
-            // We are particularly interested in "param1" values
-            // in "admin", "checkbox", "menu" and "radio" fields.
-            $search = '|<param(\d+)>(.*?)</param\1>|us';
-            if (preg_match_all($search, $contents, $matches, PREG_OFFSET_CAPTURE)) {
-
-                // cache the search and replace strings
-                // $search includes newlines for Windows, Linux/Mac(new) and Mac(old)
-                // $replace can be either "&amp;#10;" or "<![CDATA[&#10;]]>"
-                $search = array("\r\n", "\n", "\r");
-                $replace = '<![CDATA[&#10;]]>';
-
-                // loop through each of the "param" fields
-                // replacing each newline with an encoded html entity
-                for ($i = count($matches[0]); $i>0; $i--) {
-                    $match = $matches[2][$i-1][0];
-                    $start = $matches[2][$i-1][1];
-                    $length = strlen($match);
-                    $count = 0;
-                    $match = str_replace($search, $replace, $match, $count);
-                    if ($count) {
-                        $contents = substr_replace($contents, $match, $start, $length);
-                        $fixed = true;
-                    }
-                }
-            }
-            if ($fixed) {
-                file_put_contents($filepath, $contents);
-            }
-        }
-        return $fixed;
-    };
-
-    if ($importfilefixed()) {
-        $url = new moodle_url($GLOBALS['SCRIPT']);
-        $url->params($_POST);
-        $url->param('fixedimport', 1);
-
-        $msg = get_string('importfilefixed', 'datafield_admin');
-        if (defined('\core\output\notification::NOTIFY_WARNING')) {
-            // Moodle >= 31
-            $type = \core\output\notification::NOTIFY_WARNING;
-        } else {
-            // Moodle <= 30
-            $type = 'notifyproblem';
-        }
-
-        global $OUTPUT;
-        echo $OUTPUT->notification($msg, $type);
-        echo $OUTPUT->render(new single_button($url, get_string('continue')));
-        echo $OUTPUT->footer();
-        die;
-    }
-    unset($importfilefixed);
-}
-
 class data_field_admin extends data_field_base {
 
     /**
@@ -288,6 +184,14 @@ class data_field_admin extends data_field_base {
 	const FIXUSERID_ADD    = 1; // fix userid in newly added record
 	const FIXUSERID_DELETE = 2; // fix userid and delete old record
 	const FIXUSERID_MERGE  = 3; // fix userid and merge with previous records
+
+    ///////////////////////////////////////////
+    // static variable (used for export only)
+    ///////////////////////////////////////////
+
+    static $exportvalues = null;
+    static $exportrecordid = 0;
+    static $exportfieldid = 0;
 
     ///////////////////////////////////////////
     // standard methods
@@ -1445,15 +1349,21 @@ class data_field_admin extends data_field_base {
             }
 
             if ($userid) {
-				if ($value==self::FIXUSERID_DELETE) {
-					$this->delete_old_data_records($recordid, $userid, $fullname);
-				}
-				if ($value==self::FIXUSERID_MERGE) {
-					$this->merge_old_data_records($recordid, $userid, $fullname);
-				}
 
-            	// tell importing user that we fixed the userid on this record
-				$this->report_fix('fixeduserid', $recordid, $userid, $fullname);
+                if (empty($this->data->maxentries)) {
+                    // if this database allows unlimited entries,
+                    // then we do not need to merge/delete old records.
+                } else {
+                    if ($value==self::FIXUSERID_DELETE) {
+                        $this->delete_old_data_records($recordid, $userid, $fullname);
+                    }
+                    if ($value==self::FIXUSERID_MERGE) {
+                        $this->merge_old_data_records($recordid, $userid, $fullname);
+                    }
+                }
+
+                // tell importing user that we fixed the userid on this record
+                $this->report_fix('fixeduserid', $recordid, $userid, $fullname);
 
             } else if (count(array_filter($record))==0) {
                 // empty record
@@ -1481,7 +1391,7 @@ class data_field_admin extends data_field_base {
     }
 
     /**
-     * Change record userid to match the given email address
+     * Change record userid to match the given username or email address
      *
      * @param string $name of field (e.g. "username" or "email")
      * @param string $value of field
@@ -1672,6 +1582,7 @@ class data_field_admin extends data_field_base {
 
 				// get most recent "old" record and its contents
 				$oldrecord = array_pop($oldrecords);
+
                 $params = array_merge($contentparams, array($oldrecord->id));
 				$oldcontents = $DB->get_records_sql_menu($contentsql, $params);
 
@@ -2361,5 +2272,451 @@ class data_field_admin extends data_field_base {
     static public function require_js($filepath, $truefalse) {
         global $PAGE;
         $PAGE->requires->js($filepath);
+    }
+
+    /**
+     * This hack allows us to set up in export values
+     * just before the export process begins.
+     *
+     * This action may be necessary when exporting field types,
+     * such as "admin", "report" and "template" fields,
+     * that calculate their content values dynamically.
+     */
+    static public function setup_export_values() {
+        global $data, $cm, $course, $context, $DB;
+
+        // check $exportvalues is not already set
+        if (isset(self::$exportvalues)) {
+            return true;
+        }
+        self::$exportvalues= array();
+
+        // Was any form data submitted?
+        if (! $formdata = data_submitted()) {
+            return false;
+        }
+
+        // Was the form's cancel button pressed?
+        if (! empty($formdata->cancel)) {
+            return false;
+        }
+
+        // Fetch the ids of fields selected by the user.
+        $fieldids = array();
+        foreach ($formdata as $name => $value) {
+            // field form elements are field_1 field_2 etc. 0 if not selected. 1 if selected.
+            if (strpos($name, 'field_') === 0 && !empty($value)) {
+                $fieldid = substr($name, 6);
+                $fieldids[] = intval($fieldid);
+            }
+        }
+        if (empty($fieldids)) {
+            // no fields were selected by the user - unexpected !!
+            return false;
+        }
+
+        // Set up SQL to extract selected fields.
+        list($select, $params) = $DB->get_in_or_equal($fieldids);
+        $select = "dataid = ? AND id $select";
+        array_unshift($params, $data->id);
+
+        // Fetch fields (we could use $GLOBALS['fieldrecords'])
+        if (! $fields = $DB->get_records_select('data_fields', $select, $params, 'id')) {
+            // no fields were found - shouldn't happen !!
+            return false;
+        }
+
+        // Convert fields to "data_field_xxx" objects.
+        foreach ($fields as $fieldid => $field) {
+            $fields[$fieldid] = data_get_field($field, $data, $cm);
+        }
+
+        // Fetch records.
+        if (! $records = $DB->get_records('data_records', array('dataid' => $data->id), 'id')) {
+            // no records were found - unexpected !!
+            return false;
+        }
+
+        // Store formatted content values in $exportvalues array.
+        // These will be accessed by the "get_export_value()" method (see below).
+        foreach ($records as $recordid => $record) {
+            self::$exportvalues[$recordid] = array();
+            foreach ($fields as $fieldid => $field) {
+                $content = $field->display_browse_field($recordid, 'singletemplate');
+                $content = html_to_text($content);
+                self::$exportvalues[$recordid][$fieldid] = $content;
+            }
+        }
+
+        // Prepend BOM marker to the name of the first field,
+        // so that it appears at the start of the CSV file,
+        // thus allowing Excel to decode the file easily.
+        if ($formdata->exporttype == 'csv') {
+            if (array_key_exists('fieldrecords', $GLOBALS)) {
+                $fieldid = key($fields); // "id" of first field
+                if (array_key_exists($fieldid, $GLOBALS['fieldrecords'])) {
+                    $bom = chr(239).chr(187).chr(191); // "\xEF\xBB\xBF"
+                    $name = $GLOBALS['fieldrecords'][$fieldid]->name;
+                    $GLOBALS['fieldrecords'][$fieldid]->name = $bom.$name;
+                }
+            }
+        }
+    }
+
+    /**
+     * get an export value from the self::$exportvalues array
+     */
+    static public function get_export_value($fieldid) {
+        if (self::$exportrecordid === 0) {
+            // set array index to first record
+            reset(self::$exportvalues);
+        } else if ($fieldid < self::$exportfieldid) {
+            // set array index to next record
+            next(self::$exportvalues);
+        }
+        $recordid = key(self::$exportvalues);
+        self::$exportfieldid = $fieldid;
+        self::$exportrecordid = $recordid;
+        if (array_key_exists($fieldid, self::$exportvalues[$recordid])) {
+            return self::$exportvalues[$recordid][$fieldid];
+        } else {
+            return ''; // unexpected !!
+        }
+    }
+
+    /**
+     * If current user has sufficient privileges (i.e. is site admin),
+     * fix import data file by adding users if possible and required.
+     *
+     * This will allow, fixuserid to assign the new records to the newly created users.
+     */
+    static public function fix_import_data_file() {
+        global $CFG, $DB, $PAGE, $USER;
+        $fixed = false;
+
+        if (! has_capability('moodle/user:create', $PAGE->context)) {
+            return false;
+        }
+
+        // get content of import file, this mimics
+        // "get_file_content()" in "lib/formslib.php"
+        $content = '';
+        $name = 'recordsfile';
+        if ($draftid = optional_param($name, 0, PARAM_INT)) {
+            $fs = get_file_storage();
+            $context = context_user::instance($USER->id);
+            if ($file = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id DESC', false)) {
+                $file = reset($file);
+                $content = $file->get_content();
+            }
+        } else if (array_key_exists($name, $_FILES)) {
+            $content = file_get_contents($_FILES[$name]['tmp_name']);
+        }
+
+        if (! $content) {
+            // input file is missing or empty
+            return false;
+        }
+
+        $iid = csv_import_reader::get_new_iid('datafield_admin');
+        $cir = new csv_import_reader($iid, 'datafield_admin');
+
+        $encoding  = optional_param('encoding', 'UTF-8', PARAM_TEXT);
+        $delimiter  = optional_param('fielddelimiter', ',', PARAM_TEXT);
+        $enclosure = optional_param('fieldenclosure', '', PARAM_TEXT);
+
+        // parse the $content as rows of CSV data
+        if ($cir->load_csv_content($content, $encoding, $delimiter)) {
+
+            // save a bit of internal memory
+            unset($content);
+
+            $columns = $cir->get_columns();
+
+            $col = new stdClass();
+            $names = array(
+                'fullname' => array(get_string('user'), 'User'),
+                'username' => array(get_string('username'), 'Username'),
+                'email' => array(get_string('email'), 'Email address'),
+                'fixuserid' => array('Fix User ID', 'Fix userid', 'fixuserid'),
+            );
+            foreach ($names as $name => $texts) {
+                $col->$name = false;
+                foreach ($texts as $text) {
+                    if ($col->$name === false) {
+                        $col->$name = array_search($text, $columns);
+                    }
+                }
+            }
+
+            $error = array();
+            $warning = array();
+            if ($col->username === false) {
+                $error[] = 'Column is missing from import file: Username';
+            }
+            if ($col->fixuserid === false) {
+                $error[] = 'Column is missing from import file: Fix user ID';
+            }
+            if ($col->fullname === false) {
+                $warning[] = 'Column is missing from import file: User';
+            }
+            if ($col->email === false) {
+                $warning[] = 'Column is missing from import file: Email';
+            }
+            
+            if (count($error)) {
+                echo html_writer::alist($error);
+            } else {
+                if (count($warning)) {
+                    echo html_writer::alist($warning);
+                }
+
+                if (empty($CFG->passwordsaltmain)) {
+                    $salt = '';
+                } else {
+                    $salt = $CFG->passwordsaltmain;
+                }
+
+                $cir->init();
+                while ($record = $cir->next()) {
+
+                    if (empty($record[$col->fixuserid])) {
+                        continue;
+                    }
+
+                    if (empty($record[$col->username])) {
+                        continue;
+                    }
+
+                    $username = $record[$col->username];
+                    if ($DB->record_exists('user', array('username' => $username))) {
+                        // username already exists - great! 
+                        continue;
+                    }
+
+                    if ($col->email === false || empty($record[$col->email])) {
+                        $email = $username.'@localhost.invalid';
+                    } else {
+                        $email = $record[$col->email];
+                    }
+
+                    if ($col->fullname === false || empty($record[$col->fullname])) {
+                        $fullname = $username;
+                    } else {
+                        $fullname = $record[$col->fullname];
+                    }
+
+                    if (strpos($fullname, ' ')) {
+                        list($firstname, $lastname) = explode(' ', $fullname, 2);
+                    } else {
+                        $firstname = '';
+                        $lastname = $fullname;
+                    }
+
+                    // TODO: force password change on next login
+                    $password = random_string(8);
+
+                    $user = (object)array(
+                        'username'  => $username,
+                        'auth'      => 'manual',
+                        'confirmed' => '1',
+                        'policyagreed' => '1',
+                        'deleted'   => '0',
+                        'suspended' => '0',
+                        'mnethostid' => $CFG->mnet_localhost_id,
+                        'password'  => md5($password.$salt),
+                        'rawpassword' => $password,
+                        'idnumber'  => '',
+                        'firstname' => $firstname,
+                        'lastname'  => $lastname,
+                        'email'     => $username.'@localhost.invalid',
+                        'emailstop' => '1',
+                        'icq'       => '',
+                        'skype'     => '',
+                        'yahoo'     => '',
+                        'aim'       => '',
+                        'msn'       => '',
+                        'phone1'    => '',
+                        'phone2'    => '',
+                        'institution' => '',
+                        'department'  => '',
+                        'address'   => '',
+                        'city'      => '',
+                        'country'   => '',
+                        'lang'      => $USER->lang,
+                        'theme'     => '',
+                        'timezone'  => $USER->timezone,
+                        'firstaccess'   => '0',
+                        'lastaccess'    => '0',
+                        'lastlogin'     => '0',
+                        'currentlogin'  => '0',
+                        'lastip'        => '',
+                        'secret'        => '',
+                        'picture'       => '0',
+                        'url'           => '',
+                        'description'   => 'Hi',
+                        'descriptionformat' => 0,
+                        'mailformat'    => '1',
+                        'maildigest'    => '0',
+                        'maildisplay'   => '2',
+                        'autosubscribe' => '1',
+                        'trackforums'   => '0',
+                        'timecreated'   => '0',
+                        'timemodified'  => '0',
+                        'trustbitmask'  => '0',
+                        'imagealt'      => '',
+                        'lastnamephonetic'  => '',
+                        'firstnamephonetic' => '',
+                        'middlename'    => '',
+                        'alternatename' => '',
+                        'calendartype'  => $USER->calendartype
+                    );
+
+                    if ($user->id = $DB->insert_record('user', $user)) {
+                        $fixed = true;
+                        echo "New user was added; username=$username (id=$user->id)<br>";
+                    }
+                } // end while
+            } // end if
+        } // end if
+
+        $cir->close();
+        $cir->cleanup(true);
+
+        return $fixed;
+    }
+
+    /**
+     * fix import preset file by encoding any newlines in param1-5 fields
+     */
+    static public function fix_import_preset_file() {
+        global $CFG;
+        $fixed = false;
+
+        $filepath = '';
+        if (optional_param('fixedimportpreset', 0, PARAM_INT) == 0) {
+            if (optional_param('action', '', PARAM_ALPHANUM) == 'finishimport') {
+                if (! $filepath = optional_param('fullname', '', PARAM_PATH)) {
+                    if ($filepath = optional_param('directory', '', PARAM_FILE)) {
+                        $filepath = $CFG->tempdir."/forms/$filepath";
+                        $filepath = rtrim($filepath, '/').'/preset.xml';
+                    }
+                }
+            }
+        }
+        if ($filepath && file_exists($filepath)) {
+            $contents = file_get_contents($filepath);
+
+            // Locate the param values for all fields.
+            // We are particularly interested in "param1" values
+            // in "admin", "checkbox", "menu" and "radio" fields.
+            $search = '|<param(\d+)>(.*?)</param\1>|us';
+            if (preg_match_all($search, $contents, $matches, PREG_OFFSET_CAPTURE)) {
+
+                // cache the search and replace strings
+                // $search includes newlines for Windows, Linux/Mac(new) and Mac(old)
+                // $replace can be either "&amp;#10;" or "<![CDATA[&#10;]]>"
+                $search = array("\r\n", "\n", "\r");
+                $replace = '<![CDATA[&#10;]]>';
+
+                // loop through each of the "param" fields
+                // replacing all newlines with an encoded html entity
+                for ($i = count($matches[0]); $i>0; $i--) {
+                    $match = $matches[2][$i-1][0];
+                    $start = $matches[2][$i-1][1];
+                    $length = strlen($match);
+                    $count = 0;
+                    $match = str_replace($search, $replace, $match, $count);
+                    if ($count) {
+                        $contents = substr_replace($contents, $match, $start, $length);
+                        $fixed = true;
+                    }
+                }
+            }
+            if ($fixed) {
+                file_put_contents($filepath, $contents);
+            }
+        }
+        return $fixed;
+    }
+
+    static public function reload_with_message($params) {
+        $url = new moodle_url($GLOBALS['SCRIPT']);
+        $url->params($_POST);
+
+        // The name of first param is also used as the string name.
+        $stringname = key($params);
+
+        foreach ($params as $name => $value) {
+            $url->param($name, $value);
+        }
+
+        global $OUTPUT;
+        if ($stringname) {
+            $msg = get_string($stringname, 'datafield_admin');
+            if (defined('\core\output\notification::NOTIFY_REDIRECT')) {
+                // Moodle >= 29
+                $type = \core\output\notification::NOTIFY_REDIRECT;
+            } else {
+                // Moodle <= 28
+                $type = 'notifyproblem';
+            }
+            echo $OUTPUT->notification($msg, $type);
+        }
+        echo $OUTPUT->render(new single_button($url, get_string('continue')));
+        echo $OUTPUT->footer();
+        die;
+    }
+}
+
+/**
+ * The following hack is required to calculate export values
+ * for field types such as "admin", "report" and "template" fields,
+ * that calculate their content values dynamically.
+ *
+ */
+if ($GLOBALS['SCRIPT'] == '/mod/data/export.php') {
+    data_field_admin::setup_export_values();
+}
+
+/**
+ * The following hack is required to keep "fixuserid" working
+ * during import into Moodle >= 3.8.
+ *
+ * It gives the "update_content_import()" method access to the
+ * variables used when importing records from a CSV file.
+ *
+ * Note that $rawfields, $fields and $fieldnames already hold data,
+ * so we assign them by reference in order to maintain their values.
+ *
+ * $recordsadded and $record have not been used yet,
+ * so they can be initialised as global variables
+ */
+if ($GLOBALS['SCRIPT'] == '/mod/data/import.php') {
+    if (data_field_admin::fix_import_data_file()) {
+        $params = array('fixedimportfile' => 1);
+        data_field_admin::reload_with_message($params);
+        // NOTE: script stops here
+    }
+    if (function_exists('data_import_csv')) {
+        $GLOBALS['fieldnames'] =& $fieldnames;
+        $GLOBALS['rawfields'] =& $rawfields;
+        $GLOBALS['fields'] =& $fields;
+        global $recordsadded, $record;
+    }
+}
+
+/**
+ * The following hack is required to fix newlines in "menu" and "checkbox" fields
+ * during the import of a preset.xml file.
+ *
+ * Without encoding, the naked newlines are squashed by the xmlize function,
+ * (see "/lib/xmlize.php") and all options become merged into a single string.
+ */
+if ($GLOBALS['SCRIPT'] == '/mod/data/preset.php') {
+    if (data_field_admin::fix_import_preset_file()) {
+        $params = array('fixedpresetfile' => 1);
+        data_field_admin::reload_with_message($params);
+        // NOTE: script stops here
     }
 }
