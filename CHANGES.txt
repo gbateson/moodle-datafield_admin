@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-06-24 (03)
+ - new static method to initializenew user object
+
 2021-05-14 (02)
  - reimplement anonymous functions as static methods when importing, exporting and data and presets
 

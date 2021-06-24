@@ -2477,6 +2477,8 @@ class data_field_admin extends data_field_base {
                     $salt = $CFG->passwordsaltmain;
                 }
 
+                $user = self::default_user_object();
+
                 $cir->init();
                 while ($record = $cir->next()) {
 
@@ -2516,61 +2518,14 @@ class data_field_admin extends data_field_base {
                     // TODO: force password change on next login
                     $password = random_string(8);
 
-                    $user = (object)array(
-                        'username'  => $username,
-                        'auth'      => 'manual',
-                        'confirmed' => '1',
-                        'policyagreed' => '1',
-                        'deleted'   => '0',
-                        'suspended' => '0',
-                        'mnethostid' => $CFG->mnet_localhost_id,
-                        'password'  => md5($password.$salt),
-                        'rawpassword' => $password,
-                        'idnumber'  => '',
-                        'firstname' => $firstname,
-                        'lastname'  => $lastname,
-                        'email'     => $username.'@localhost.invalid',
-                        'emailstop' => '1',
-                        'icq'       => '',
-                        'skype'     => '',
-                        'yahoo'     => '',
-                        'aim'       => '',
-                        'msn'       => '',
-                        'phone1'    => '',
-                        'phone2'    => '',
-                        'institution' => '',
-                        'department'  => '',
-                        'address'   => '',
-                        'city'      => '',
-                        'country'   => '',
-                        'lang'      => $USER->lang,
-                        'theme'     => '',
-                        'timezone'  => $USER->timezone,
-                        'firstaccess'   => '0',
-                        'lastaccess'    => '0',
-                        'lastlogin'     => '0',
-                        'currentlogin'  => '0',
-                        'lastip'        => '',
-                        'secret'        => '',
-                        'picture'       => '0',
-                        'url'           => '',
-                        'description'   => 'Hi',
-                        'descriptionformat' => 0,
-                        'mailformat'    => '1',
-                        'maildigest'    => '0',
-                        'maildisplay'   => '2',
-                        'autosubscribe' => '1',
-                        'trackforums'   => '0',
-                        'timecreated'   => '0',
-                        'timemodified'  => '0',
-                        'trustbitmask'  => '0',
-                        'imagealt'      => '',
-                        'lastnamephonetic'  => '',
-                        'firstnamephonetic' => '',
-                        'middlename'    => '',
-                        'alternatename' => '',
-                        'calendartype'  => $USER->calendartype
-                    );
+                    // set fields for this user
+                    unset($user->id);
+                    $user->username = $username;
+                    $user->password = md5($password.$salt);
+                    $user->rawpassword = $password;
+                    $user->firstname = $firstname;
+                    $user->lastname = $lastname;
+                    $user->email = $username.'@localhost.invalid';
 
                     if ($user->id = $DB->insert_record('user', $user)) {
                         $fixed = true;
@@ -2584,6 +2539,68 @@ class data_field_admin extends data_field_base {
         $cir->cleanup(true);
 
         return $fixed;
+    }
+
+    /**
+     * default_user_object
+     */
+    static public function default_user_object() {
+        global $CFG, $USER;
+        return (object)array(
+            'username'  => '',
+            'auth'      => 'manual',
+            'confirmed' => '1',
+            'policyagreed' => '1',
+            'deleted'   => '0',
+            'suspended' => '0',
+            'mnethostid' => $CFG->mnet_localhost_id,
+            'password'  => '',
+            'rawpassword' => '',
+            'idnumber'  => '',
+            'firstname' => '',
+            'lastname'  => '',
+            'email'     => '',
+            'emailstop' => '1',
+            'icq'       => '',
+            'skype'     => '',
+            'yahoo'     => '',
+            'aim'       => '',
+            'msn'       => '',
+            'phone1'    => '',
+            'phone2'    => '',
+            'institution' => '',
+            'department'  => '',
+            'address'   => '',
+            'city'      => '',
+            'country'   => '',
+            'lang'      => $USER->lang,
+            'theme'     => '',
+            'timezone'  => $USER->timezone,
+            'firstaccess'   => '0',
+            'lastaccess'    => '0',
+            'lastlogin'     => '0',
+            'currentlogin'  => '0',
+            'lastip'        => '',
+            'secret'        => '',
+            'picture'       => '0',
+            'url'           => '',
+            'description'   => 'Hi',
+            'descriptionformat' => 0,
+            'mailformat'    => '1',
+            'maildigest'    => '0',
+            'maildisplay'   => '2',
+            'autosubscribe' => '1',
+            'trackforums'   => '0',
+            'timecreated'   => '0',
+            'timemodified'  => '0',
+            'trustbitmask'  => '0',
+            'imagealt'      => '',
+            'lastnamephonetic'  => '',
+            'firstnamephonetic' => '',
+            'middlename'    => '',
+            'alternatename' => '',
+            'calendartype'  => $USER->calendartype
+        );
     }
 
     /**
