@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-08-18 (04)
+ - add trailing space after ":" on dt.label-separators; fix missing variable $total in tools/generatetemplates.php
+
 2021-06-24 (03)
  - new static method to initializenew user object
 

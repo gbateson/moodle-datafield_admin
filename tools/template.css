@@ -35,9 +35,12 @@ label[for^=field] {
 /**
  * Append label separators that are appropriate
  * for the current language.
+ *
+ * NOTE: Non-breaking space cannot be added as &nbsp;
+ *       so we add it as a a unicode character "\a0"
  */
 .lang-en .label-separators dt:not(:empty):after {
-    content: ":";
+    content: ":\a0";
 }
 .lang-ja .label-separators dt:not(:empty):after {
     content: "：";

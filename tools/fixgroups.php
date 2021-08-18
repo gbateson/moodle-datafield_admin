@@ -152,7 +152,7 @@ if (optional_param('autoassign', 0, PARAM_INT)) {
     if ($totalrecords == 0) {
         $msg[] = get_string('updatedgroupidsnone', $plugin);
     }  else if ($countgroups > 1) {
-        $msg[] = get_string('updatedgroupidstotal', $plugin, $total);
+        $msg[] = get_string('updatedgroupidstotal', $plugin, $totalrecords);
     }
     if (count($msg) == 1) {
         $msg = reset($msg);

@@ -4,7 +4,7 @@
 }
 
 .lang-en .label-separators dt:not:empty:after {
-    content: ":";
+    content: ":\a0";
 }
 .lang-ja .label-separators dt:not:empty:after {
     content: "：";
