@@ -202,9 +202,9 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $actions = '';
         $types = array('admin',  'checkbox',
                        'date',   'file',
-                       'menu',   'url',
+                       'menu',   'picture',
                        'number', 'radiobutton',
-                       'text',   'textarea');
+                       'text',   'textarea', 'url');
 
         switch ($templatename) {
             case 'addtemplate':

@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2021-11-30 (05)
+ - include picture fields when generating templates
+
 2021-08-18 (04)
  - add trailing space after ":" on dt.label-separators; fix missing variable $total in tools/generatetemplates.php
 
