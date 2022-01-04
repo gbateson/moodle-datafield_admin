@@ -167,7 +167,13 @@ $params = array_merge(array($data->id), $params, array('admin'), $params, array(
 
 $fields = $DB->get_records_select('data_fields', $select, $params, 'id');
 if (empty($fields)) {
-    echo html_writer::tag('p', get_string('nomodifyfields', $plugin), array('class' => 'alert alert-primary'));
+
+    echo html_writer::tag('p', get_string('nomodifyfields', $plugin), array('class' => 'alert alert-primary my-0'));
+
+    echo html_writer::start_tag('div', array('class' => 'buttons my-0'));
+    echo $OUTPUT->single_button($url, get_string('cancel'), 'post', array('name' => 'cancel', 'value' => '1'));
+    echo html_writer::end_tag('div');
+
 } else {
 
     // Cache the formatted "notused" <span>

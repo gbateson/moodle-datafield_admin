@@ -422,12 +422,19 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         echo html_writer::end_tag('fieldset').$newline;
     }
 
-    // Add "cancel" button to return to the "Add new admin field" page.
-    $params = array('d' => $data->id,
-                    'mode' => 'new',
-                    'newtype' => 'admin');
-    $url = new moodle_url('/mod/data/field.php', $params);
-    echo $OUTPUT->single_button($url, get_string('cancel'), 'post');
+} else {
+
+    echo html_writer::tag('p', get_string('nofieldindatabase', 'mod_data'), array('class' => 'alert alert-primary my-0'));
+
 }
+
+// Add "cancel" button to return to the "Add new admin field" page.
+echo html_writer::start_tag('div', array('class' => 'buttons my-0'));
+$params = array('d' => $data->id,
+                'mode' => 'new',
+                'newtype' => 'admin');
+$url = new moodle_url('/mod/data/field.php', $params);
+echo $OUTPUT->single_button($url, get_string('cancel'), 'post');
+echo html_writer::end_tag('div');
 
 echo $OUTPUT->footer();

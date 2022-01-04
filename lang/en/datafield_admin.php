@@ -120,6 +120,7 @@ $string['newgroup'] = 'New group';
 $string['nomodifyfields'] = 'There is nothing to show on this page, because there are no menu, checkbox or radiobutton fields in this database.';
 $string['norecords'] = 'No records found';
 $string['norecordsforgroup'] = 'No records found for group: {$a}';
+$string['norecordswithoutgroup'] = 'No records found without a group';
 $string['notused'] = 'Not used';
 $string['recorddetails'] = 'Record details';
 $string['recordid'] = 'Record ID';

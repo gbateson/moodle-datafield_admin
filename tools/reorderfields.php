@@ -249,6 +249,15 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                                    'value' => get_string('cancel')));
         echo html_writer::end_tag('form');
     }
+
+} else {
+
+    echo html_writer::tag('p', get_string('nofieldindatabase', 'mod_data'), array('class' => 'alert alert-primary my-0'));
+
+    echo html_writer::start_tag('div', array('class' => 'buttons my-0'));
+    echo $OUTPUT->single_button($url, get_string('cancel'), 'post', array('name' => 'cancel', 'value' => '1'));
+    echo html_writer::end_tag('div');
+
 }
 
 echo $OUTPUT->footer();

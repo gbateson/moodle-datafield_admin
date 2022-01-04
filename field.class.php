@@ -2059,11 +2059,11 @@ class data_field_admin extends data_field_base {
      */
     static public function get_formats() {
         return array(
-            FORMAT_MOODLE   => get_string('formattext',     'moodle'), // 0
-            FORMAT_HTML     => get_string('formathtml',     'moodle'), // 1
-            FORMAT_PLAIN    => get_string('formatplain',    'moodle'), // 2
-            // FORMAT_WIKI  => get_string('formatwiki',     'moodle'), // 3 deprecated
-            FORMAT_MARKDOWN => get_string('formatmarkdown', 'moodle')  // 4
+            FORMAT_MOODLE   => get_string('formattext'), // 0
+            FORMAT_HTML     => get_string('formathtml'), // 1
+            FORMAT_PLAIN    => get_string('formatplain'), // 2
+            // FORMAT_WIKI  => get_string('formatwiki'), // 3 deprecated
+            FORMAT_MARKDOWN => get_string('formatmarkdown')  // 4
         );
     }
 

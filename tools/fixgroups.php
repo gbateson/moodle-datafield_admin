@@ -34,10 +34,10 @@ require_once($CFG->dirroot.'/mod/data/field/admin/field.class.php');
 $id = required_param('id', PARAM_INT);
 
 // "groupid" is used to filter records
-$groupid = optional_param('groupid', 0, PARAM_INT);
+$groupid = optional_param('group', 0, PARAM_INT);
 
 // "newgroupid" is used to modify groupid for selected $recordids
-$newgroupid = optional_param('newgroupid', $groupid, PARAM_INT);
+$newgroupid = optional_param('newgroupid', 0, PARAM_INT);
 $recordids = optional_param_array('recordids', array(), PARAM_INT);
 
 $url = new moodle_url($SCRIPT, array('id' => $id));
@@ -121,17 +121,17 @@ if (optional_param('autoassign', 0, PARAM_INT)) {
 
     // set groupid for user who we know about
     $groups = groups_get_all_groups($course->id);
-    foreach ($groups as $groupid => $group) {
+    foreach ($groups as $gid => $group) {
 
         $countrecords = 0; // The number of records updated for this group.
 
         // get list of userids for members of this group
-        if ($members = $DB->get_records_menu('groups_members', array('groupid' => $groupid), 'id', 'id,userid')) {
+        if ($members = $DB->get_records_menu('groups_members', array('groupid' => $gid), 'id', 'id,userid')) {
             list($select, $params) = $DB->get_in_or_equal($members);
             $select = "dataid = ? AND userid $select";
             $params = array_merge(array($data->id), $params);
             if ($countrecords = $DB->count_records_select('data_records', $select, $params)) {
-                $DB->set_field_select('data_records', 'groupid', $groupid, $select, $params);
+                $DB->set_field_select('data_records', 'groupid', $gid, $select, $params);
                 $countgroups ++;
             } else {
                 $countrecords = 0;
@@ -143,7 +143,7 @@ if (optional_param('autoassign', 0, PARAM_INT)) {
 
         $a = (object)array(
             'groupname' => $group->name,
-            'groupid' => $groupid,
+            'groupid' => $gid,
             'count' => $countrecords
         );
         $msg[] = get_string('updatedgroupidscount', $plugin, $a);
@@ -195,8 +195,15 @@ if ($newgroupid && count($recordids) && confirm_sesskey()) {
     } else {
         $countrecords = 0;
     }
+    if (array_key_exists($newgroupid, $groups)) {
+        $groupname = $groups[$newgroupid]->name;
+    } else if ($newgroupid == -1) {
+        $groupname = $str->nogroup;
+    } else {
+        $groupname = $newgroupid; // shouldn't hapen !!
+    }
     $a = (object)array(
-        'groupname' => $groups[$newgroupid]->name,
+        'groupname' => $groupname,
         'groupid' => $newgroupid,
         'count' => $countrecords
     );
@@ -204,11 +211,12 @@ if ($newgroupid && count($recordids) && confirm_sesskey()) {
     echo $OUTPUT->notification($msg, 'notifysuccess');
 }
 
-// get/set the display group id, if any
-if (empty($course->groupmode)) {
-    $groupid = optional_param('group', 0, PARAM_INT);
-} else {
-    $groupid = groups_get_course_group($course, true, $groups);
+// Get/set the display group id, if any.
+if ($course->groupmode) {
+    // Note that we don't set $groupid here, because
+    // "groups_get_course_group()" ignores the value of "-1"
+    // which we are using to represent "No groups"
+    groups_get_course_group($course, true, $groups);
 }
 
 $sortfield = optional_param('sortfield', 'recordid', PARAM_ALPHANUM);
@@ -474,15 +482,17 @@ echo html_writer::end_tag('dl');
 
 echo html_writer::end_tag('div');
 
-echo html_writer::start_tag('form', array('action' => $url,
-                                          'method' => 'post',
-                                          'class' => $tool.' container ml-0'));
-echo html_writer::empty_tag('input', array('type' => 'hidden',
-                                           'name' => 'sesskey',
-                                           'value' => sesskey()));
-
 // Responsive list suitable for Boost in Moodle >= 3.6
 if ($records) {
+
+    // Start form.
+    echo html_writer::start_tag('form', array('action' => $url,
+                                              'method' => 'post',
+                                              'class' => $tool.' container ml-0'));
+    echo html_writer::empty_tag('input', array('type' => 'hidden',
+                                               'name' => 'sesskey',
+                                               'value' => sesskey()));
+
 
     $dl_class = 'row my-0 py-1 px-sm-3';
     $dt_class = 'col-3 d-sm-none my-0 py-1'; // only visible on very small screens
@@ -595,31 +605,47 @@ if ($records) {
         echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
     }
 
+    // Only show the "New group" menu if we found any records.
+    echo html_writer::start_tag('p', array('class' => 'mr-2 my-2 px-2'));
+    echo html_writer::tag('b', $newgrouplabel).' ';
+    echo html_writer::tag('span', $newgroupmenu);
+    echo html_writer::end_tag('p');
+
+    // Show buttons.
+    echo html_writer::start_tag('div', array('class' => 'buttons my-2'));
+    echo html_writer::empty_tag('input', array('type' => 'submit',
+                                               'name' => 'savechanges',
+                                               'class' => 'btn btn-primary',
+                                               'value' => get_string('savechanges')));
+    echo ' ';
+    echo html_writer::empty_tag('input', array('type' => 'submit',
+                                               'name' => 'cancel',
+                                               'class' => 'btn btn-secondary',
+                                               'value' => get_string('cancel')));
+    echo html_writer::end_tag('div');
+
+    // Finish form.
+    echo html_writer::end_tag('form');
+
 } else {
 
-    if ($groupid) {
-        echo html_writer::tag('p', get_string('norecordsforgroup', $plugin, groups_get_group_name($groupid)));
-    } else {
-        echo html_writer::tag('p', get_string('norecords', $plugin));
+    // No records found, so show an appropriate warning.
+    switch ($groupid) {
+        case -1:
+            $warning = get_string('norecordswithoutgroup', $plugin);
+            break;
+        case 0:
+            $warning = get_string('norecords', $plugin);
+            break;
+        default:
+            $warning = get_string('norecordsforgroup', $plugin, groups_get_group_name($groupid));
     }
+    echo html_writer::tag('p', $warning, array('class' => 'alert alert-primary my-0'));
+
+    echo html_writer::start_tag('div', array('class' => 'buttons my-0'));
+    echo $OUTPUT->single_button($url, get_string('cancel'), 'post', array('name' => 'cancel', 'value' => '1'));
+    echo html_writer::end_tag('div');
+
 }
-
-echo html_writer::start_tag('p', array('class' => 'mr-2 my-2 px-2'));
-echo html_writer::tag('b', $newgrouplabel).' ';
-echo html_writer::tag('span', $newgroupmenu);
-echo html_writer::end_tag('p');
-
-echo html_writer::start_tag('div', array('class' => 'buttons my-2'));
-echo html_writer::empty_tag('input', array('type' => 'submit',
-                                           'name' => 'savechanges',
-                                           'class' => 'btn btn-primary',
-                                           'value' => get_string('savechanges')));
-echo ' ';
-echo html_writer::empty_tag('input', array('type' => 'submit',
-                                           'name' => 'cancel',
-                                           'class' => 'btn btn-secondary',
-                                           'value' => get_string('cancel')));
-echo html_writer::end_tag('div');
-echo html_writer::end_tag('form');
 
 echo $OUTPUT->footer();
