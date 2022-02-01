@@ -2658,7 +2658,9 @@ class data_field_admin extends data_field_base {
     }
 
     static public function reload_with_message($params) {
-        $url = new moodle_url($GLOBALS['SCRIPT']);
+        global $OUTPUT, $SCRIPT;
+
+        $url = new moodle_url($SCRIPT);
         $url->params($_POST);
 
         // The name of first param is also used as the string name.
@@ -2668,7 +2670,6 @@ class data_field_admin extends data_field_base {
             $url->param($name, $value);
         }
 
-        global $OUTPUT;
         if ($stringname) {
             $msg = get_string($stringname, 'datafield_admin');
             if (defined('\core\output\notification::NOTIFY_REDIRECT')) {

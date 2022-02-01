@@ -34,7 +34,7 @@ require_once($CFG->dirroot.'/mod/data/field/admin/field.class.php');
 $id = required_param('id', PARAM_INT);
 
 // "groupid" is used to filter records
-$groupid = optional_param('group', 0, PARAM_INT);
+$groupid = optional_param('group', '', PARAM_INT);
 
 // "newgroupid" is used to modify groupid for selected $recordids
 $newgroupid = optional_param('newgroupid', 0, PARAM_INT);
@@ -217,6 +217,14 @@ if ($course->groupmode) {
     // "groups_get_course_group()" ignores the value of "-1"
     // which we are using to represent "No groups"
     groups_get_course_group($course, true, $groups);
+
+    // First time only, we set the groupid to be the same as that of the course.
+    if ($groupid === '') {
+        $groupid = ($aag ? 'aag' : $groupmode);
+        $groupid = $SESSION->activegroup[$course->id][$groupid][$course->defaultgroupingid];
+    }
+} else {
+    $groupid = 0;
 }
 
 $sortfield = optional_param('sortfield', 'recordid', PARAM_ALPHANUM);
@@ -245,7 +253,7 @@ $url->params(array('id' => $cm->id,
                    'autoassign' => '1'));
 
 $button = get_string('autoassigndatagroups', $plugin);
-$button = html_writer::tag('button', $button, array('type' => 'button', 'class' => 'btn btn-primary ml-3'));
+$button = html_writer::tag('button', $button, array('type' => 'button', 'class' => 'btn btn-secondary bg-light rounded ml-3'));
 $button = $OUTPUT->action_link($url, $button);
 
 // get all records in the current group
@@ -458,14 +466,14 @@ $dd_class = "col-sm-9 col-lg-10 my-0 py-0";
 
 $params = array('class' => 'rounded bg-secondary text-dark font-weight-bold mt-3 py-2 px-3');
 echo html_writer::tag('h3', get_string($tool, $plugin).' '.$button, $params);
-echo html_writer::start_tag('div', array('class' => 'container ml-0'));
+echo html_writer::start_tag('div', array('class' => 'container stripes ml-0'));
 
 echo html_writer::start_tag('dl', array('class' => $dl_class));
 echo html_writer::tag('dt', $grouplabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $groupmenu, array('class' => $dd_class));
 echo html_writer::end_tag('dl');
 
-echo html_writer::start_tag('dl', array('class' => $dl_class.' bg-light'));
+echo html_writer::start_tag('dl', array('class' => $dl_class));
 echo html_writer::tag('dt', $sortlabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $sortfieldmenu.' '.$sortdirectionmenu, array('class' => $dd_class));
 echo html_writer::end_tag('dl');
@@ -475,7 +483,7 @@ echo html_writer::tag('dt', $perpagelabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $perpagemenu, array('class' => $dd_class));
 echo html_writer::end_tag('dl');
 
-echo html_writer::start_tag('dl', array('class' => $dl_class.' bg-light'));
+echo html_writer::start_tag('dl', array('class' => $dl_class));
 echo html_writer::tag('dt', $pagenumberlabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $pagenumbermenu, array('class' => $dd_class));
 echo html_writer::end_tag('dl');
@@ -488,7 +496,7 @@ if ($records) {
     // Start form.
     echo html_writer::start_tag('form', array('action' => $url,
                                               'method' => 'post',
-                                              'class' => $tool.' container ml-0'));
+                                              'class' => $tool.' container stripes ml-0'));
     echo html_writer::empty_tag('input', array('type' => 'hidden',
                                                'name' => 'sesskey',
                                                'value' => sesskey()));
@@ -507,7 +515,7 @@ if ($records) {
     echo html_writer::tag('dd', $str->groupid, array('class' => $dd_class_num));
     echo html_writer::tag('dd', $str->groupname, array('class' => $dd_class_name));
     echo html_writer::tag('dd', $str->userid, array('class' => $dd_class_num));
-    echo html_writer::tag('dd', $str->username, array('class' => $dd_class_name));
+    echo html_writer::tag('dd', $str->fullname, array('class' => $dd_class_name));
     echo html_writer::tag('dd', $str->recordid, array('class' => $dd_class_num));
     echo html_writer::tag('dd', $str->recorddetails, array('class' => $dd_class_text));
     echo html_writer::end_tag('dl');
@@ -518,7 +526,7 @@ if ($records) {
     list($fieldwhere, $fieldparams) = $DB->get_in_or_equal($fieldparams);
 
     // cache lists of user names/lnks
-    $usernames = array();
+    $fullnames = array();
     $userlinks = array();
 
     // cache lists of user names/lnks
@@ -528,16 +536,16 @@ if ($records) {
     foreach ($records as $rid => $record) {
 
         $uid = $record->userid;
-        if (empty($usernames[$uid])) {
+        if (empty($fullnames[$uid])) {
             if ($user = $DB->get_record('user', array('id' => $uid))) {
-                $usernames[$uid] = fullname($user);
+                $fullnames[$uid] = fullname($user);
                 $userlinks[$uid] = new moodle_url('/user/view.php', array('id' => $uid, 'course' => $course->id));
                 $userlinks[$uid] = html_writer::link($userlinks[$uid], $uid, array('target' => $plugin));
             } else if ($uid) {
-                $usernames[$uid] = get_string('unknownuser');
+                $fullnames[$uid] = get_string('unknownuser');
                 $userlinks[$uid] = $uid;
             } else {
-                $usernames[$uid] = get_string('nouser');
+                $fullnames[$uid] = get_string('nouser');
                 $userlinks[$uid] = '';
             }
         }
@@ -592,8 +600,8 @@ if ($records) {
         echo html_writer::tag('dt', $str->userid, array('class' => $dt_class));
         echo html_writer::tag('dd', $userlinks[$uid], array('class' => $dd_class_num));
 
-        echo html_writer::tag('dt', $str->username, array('class' => $dt_class));
-        echo html_writer::tag('dd', $usernames[$uid], array('class' => $dd_class_name));
+        echo html_writer::tag('dt', $str->fullname, array('class' => $dt_class));
+        echo html_writer::tag('dd', $fullnames[$uid], array('class' => $dd_class_name));
 
         echo html_writer::tag('dt', $str->recordid, array('class' => $dt_class));
         echo html_writer::tag('dd', $recordlink, array('class' => $dd_class_num));
@@ -602,7 +610,7 @@ if ($records) {
         echo html_writer::tag('dd', $recorddetails, array('class' => $dd_class_text));
 
         echo html_writer::end_tag('dl');
-        echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
+        //echo html_writer::empty_tag('hr', array('class' => 'my-0 border'));
     }
 
     // Only show the "New group" menu if we found any records.

@@ -177,9 +177,12 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     $highlang = 'ja';
 
     $nameclass = "col-sm-4 col-lg-3 col-xl-3 my-0 py-1";
-    $typeclass = "col-sm-8 col-lg-5 col-xl-4 my-0 py-1";
-    $descclass = "col-sm-12 col-lg-4 col-xl-5 my-0 py-1";
+    $typeclass = "col-sm-8 col-lg-5 col-xl-4 my-0 py-1 ml-2 ml-sm-0";
+    $descclass = "col-sm-12 col-lg-4 col-xl-5 my-0 py-1 ml-2 ml-sm-0";
 
+    $selectnothing = '';
+    $selectclass= array('class' => 'mr-2');
+    
     $multilanglowhigh = '/^([ -~].*?) ([^ -~]+)$/u';
     $multilanghighlow = '/^([^ -~].*?) ([ -~]+)$/u';
 
@@ -207,8 +210,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
             $adminvalue = 0;
         }
         $typemenu = '';
-        $typemenu .= html_writer::select($adminoptions, 'admin['.$field->id.']', $adminvalue, null);
-        $typemenu .= html_writer::select($typeoptions, 'type['.$field->id.']', $fieldtype, null);
+        $typemenu .= html_writer::select($adminoptions, 'admin['.$field->id.']', $adminvalue, $selectnothing, $selectclass);
+        $typemenu .= html_writer::select($typeoptions, 'type['.$field->id.']', $fieldtype, $selectnothing, $selectclass);
         $typemenu = html_writer::tag('small', $typemenu);
 
 

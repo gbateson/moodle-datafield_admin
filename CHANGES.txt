@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2022-02-01 (07)
+ - optimize and standardize bootstrap classes in forms in the admin tools
+
 2022-01-04 (06)
  - improve handling of errors and databases in tools to fix-groups, generate-templates, modify-values and reorder-fields
 

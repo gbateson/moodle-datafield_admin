@@ -246,7 +246,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
         $dl = '';
 
         // start FIELDSET
-        $params = array('class' => "template $templatename border border-dark rounded mt-4 px-4 bg-light");
+        $params = array('class' => "template $templatename border border-dark rounded mt-4 px-3 bg-light");
         echo $newline.html_writer::start_tag('fieldset', $params).$newline;
 
         // LEGEND (acts as the title for the FIELDSET)

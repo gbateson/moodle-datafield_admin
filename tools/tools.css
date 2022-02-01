@@ -1,11 +1,39 @@
+/**
+ * override margin-top: 10px;
+ */
+.path-mod-data form {
+    margin-top: 0px;
+}
+
 .lang-en .multilang:not([lang=en]),
 .lang-ja .multilang:not([lang=ja]) {
     display:none;
 }
 
-.lang-en .label-separators dt:not:empty:after {
+.lang-en .label-separators dt:not(:empty):after {
     content: ":\a0";
 }
-.lang-ja .label-separators dt:not:empty:after {
+.lang-ja .label-separators dt:not(:empty):after {
     content: "：";
+}
+
+.row:not(.h3, .h5):hover {
+    /* must be "important" in order to override :nth-of-type() */
+    background-color: #ffe6ea !important;
+}
+
+.stripes .row:nth-of-type(odd) {
+    background-color: #f0f0f0;
+}
+
+.stripes .row:nth-of-type(even) {
+    background-color: #f8f8f8;
+}
+
+.stripes .row {
+    border-top: 1px solid #999;
+}
+
+.stripes .row:last-of-type {
+    border-bottom: 1px solid #999;
 }

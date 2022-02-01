@@ -17,32 +17,3 @@ legend .icons {
 .specialfields {
     display: none;
 }
-
-.lang-en .label-separators dt:not(:empty):after {
-    content: ":\a0";
-}
-
-.lang-ja .label-separators dt:not(:empty):after {
-    content: "：";
-}
-
-.defaulttemplate .row:not(.h3):hover {
-    /* must be "important" in order to override :nth-of-type() */
-    background-color: #ffe6ea !important;
-}
-
-.defaulttemplate.stripes .row:nth-of-type(odd) {
-    background-color: #f0f0f0;
-}
-
-.defaulttemplate.stripes .row:nth-of-type(even) {
-    background-color: #f4f4f4;
-}
-
-.defaulttemplate.stripes .row {
-    border-top: 1px solid #999;
-}
-
-.defaulttemplate.stripes .row:last-of-type {
-    border-bottom: 1px solid #999;
-}

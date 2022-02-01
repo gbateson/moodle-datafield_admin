@@ -190,7 +190,8 @@ if (empty($fields)) {
     // Start the <form>.
     echo html_writer::start_tag('form', array('action' => $url,
                                               'method' => 'post',
-                                              'class' => $tool));
+                                              'class' => "$tool container stripes ml-0      ",
+                                              'style' => 'max-width: 1600px;'));
 
     // Add sesskey to the form.
     echo html_writer::empty_tag('input', array('type' => 'hidden',
@@ -198,7 +199,7 @@ if (empty($fields)) {
                                                'value' => sesskey()));
 
     // Add titles.
-    echo html_writer::start_tag('dl', array('class' => $listclass.' d-none d-lg-flex rounded-top columnheadings'));
+    echo html_writer::start_tag('dl', array('class' => $listclass.' d-none d-lg-flex rounded-top bg-info h5 text-light font-weight-bold columnheadings'));
     echo html_writer::tag('dt', get_string('fieldname', 'data'), array('class' => $nameclass.' fieldname'));
     echo html_writer::tag('dt', get_string('type', 'data'), array('class' => $typeclass.' fieldtype'));
     echo html_writer::tag('dt', get_string('currentvalues', $plugin), array('class' => $valuesclass.' text-center currentvalues'));
@@ -327,6 +328,7 @@ if (empty($fields)) {
         echo html_writer::end_tag('dl');
     }
 
+    echo html_writer::start_tag('div', array('class' => 'my-2'));
     echo html_writer::empty_tag('input', array('type' => 'submit',
                                                'name' => 'savechanges',
                                                'class' => 'btn btn-primary',
@@ -336,6 +338,8 @@ if (empty($fields)) {
                                                'name' => 'cancel',
                                                'class' => 'btn btn-secondary',
                                                'value' => get_string('cancel')));
+    echo html_writer::end_tag('div');
+
     echo html_writer::end_tag('form');
 }
 
