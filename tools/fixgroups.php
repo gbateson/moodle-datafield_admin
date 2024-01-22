@@ -163,7 +163,11 @@ if (optional_param('autoassign', 0, PARAM_INT)) {
 }
 
 // fetch group mode and groups available to the current user
-$groupmode = $course->groupmode;
+if ($course->groupmodeforce) {
+    $groupmode = $course->groupmode;
+} else {
+    $groupmode = $cm->groupmode;
+}
 $aag = has_capability('moodle/site:accessallgroups', $context);
 
 if ($groupmode == VISIBLEGROUPS || $aag) {
@@ -212,7 +216,7 @@ if ($newgroupid && count($recordids) && confirm_sesskey()) {
 }
 
 // Get/set the display group id, if any.
-if ($course->groupmode) {
+if ($groupmode) {
     // Note that we don't set $groupid here, because
     // "groups_get_course_group()" ignores the value of "-1"
     // which we are using to represent "No groups"
