@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2025-02-02 (10)
+ - use mustache templates in Moodle >= 4.4
+
 2024-01-22 (08)
  - improve the setting of groupmode
 

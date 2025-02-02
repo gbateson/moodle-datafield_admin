@@ -130,3 +130,11 @@ function datafield_admin_pluginfile($course, $cm, $context, $filearea, $args, $f
     // file not found :-(
     send_file_not_found();
 }
+
+/**
+ * Get icon mapping for font-awesome.
+ */
+function datafield_admin_get_fontawesome_icon_map() {
+    // The hex code for "unlock" is "f09c".
+    return ['mod_data:field/admin' => 'fa-solid fa-unlock'];
+}

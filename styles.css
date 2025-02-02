@@ -25,13 +25,26 @@
  * @since     Moodle 2.0
  */
 
+/**
+ * The font-awesome icon for this plugin is not defined by
+ * standard Moodle themes (Boost, Classic) so we add it here.
+ */
+.fa-unlock:before {
+    content: "\f09c";
+}
+
 .path-mod-data-field form#editfield table.datafield_admin tr.param8 td.c0 {
     padding-top: 10px;
     vertical-align: top;
 }
 
-.path-mod-data-field input[type="checkbox"] {
+/** Moodle <= 4.3 uses a table in mod.html */
+.path-mod-data-field .c1 input[type="checkbox"] {
     margin-top: -8px;
+}
+/** Moodle >= 4.4 uses a Moodle form in a mustache template */
+.path-mod-data-field .felement input[type="checkbox"] {
+    margin-top: 6px;
 }
 
 .path-mod-data-field .fieldname, .path-mod-data-field .icon {

@@ -916,7 +916,149 @@ class data_field_admin extends data_field_base {
      * @since Moodle 3.3
      */
     public function get_config_for_external() {
-    	return self::get_field_params($this->field);
+    	return self::get_field_params_for_external($this->field);
+    }
+
+    public function get_field_params_with_help(): array {
+        global $OUTPUT;
+
+        // Fetch the name, description and params1-10.
+        $data = parent::get_field_params();
+
+        // Add help icons (including help text).
+        $name = 'fieldname';
+        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
+
+        $name = 'fielddescription';
+        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
+
+        return $data;
+    }
+
+    /**
+     * Return the params required by "templates/xxx.mustache" template.
+     *
+     * @return array the list of config parameters
+     * @since Moodle 3.3
+     */
+    protected function get_field_params(): array {
+        global $CFG, $OUTPUT;
+
+        // Fetch the name, description and param1 to 10.
+        $data = $this->get_field_params_with_help();
+
+        // Add help icons (including help text).
+        $name = 'fieldname';
+        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
+
+        $name = 'fielddescription';
+        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
+
+        // Prepare action types for mustache template.
+        $name = 'fieldtypes';
+        $data[$name] = ['action', 'constant', 'template', 'report'];
+        $data[$name] = $this->get_datafield_types($data[$name]);
+        $data[$name] = data_field_admin::mustache_select_options(
+            $data['param10'], $data[$name]
+        );
+
+        // Prepare accessibility array for mustache template.
+        $name = 'accesstypes';
+        $data[$name] = $this->get_access_types();
+        $data[$name] = data_field_admin::mustache_select_options(
+            $data['param9'], $data[$name]
+        );
+
+        // Prepare settings for subfield.
+        if ($subfolder = $this->subfolder) {
+            $name = 'moresettings';
+            $type = $this->subtype;
+            if (file_exists("$subfolder/templates/$type.mustache")) {
+                $template = "datafield_$type/$type";
+                $data[$name] = $this->subfield->get_field_params();
+                $data[$name] = $OUTPUT->render_from_template($template, $data[$name]);
+                $data[$name] = $this->remove_basic_fields(
+                    $data[$name],
+                    ['form-group', 'row', 'fitem'],
+                    ['name', 'description', 'required']
+                );
+            } else if (file_exists("$subfolder/mod.html")) {
+                // The "prepare_format_sub_field()" method
+                // removes the field name and description fields.
+                ob_start(array($this, 'prepare_format_sub_field'));
+                include("$subfolder/mod.html");
+                $data[$name] = ob_get_clean();
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Removes specific input fields from HTML form markup based on CSS classes and input names.
+     *
+     * This function parses an HTML string, finds all <div> elements that contain 
+     * any of the specified CSS classes, and removes those containing an <input> element
+     * with a name attribute matching any of the specified target names.
+     *
+     * It will use Dom\HTMLDocument (if available in PHP 8.4+) for modern HTML5 parsing,
+     * otherwise, it falls back to the older DOMDocument.
+     *
+     * @param string $html The HTML string containing form elements.
+     * @param array $targetclasses An array of CSS class names to search for in <div> elements.
+     * @param array $targetnames An array of <input> name attributes to identify fields for removal.
+     * @return string The modified HTML string with the specified fields removed.
+     */
+    function remove_basic_fields($html, array $targetclasses, array $targetnames) {
+
+        // Check if \Dom\HTMLDocument (PHP 8.4+) is available
+        if (class_exists('\\Dom\\HTMLDocument')) {
+            $dom = new \Dom\HTMLDocument();
+            $dom->loadHTML($html);
+        } else {
+            // Fallback for PHP 8.3 and earlier
+            $dom = new DOMDocument();
+            libxml_use_internal_errors(true); // Prevent warnings for malformed HTML
+            $options = (LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, $options);
+            libxml_clear_errors();
+        }
+
+        // Create an XPath instance
+        $xpath = new DOMXPath($dom);
+    
+        // Build an XPath query to match <div> elements containing any of the target classes
+        $conditions = array_map(fn($class) => "contains(@class, '$class')", $targetclasses);
+        $query = "//div[" . implode(" and ", $conditions) . "]";
+    
+        // Find all matching <div> elements
+        $divs = $xpath->query($query);
+    
+        foreach ($divs as $div) {
+            // Extract <input> elements inside this <div>.
+            // We only expect at most one, but anything is possible!
+            $inputs = $div->getElementsByTagName('input');
+    
+            foreach ($inputs as $input) {
+                $name = $input->getAttribute('name');
+
+                // Check if the input name is in the target list
+                $i = array_search($name, $targetnames, true);
+                if (is_numeric($i)) {
+                    $div->parentNode->removeChild($div); // Remove the <div>.
+                    unset($targetnames[$i]); // Remove the name from the list.
+                    break; // No need to check further inputs in this div.
+                }
+            }
+    
+            // If all target names have been matched and removed, exit loop early
+            if (empty($targetnames)) {
+                break;
+            }
+        }
+    
+        // Return the cleaned HTML
+        return $dom->saveHTML();
     }
 
     ///////////////////////////////////////////
@@ -1794,7 +1936,8 @@ class data_field_admin extends data_field_base {
 
     /**
      * Update the content of one data field in the data_content table
-     * @global object
+     *
+     * @global object $DB
      * @param int $fieldid
      * @param int $recordid
      * @param mixed $value
@@ -1819,13 +1962,30 @@ class data_field_admin extends data_field_base {
     }
 
     /**
+     * Convert array of $name => $value pairs to an array of objects
+     * suitable for use as select options in a mustache template.
+     *
+     * @param mixed $paramvalue the current value of the parameter
+     * @param array $values
+     * @return array
+     */
+    static public function mustache_select_options($paramvalue, $values) {
+        $options = [];
+        foreach ($values as $value => $text) {
+            $selected = ($value == $paramvalue ? 1 : 0);
+            $options[] = ['value' => $value, 'text' => $text, 'selected' => $selected];
+        }
+        return $options;
+    }
+
+    /**
      * Central method to return params 1-10 for a field
      * as requied for the "get_config_for_external" method
      *
      * @return array the list of config parameters
      * @since Moodle 3.3
      */
-    static public function get_field_params($field) {
+    static public function get_field_params_for_external($field) {
         $params = array();
         for ($i = 1; $i <= 10; $i++) {
         	$param = "param$i";
@@ -2463,7 +2623,7 @@ class data_field_admin extends data_field_base {
             if ($col->email === false) {
                 $warning[] = 'Column is missing from import file: Email';
             }
-            
+
             if (count($error)) {
                 echo html_writer::alist($error);
             } else {
@@ -2492,7 +2652,7 @@ class data_field_admin extends data_field_base {
 
                     $username = $record[$col->username];
                     if ($DB->record_exists('user', array('username' => $username))) {
-                        // username already exists - great! 
+                        // username already exists - great!
                         continue;
                     }
 
