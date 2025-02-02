@@ -1,0 +1,51 @@
+<fieldset>
+    {{> datafield_admin/basicfields }}
+    {{> mod_data/fields/requiredfield }}
+
+    <!-- Template for Field type field -->
+    <div class="form-group row fitem">
+        <div class="col-md-3">
+            <label for="param10" class="mb-0">{{#str}}type, data{{/str}}</label>
+        </div>
+        <div class="col-md-9 form-inline align-items-start felement">
+            <select id="param10" class="select custom-select form-control" name="param10">
+                {{#fieldtypes}}
+                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{text}}</option>
+                {{/fieldtypes}}
+            </select>
+        </div>
+    </div>
+
+    <!-- Template for Accessibility field -->
+    <div class="form-group row fitem">
+        <div class="col-md-3">
+            <label for="param9" class="mb-0">{{#str}}access, access{{/str}}</label>
+        </div>
+        <div class="col-md-9 form-inline align-items-start felement">
+            <select id="param9" class="select custom-select form-control" name="param9">
+                {{#accesstypes}}
+                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{text}}</option>
+                {{/accesstypes}}
+            </select>
+        </div>
+    </div>
+
+    <!-- Template for Conditions field -->
+    <div class="form-group row fitem">
+        <div class="col-md-3">
+            <label for="param8" class="mb-0">{{#str}}disabledif, datafield_admin{{/str}}</label>
+        </div>
+        <div class="col-md-9 form-inline align-items-start felement">
+            <textarea id="id_param8" name="param8" class="widetext" rows="2">{{param8}}</textarea>
+        </div>
+    </div>
+
+    {{#moresettings}}
+        {{{moresettings}}}
+    {{/moresettings}}
+    {{^moresettings}}
+    <div class="form-group row fitem">
+        <div class="col">{{#str}}moresettings, datafield_admin{{/str}}</div>
+    </div>
+    {{/moresettings}}
+</fieldset>
