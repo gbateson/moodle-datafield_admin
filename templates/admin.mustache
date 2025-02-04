@@ -1,11 +1,11 @@
 <fieldset>
     {{> datafield_admin/basicfields }}
-    {{> mod_data/fields/requiredfield }}
 
     <!-- Template for Field type field -->
     <div class="form-group row fitem">
         <div class="col-md-3">
-            <label for="param10" class="mb-0">{{#str}}type, data{{/str}}</label>
+            <label for="param10" class="mb-0">{{param10_label}}</label>
+            {{#param10_helpicon}}{{{param10_helpicon}}}{{/param10_helpicon}}
         </div>
         <div class="col-md-9 form-inline align-items-start felement">
             <select id="param10" class="select custom-select form-control" name="param10">
@@ -19,7 +19,8 @@
     <!-- Template for Accessibility field -->
     <div class="form-group row fitem">
         <div class="col-md-3">
-            <label for="param9" class="mb-0">{{#str}}access, access{{/str}}</label>
+            <label for="param9" class="mb-0">{{param9_label}}</label>
+            {{#param9_helpicon}}{{{param9_helpicon}}}{{/param9_helpicon}}
         </div>
         <div class="col-md-9 form-inline align-items-start felement">
             <select id="param9" class="select custom-select form-control" name="param9">
@@ -33,7 +34,8 @@
     <!-- Template for Conditions field -->
     <div class="form-group row fitem">
         <div class="col-md-3">
-            <label for="param8" class="mb-0">{{#str}}disabledif, datafield_admin{{/str}}</label>
+            <label for="param8" class="mb-0">{{param8_label}}</label>
+            {{#param8_helpicon}}{{{param8_helpicon}}}{{/param8_helpicon}}
         </div>
         <div class="col-md-9 form-inline align-items-start felement">
             <textarea id="id_param8" name="param8" class="widetext" rows="2">{{param8}}</textarea>

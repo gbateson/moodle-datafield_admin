@@ -38,8 +38,8 @@
 
 <div class="form-group row fitem">
     <div class="col-md-3 col-form-label d-flex pb-0 pe-md-0">
-        <label for="name" class="mb-0">{{#str}}fieldname, datafield_admin{{/str}}</label>
-        {{{fieldname_helpicon}}}
+        <label for="name" class="mb-0">{{name_label}}</label>
+        {{#name_helpicon}}{{{name_helpicon}}}{{/name_helpicon}}
     </div>
     <div class="col-md-9 form-inline align-items-start felement">
         <input class="fieldname form-control" type="text" name="name" id="name" value="{{name}}">
@@ -47,10 +47,10 @@
 </div>
 <div class="form-group row fitem">
     <div class="col-md-3 col-form-label d-flex pb-0 pe-md-0">
-        <label for="description" class="mb-0">{{#str}}fielddescription, datafield_admin{{/str}}</label>
-        {{{fielddescription_helpicon}}}
+        <label for="description" class="mb-0">{{description_label}}</label>
+        {{#description_helpicon}}{{{description_helpicon}}}{{/description_helpicon}}
     </div>
     <div class="col-md-9 form-inline align-items-start felement">
-        <input class="fielddescription form-control" type="text" name="description" id="description" value="{{description}}">
+        <input class="description form-control" type="text" name="description" id="description" value="{{description}}">
     </div>
 </div>

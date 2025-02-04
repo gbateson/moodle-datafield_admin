@@ -919,40 +919,30 @@ class data_field_admin extends data_field_base {
     	return self::get_field_params_for_external($this->field);
     }
 
-    public function get_field_params_with_help(): array {
-        global $OUTPUT;
-
-        // Fetch the name, description and params1-10.
-        $data = parent::get_field_params();
-
-        // Add help icons (including help text).
-        $name = 'fieldname';
-        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
-
-        $name = 'fielddescription';
-        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
-
-        return $data;
-    }
-
     /**
-     * Return the params required by "templates/xxx.mustache" template.
+     * Retrieves and prepares configuration parameters for the Mustache template.
      *
-     * @return array the list of config parameters
-     * @since Moodle 3.3
+     * This method extends the parent method to fetch default field parameters
+     * and enhances them with additional settings required by the Mustache template.
+     * It processes field types, accessibility options, subfield settings, and
+     * removes unnecessary fields. Additionally, it adds help icons for fields
+     * where language help strings are available.
+     *
+     * @return array The list of prepared configuration parameters for the Mustache template.
+     * @global core_renderer $OUTPUT Used to render Mustache templates.
+     * @since Moodle 4.4
      */
     protected function get_field_params(): array {
-        global $CFG, $OUTPUT;
+        global $OUTPUT;
 
-        // Fetch the name, description and param1 to 10.
-        $data = $this->get_field_params_with_help();
+        // Fetch the fields that are initialized
+        // by the define_default_field() method.
+        // This includes id, dataid, type, param1~3,
+        // and the name, description, required fields.
+        $data = parent::get_field_params();
 
-        // Add help icons (including help text).
-        $name = 'fieldname';
-        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
-
-        $name = 'fielddescription';
-        $data["{$name}_helpicon"] = $OUTPUT->help_icon($name, 'datafield_admin');
+        // Add labels and help icons for the mustache template.
+        $data = self::add_labels_and_help($data, $this);
 
         // Prepare action types for mustache template.
         $name = 'fieldtypes';
@@ -1009,7 +999,7 @@ class data_field_admin extends data_field_base {
      * @param array $targetnames An array of <input> name attributes to identify fields for removal.
      * @return string The modified HTML string with the specified fields removed.
      */
-    function remove_basic_fields($html, array $targetclasses, array $targetnames) {
+    protected function remove_basic_fields($html, array $targetclasses, array $targetnames) {
 
         // Check if \Dom\HTMLDocument (PHP 8.4+) is available
         if (class_exists('\\Dom\\HTMLDocument')) {
@@ -1029,14 +1019,14 @@ class data_field_admin extends data_field_base {
     
         // Build an XPath query to match <div> elements containing any of the target classes
         $conditions = array_map(fn($class) => "contains(@class, '$class')", $targetclasses);
-        $query = "//div[" . implode(" and ", $conditions) . "]";
+        $query = '//div[' . implode(' and ', $conditions) . ']';
     
         // Find all matching <div> elements
         $divs = $xpath->query($query);
     
         foreach ($divs as $div) {
             // Extract <input> elements inside this <div>.
-            // We only expect at most one, but anything is possible!
+            // We expect only one, but anything is possible!
             $inputs = $div->getElementsByTagName('input');
     
             foreach ($inputs as $input) {
@@ -1059,6 +1049,61 @@ class data_field_admin extends data_field_base {
     
         // Return the cleaned HTML
         return $dom->saveHTML();
+    }
+
+    /**
+     * Adds labels and help icons to the provided data array for use in a Mustache template.
+     *
+     * This method enhances the given data array by adding label strings and help icons 
+     * for specific fields. It retrieves the appropriate language strings and help icons 
+     * based on predefined mappings and the static method `get_string_names()` from the field object.
+     *
+     * @param array $data An associative array of field data to be used in a Mustache template.
+     * @param object|string $field An object or class name that provides additional string mappings 
+     *                              via the `get_string_names()` static method.
+     * @return array The modified $data array with added labels and help icons.
+     * @global core_renderer $OUTPUT Used to generate help icons.
+     */
+    public static function add_labels_and_help($data, $field) {
+        global  $OUTPUT;
+        $strman = get_string_manager();
+    
+        $strnames = [
+            'name' => ['fieldname', 'datafield_admin'],
+            'description' => ['fielddescription', 'datafield_admin'],
+            'required' => ['required', 'mod_data'],
+        ];
+        $strnames += $field::get_string_names();
+
+        foreach ($data as $name => $value) {
+            if (array_key_exists($name, $strnames)) {
+                // Ensure we have at least 3 elements defined for this string.
+                $strname = array_pad($strnames[$name], 3, null);
+                list($strname, $component, $a) = $strname;
+                if ($strman->string_exists($strname, $component)) {
+                    $data["{$name}_label"] = get_string($strname, $component, $a);
+                }
+                if ($strman->string_exists("{$strname}_help", $component)) {
+                    $data["{$name}_helpicon"] = $OUTPUT->help_icon($strname, $component);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Map param names to a label string and component.
+     * Used by self::add_labels_and_help($data, $field).
+     */
+    protected static function get_string_names() {
+        return [
+            // Params 1~5 are used by the subfield.
+            'param8' => ['disabledif', 'datafield_admin'],
+            'param9' => ['access', 'access'],
+            'param10' => ['type', 'mod_data'],
+        ];
+        
     }
 
     ///////////////////////////////////////////
