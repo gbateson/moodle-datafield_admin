@@ -194,17 +194,19 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     //     ##edit##  ##more##  ##delete##
     //     ##approve##  ##disapprove##  ##export##
 
+    $inputtypes = ['admin', 'action', 'checkbox', 'date',
+                   'file', 'menu', 'picture', 'number',
+                   'radiobutton', 'text', 'textarea', 'url'];
+    $outputtypes = ['constant', 'template', 'report'];
+    $hiddentypes = ['action'];
+
     foreach ($templatenames as $templatename) {
 
         $specialfields = array();
         $printfields = array();
+        $hiddenfields = array();
         $metafields = array();
         $actions = '';
-        $types = array('admin',  'checkbox',
-                       'date',   'file',
-                       'menu',   'picture',
-                       'number', 'radiobutton',
-                       'text',   'textarea', 'url');
 
         switch ($templatename) {
             case 'addtemplate':
@@ -221,6 +223,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'print_ticket'         => '',
                                      'print_dinner_receipt' => '',
                                      'print_certificate'    => '');
+                $types = $inputtypes;
                 break;
 
             case 'listtemplate':
@@ -229,9 +232,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'fee_receipt'    => '',
                                      'dinner_receipt' => '',
                                      'certificate'    => '');
-                //$types[] = 'constant';
-                //$types[] = 'template';
                 $actions = '##more## ##edit## ##delete##';
+                $types = array_merge($inputtypes, $outputtypes);
                 break;
 
             case 'singletemplate':
@@ -240,7 +242,16 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                     'timemodified' => get_string('timemodified', 'data'),
                                     'tags' => get_string('tags'));
                 $actions = '##edit## ##delete##';
+                $types = array_merge($inputtypes, $outputtypes);
                 break;
+
+            case 'asearchtemplate':
+                $types = $inputtypes;
+                break;
+
+            default:
+                // csstemplate, jstemplate and anything else.
+                $types = [];
         }
 
         $dl = '';
@@ -272,6 +283,9 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                         $specialfields[$field->name] = '[['.$field->name.']]';
                     } else if (array_key_exists($field->name, $printfields)) {
                         $printfields[$field->name] = '[['.$field->name.']]';
+                    } else if (in_array($field->type, $hiddentypes)) {
+                        $params = array('class' => 'd-none');
+                        echo $indent1.html_writer::tag('div', '[['.$field->name.']]', $params).$newline;
                     } else if (in_array($field->type, $types)) {
                         $fieldname = preg_replace($illegalchars, '_', $field->name);
                         $fieldname = preg_replace($trimstartend, '', $fieldname);

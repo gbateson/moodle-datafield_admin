@@ -122,7 +122,7 @@ if ($fields && is_array($fields)) {
                 }
             }
             foreach ($new as $i => $line) {
-                if (array_key_exists($i, $old) && strcmp($line, $old[$i])) {
+                if (array_key_exists($i, $old) && (is_null($old[$i]) || strcmp($line, $old[$i]))) {
                     $select = 'fieldid = ? AND '.$DB->sql_compare_text('content').' = ?';
                     $params = array($fid, $old[$i]);
                     $DB->set_field_select('data_content', 'content', $line, $select, $params);

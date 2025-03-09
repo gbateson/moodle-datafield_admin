@@ -82,6 +82,24 @@ class data_field_admin extends data_field_base {
     var $disabledifparam = 'param8';
 
     /**
+     * the $field property that contains line of display text
+     * for select, radio, and checkbox subfields
+     * e.g. value, multilingual display text
+     * =====================================
+     * This field is NOT IMPLEMENTED ... yet
+     * =====================================
+     */
+    var $displaytextparam = 'param7';
+
+    /**
+     * the $field property that contains the sort order for this field
+     * =====================================
+     * This field is NOT IMPLEMENTED ... yet
+     * =====================================
+     */
+    var $sortorderparam = 'param6';
+
+    /**
      * TRUE if the current user can view this field; otherwise FALSE
      */
     var $is_viewable = null;
@@ -132,22 +150,6 @@ class data_field_admin extends data_field_base {
      * otherwise FALSE
      */
     var $setdefaultvalues = false;
-
-    ///////////////////////////////////////////
-    // fields that are NOT IMPLEMENTED ... yet
-    ///////////////////////////////////////////
-
-    /**
-     * the $field property that contains line of display text
-     * for select, radio, and checkbox subfields
-     * e.g. value, multilingual display text
-     */
-    var $displaytextparam = 'param7';
-
-    /**
-     * the $field property that contains the sort order for this field
-     */
-    var $sortorderparam = 'param6';
 
     /**
      * should we use TABLE or DL + bootstrap classes
@@ -358,6 +360,28 @@ class data_field_admin extends data_field_base {
                 }
             }
         }
+
+        // Ensure there are no NULL values in the param fields.
+        $this->fix_null_params($this->field);
+        $this->fix_null_params($this->subfield);
+    }
+
+    /* Ensure there are no NULL values in the param fields
+     * As this can upset the {{mustache}} templates.
+     *
+     * @param object $field|NULL
+     * @return void (but may update param values in $field)
+     */
+    protected function fix_null_params($field) {
+        if ($field) {
+            for ($i = 1; $i <= 10; $i++) {
+                $param = "param$i";
+                if (isset($this->field->$param)) {
+                    continue;
+                }
+                $this->field->$param = '';
+            }
+        }
     }
 
     /**
@@ -414,6 +438,10 @@ class data_field_admin extends data_field_base {
      * define default values for settings in a new admin field
      */
     function define_default_field() {
+        // Initialize the following properties of $this->field: 
+        // id, dataid, type,
+        // param1, param2, param3
+        // name, description, required
         parent::define_default_field();
 
         $param = $this->subparam;
@@ -428,6 +456,7 @@ class data_field_admin extends data_field_base {
         if ($this->subfield) {
             $this->subfield->define_default_field();
         }
+
         return true;
     }
 

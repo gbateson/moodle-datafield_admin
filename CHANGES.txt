@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2025-03-09 (15)
+ - improvement to tool to generate templates
+
 2025-02-04 (13)
  - utilize central function to add labels and help icons in mustache template for this field type
 
