@@ -194,9 +194,10 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     //     ##edit##  ##more##  ##delete##
     //     ##approve##  ##disapprove##  ##export##
 
-    $inputtypes = ['admin', 'action', 'checkbox', 'date',
-                   'file', 'menu', 'picture', 'number',
+    $inputtypes = ['admin', 'action',
+                   'checkbox', 'date', 'menu', 'number',
                    'radiobutton', 'text', 'textarea', 'url'];
+    $uploadtypes = ['file', 'picture'];
     $outputtypes = ['constant', 'template', 'report'];
     $hiddentypes = ['action'];
 
@@ -223,7 +224,8 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'print_ticket'         => '',
                                      'print_dinner_receipt' => '',
                                      'print_certificate'    => '');
-                $types = $inputtypes;
+
+                $types = array_merge($inputtypes, $uploadtypes);
                 break;
 
             case 'listtemplate':
@@ -233,7 +235,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                      'dinner_receipt' => '',
                                      'certificate'    => '');
                 $actions = '##more## ##edit## ##delete##';
-                $types = array_merge($inputtypes, $outputtypes);
+                $types = array_merge($inputtypes, $uploadtypes, $outputtypes);
                 break;
 
             case 'singletemplate':
@@ -242,7 +244,7 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                     'timemodified' => get_string('timemodified', 'data'),
                                     'tags' => get_string('tags'));
                 $actions = '##edit## ##delete##';
-                $types = array_merge($inputtypes, $outputtypes);
+                $types = array_merge($inputtypes, $uploadtypes, $outputtypes);
                 break;
 
             case 'asearchtemplate':
@@ -278,7 +280,6 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
 
                 $firstrow = true;
                 foreach ($fields as $field) {
-
                     if (array_key_exists($field->name, $specialfields)) {
                         $specialfields[$field->name] = '[['.$field->name.']]';
                     } else if (array_key_exists($field->name, $printfields)) {
