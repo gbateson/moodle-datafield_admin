@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2025-03-13 (17)
+ - add JS to fix placement of left/right column in addsingle
+
 2025-03-11 (16)
  - when generating the Ssearch template, do not display file or picture fields
 

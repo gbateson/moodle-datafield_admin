@@ -18,6 +18,14 @@
     JS.video_max_height = "360px";
     JS.video_max_width = "640px";
 
+    /**
+     * Adds an event listener to an element.
+     *
+     * @param {HTMLElement} obj The element to which the event listener is attached.
+     * @param {string} evt The event type (e.g., "click", "load").
+     * @param {Function} fn The callback function to execute when the event occurs.
+     * @param {boolean} [useCapture=false] Whether to use capture phase (default: false).
+     */
     JS.add_event_listener = function(obj, evt, fn, useCapture) {
         if (obj.addEventListener) {
             obj.addEventListener(evt, fn, (useCapture || false));
@@ -26,8 +34,17 @@
         }
     };
 
-    // https://stackoverflow.com/questions/8567114/how-to-make-an-JS.ajax-call-without-jquery
+    /**
+     * AJAX utility for making HTTP requests.
+     * https://stackoverflow.com/questions/8567114/how-to-make-an-JS.ajax-call-without-jquery
+     */
     JS.ajax = {
+
+        /**
+         * Creates an XMLHttpRequest object.
+         *
+         * @returns {XMLHttpRequest|null} A new XMLHttpRequest object or null if not supported.
+         */
         "x": function () {
             if (window.XMLHttpRequest) {
                 return new XMLHttpRequest();
@@ -44,6 +61,14 @@
             return null;
         },
 
+        /**
+         * Sends an AJAX request.
+         *
+         * @param {string} url The URL to send the request to.
+         * @param {string|null} data The request data (for POST requests).
+         * @param {Function} callback The function to execute on success.
+         * @param {string} method The HTTP method (GET or POST).
+         */
         "send": function (url, data, callback, method) {
             var x = JS.ajax.x();
             if (x) {
@@ -60,6 +85,13 @@
             }
         },
 
+        /**
+         * Sends a GET request.
+         *
+         * @param {string} url The URL to send the request to.
+         * @param {Object} data An object containing query parameters.
+         * @param {Function} callback The function to execute on success.
+         */
         "get": function (url, data, callback) {
             var q = [];
             for (var key in data) {
@@ -68,6 +100,13 @@
             JS.ajax.send(url + (q.length ? '?' + q.join('&') : ''), null, callback, "GET")
         },
 
+        /**
+         * Sends a POST request.
+         *
+         * @param {string} url The URL to send the request to.
+         * @param {Object} data An object containing form data.
+         * @param {Function} callback The function to execute on success.
+         */
         "post": function (url, data, callback) {
             var q = [];
             for (var key in data) {
@@ -77,6 +116,11 @@
         }
     };
 
+    /**
+     * Retrieves the Moodle session key.
+     *
+     * @returns {string|null} The session key or null if not found.
+     */
     JS.get_sesskey = function() {
         var elm = document.querySelector("input[name=sesskey]");
         if (elm) {
@@ -85,6 +129,12 @@
         return null; // shouldn't happen !!
     };
 
+    /**
+     * Retrieves a URL parameter by name.
+     *
+     * @param {string} name The name of the URL parameter.
+     * @returns {string} The value of the parameter or an empty string if not found.
+     */
     JS.get_url_param = function(name) {
         if (window.URLSearchParams) {
             var s = new URLSearchParams(window.location.search);
@@ -102,6 +152,25 @@
         }
     };
 
+    /**
+     * Moves sidebar columns in the page layout.
+     */
+    JS.setup_columns = function() {
+        ["left","right"].forEach(function(s) {
+            let col = document.querySelector(".column" + s);
+            if (col && col.parentNode.matches("#region-main-box")) {
+                col.closest("#page-content").appendChild(col);
+            }
+        });
+    }
+
+    /**
+     * Removes empty rows from a given selector.
+     *
+     * @param {string} rowtag The row tag name (optional).
+     * @param {string} rowclass The row class name (optional).
+     * @param {string} rowselectors The selector for targeting rows to check.
+     */
     JS.remove_empty_rows = function(rowtag, rowclass, rowselectors) {
         document.querySelectorAll(rowselectors).forEach(function(row){
             if (rowtag == "" || row.matches(rowtag)) {
@@ -114,6 +183,9 @@
         });
     };
 
+    /**
+     * Moves required field icons to the appropriate position.
+     */
     JS.move_required_icons = function() {
         document.querySelectorAll("div.inline-req").forEach(function(req){
             var elm = req;
@@ -147,12 +219,20 @@
         });
     };
 
+    /**
+     * Sets up media links for audio, video, and image elements.
+     */
     JS.setup_media_links = function() {
         document.querySelectorAll(".row dd a").forEach(function(a){
             JS.setup_media_link(a);
         });
     };
 
+    /**
+     * Converts an anchor link to a media element (audio, video, image).
+     *
+     * @param {HTMLAnchorElement} a The anchor element to be transformed.
+     */
     JS.setup_media_link = function(a) {
         var tag = "";
         switch (true) {
@@ -190,6 +270,9 @@
         }
     };
 
+    /**
+     * Initializes media players for supported elements.
+     */
     JS.setup_media_players = function() {
         var selectors = ".row dd video, " +
                         ".row dd audio, " +
@@ -199,6 +282,11 @@
         });
     };
 
+    /**
+     * Configures a media player element with appropriate settings.
+     *
+     * @param {HTMLElement} elm The media element (audio, video, or image).
+     */
     JS.setup_media_player = function(elm) {
 
         var evt = "";
@@ -307,6 +395,13 @@
         }
     }
 
+    /**
+     * Sets up a dependent field that updates based on a selection.
+     *
+     * @param {string} selectfieldname The name of the select field triggering the update.
+     * @param {string} displayfieldname The name of the field being updated.
+     * @param {string} displayparamname Additional parameters for fetching data.
+     */
     JS.setup_dependant_field = function(selectfieldname,
                                         displayfieldname,
                                         displayparamname) {
@@ -349,7 +444,11 @@
         }
     };
 
+    /**
+     * Initializes page elements and settings.
+     */
     JS.setup = function() {
+        JS.setup_columns();
         JS.remove_empty_rows("dl", ".row", ".metafield.tags");
         //JS.setup_media_links();
         //JS.setup_media_players();
@@ -357,5 +456,8 @@
         //JS.setup_dependant_field("presenter", "presentation", "extra1");
     };
 
+    /**
+     * Adds an event listener to initialize the page setup on window load.
+     */
     JS.add_event_listener(window, "load", JS.setup);
 }());
