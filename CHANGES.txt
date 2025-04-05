@@ -2,6 +2,9 @@
 Change log for datafield_admin
 ========================================
 
+2025-04-05 (18)
+ - add JS to expand/contract textarea height to match content
+
 2025-03-13 (17)
  - add JS to fix placement of left/right column in addsingle
 

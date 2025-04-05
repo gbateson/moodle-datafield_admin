@@ -962,7 +962,7 @@ class data_field_admin extends data_field_base {
      * @since Moodle 4.4
      */
     protected function get_field_params(): array {
-        global $OUTPUT;
+        global $OUTPUT, $PAGE;
 
         // Fetch the fields that are initialized
         // by the define_default_field() method.
@@ -1009,6 +1009,9 @@ class data_field_admin extends data_field_base {
                 $data[$name] = ob_get_clean();
             }
         }
+
+        // Javascript to fix the body id (and possibly  other stuff)
+        self::require_js("/mod/data/field/admin/mod.html.js", true);
 
         return $data;
     }
@@ -2925,7 +2928,6 @@ class data_field_admin extends data_field_base {
  * The following hack is required to calculate export values
  * for field types such as "admin", "report" and "template" fields,
  * that calculate their content values dynamically.
- *
  */
 if ($GLOBALS['SCRIPT'] == '/mod/data/export.php') {
     data_field_admin::setup_export_values();
