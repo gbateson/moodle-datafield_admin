@@ -3,6 +3,9 @@ Change log for datafield_admin
 ========================================
 
 2026-03-01 (20)
+ - fix incorrectly set version that blocked upgrade
+
+2026-03-01 (20)
  - detect Moodle >= 4.2 which allow #description in templates
 
 2025-04-05 (18)
