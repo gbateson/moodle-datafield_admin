@@ -146,3 +146,4 @@ $string['username'] = 'Username';
 $string['viewdescriptions'] = 'View descriptions';
 $string['viewhtml'] = 'View HTML';
 $string['viewtext'] = 'View text';
+$string['visibilityset'] = 'Visibility for group "{$a->name}" was set to "{$a->visibility}"';

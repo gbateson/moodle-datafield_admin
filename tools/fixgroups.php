@@ -36,6 +36,9 @@ $id = required_param('id', PARAM_INT);
 // "groupid" is used to filter records
 $groupid = optional_param('group', '', PARAM_INT);
 
+// Group visibility is available in Moodle >= 4.2.
+$visibility = optional_param('visibility', '', PARAM_INT);
+
 // "newgroupid" is used to modify groupid for selected $recordids
 $newgroupid = optional_param('newgroupid', 0, PARAM_INT);
 $recordids = optional_param_array('recordids', array(), PARAM_INT);
@@ -100,7 +103,7 @@ $str = (object)array(
     'ASC' => get_string('ascending', 'mod_data'),
     'DESC' => get_string('descending', 'mod_data'),
     'nogroup' => get_string('nogroup', 'group'),
-    'choose' => get_string('choose').' ...'
+    'choose' => get_string('choose').' ...',
 );
 
 if ($strman->string_exists('anygroup', 'availability_group')) {
@@ -109,6 +112,7 @@ if ($strman->string_exists('anygroup', 'availability_group')) {
     $str->anygroup = get_string('any'); // allparticipants
 }
 
+// Auto assign users to groups, if requested.
 if (optional_param('autoassign', 0, PARAM_INT)) {
 
     // unset the groupid for all records
@@ -162,12 +166,13 @@ if (optional_param('autoassign', 0, PARAM_INT)) {
     echo $OUTPUT->notification($msg, 'notifysuccess');
 }
 
-// fetch group mode and groups available to the current user
+// Fetch group mode and groups available to the current user
 if ($course->groupmodeforce) {
     $groupmode = $course->groupmode;
 } else {
     $groupmode = $cm->groupmode;
 }
+
 $aag = has_capability('moodle/site:accessallgroups', $context);
 
 if ($groupmode == VISIBLEGROUPS || $aag) {
@@ -228,7 +233,7 @@ if ($groupmode) {
         $groupid = $SESSION->activegroup[$course->id][$groupid][$course->defaultgroupingid];
     }
 } else {
-    $groupid = 0;
+    //$groupid = 0;
 }
 
 $sortfield = optional_param('sortfield', 'recordid', PARAM_ALPHANUM);
@@ -315,7 +320,7 @@ $records = "SELECT $select FROM $from WHERE $where ORDER BY $order";
 $records = $DB->get_records_sql($records, $params, $limitfrom, $perpage);
 
 // set group label / menu
-$grouplabel = get_string('groupname', $plugin).$str->labelsep;
+$grouplabel = $str->groupname.$str->labelsep;
 $groupmenu = groups_sort_menu_options($groups, $usergroups);
 if ($groupmode == VISIBLEGROUPS || $aag) {
     $groupmenu = array(-1 => $str->nogroup) + $groupmenu;
@@ -329,6 +334,7 @@ $newgroupmenu = array(-1 => $str->nogroup) + $groupmenu;
 $newgroupmenu = array(0 => $str->choose) + $groupmenu;
 $newgroupmenu = html_writer::select($newgroupmenu, 'newgroupid', $newgroupid, null);
 
+// Convert group menu to select action element.
 switch (count($groupmenu)) {
     case 0:
         $groupmenu = get_string('nogroups', 'group');
@@ -346,6 +352,54 @@ switch (count($groupmenu)) {
                            'perpage' => $perpage,
                            'pagenumber' => 1));
         $groupmenu = $OUTPUT->single_select($url, 'group', $groupmenu, $groupid, null);
+}
+
+// Group visibility is available in Moodle >= 4.2.
+$visibilitylabel = '';
+$visibilitytitle = '';
+$visibilitymenu = null;
+if (defined('GROUPS_VISIBILITY_ALL')) {
+    if ($strman->string_exists('visibility', 'group')) {
+        $visibilitylabel = \html_writer::tag('span', 
+            get_string('visibility', 'group'),
+            array('class' => 'd-inline d-sm-none')
+        ).\html_writer::tag('span',
+            get_string('visibilityshort', 'group'),
+            array('class' => 'd-none d-sm-inline')
+        ).$str->labelsep;
+        $visibilitymenu = [
+            GROUPS_VISIBILITY_ALL => get_string('visibilityall', 'group'),
+            GROUPS_VISIBILITY_MEMBERS => get_string('visibilitymembers', 'group'),
+            GROUPS_VISIBILITY_OWN => get_string('visibilityown', 'group'),
+            GROUPS_VISIBILITY_NONE => get_string('visibilitynone', 'group')
+        ];
+
+        // Set or get group visibility, as requested.
+        if ($groupid && array_key_exists($groupid, $groups)) {
+            $params = array('id' => $groupid);
+            if ($visibility == '') {
+                $visibility = $DB->get_field('groups', 'visibility', $params);
+            } else if (array_key_exists($visibility, $visibilitymenu)) {
+                $DB->set_field('groups', 'visibility', $visibility, $params);
+                $msg = get_string('visibilityset', $plugin, (object)array(
+                    'name' => $groups[$groupid]->name,
+                    'visibility' => $visibilitymenu[$visibility],
+                ));
+                echo $OUTPUT->notification($msg, 'notifysuccess');
+            }
+        }
+
+        // Convert visibility menu to select action element.
+        $url->remove_all_params();
+        $url->params(array('id' => $cm->id,
+                           'sesskey' => sesskey(),
+                           'group' => $groupid,
+                           'sortfield' => $sortfield,
+                           'sortdirection' => $sortdirection,
+                           'perpage' => $perpage,
+                           'pagenumber' => 1));
+        $visibilitymenu = $OUTPUT->single_select($url, 'visibility', $visibilitymenu, $visibility, null);
+    }
 }
 
 // Sort label and menus
@@ -477,6 +531,13 @@ echo html_writer::tag('dt', $grouplabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $groupmenu, array('class' => $dd_class));
 echo html_writer::end_tag('dl');
 
+if ($visibilitylabel && $visibilitymenu) {
+    echo html_writer::start_tag('dl', array('class' => $dl_class));
+    echo html_writer::tag('dt', $visibilitylabel, array('class' => $dt_class));
+    echo html_writer::tag('dd', $visibilitymenu, array('class' => $dd_class));
+    echo html_writer::end_tag('dl');
+}
+
 echo html_writer::start_tag('dl', array('class' => $dl_class));
 echo html_writer::tag('dt', $sortlabel, array('class' => $dt_class));
 echo html_writer::tag('dd', $sortfieldmenu.' '.$sortdirectionmenu, array('class' => $dd_class));
@@ -533,7 +594,7 @@ if ($records) {
     $fullnames = array();
     $userlinks = array();
 
-    // cache lists of user names/lnks
+    // cache lists of user/group names/links.
     $groupnames = array();
     $grouplinks = array();
 

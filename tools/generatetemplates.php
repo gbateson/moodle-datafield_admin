@@ -172,6 +172,10 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
     $multilanglowhigh = '/^([ -~].*?) ([^ -~]+)$/u';
     $multilanghighlow = '/^([^ -~].*?) ([ -~]+)$/u';
 
+    // Detect Moodle >= 4.2. which allows ___#description in templates.
+    // See "get_fields_replacements()" method in "mod/data/classes/template.php".
+    $descriptionallowalias = get_string_manager()->string_exists('otherfields', 'mod_data');    
+
     // Cache some language strings
     $str = (object)array(
         'actions'  => get_string('actions'),
@@ -302,11 +306,16 @@ if ($fields = $DB->get_records('data_fields', array('dataid' => $data->id), 'id'
                                             $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $highlang)).$newline.
                                             $indent2;
                                     break;
+
                                 case preg_match($multilanghighlow, $text, $matches):
                                     $text = $newline.
                                             $indent3.html_writer::tag('span', $matches[1], array('class' => 'multilang', 'lang' => $highlang)).$newline.
                                             $indent3.html_writer::tag('span', $matches[2], array('class' => 'multilang', 'lang' => $lowlang)).$newline.
                                             $indent2;
+                                    break;
+
+                                case $descriptionallowalias:
+                                    $text = '[['.$field->name.'#description]]';
                                     break;
                             }
                         } else {

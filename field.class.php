@@ -253,7 +253,7 @@ class data_field_admin extends data_field_base {
                         break;
 
                     case 'fixdisabledfields':
-                        // prevent "missing property" error in data/lib.php
+                        // prevent "Undefined property" error in data/lib.php
                         // caused by disabled fields in form
                         if (isset($datarecord) && is_object($datarecord)) {
                             $select = 'dataid = ?';
